@@ -18,8 +18,6 @@ export function parseBlocklist(value: unknown): Set<string> {
 export const officialBlocklist: Feature = {
   id: 'official-blocklist', title: '站点黑名单', description: '按站点当前屏蔽状态显示操作。', group: '用户', defaults: { enabled: true },
   mount(ctx) {
-    const ownId = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
-    if (!ownId) return;
     const buttons = new Map<HTMLAnchorElement, { id: string; name: string; button: HTMLButtonElement; release(): void }>();
     let blocked = new Set<string>();
     let loaded = false, checked = 0;
@@ -45,11 +43,14 @@ export const officialBlocklist: Feature = {
       render(); return fetching;
     }
     const stop = ctx.watch(() => {
+      const ownId = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
+      if (!ownId) return;
       for (const [anchor, item] of buttons) if (!anchor.isConnected) { item.button.remove(); item.release(); buttons.delete(anchor); }
       document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(anchor => {
         if (anchor.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
-        const id = authorId(anchor, location.origin), name = anchor.textContent?.trim();
-        if (!id || id === String(ownId) || !name || anchor.querySelector('img') || buttons.has(anchor)) return;
+        const id = authorId(anchor, location.origin);
+        const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).find(candidate => !candidate.closest('.nspp-user-hover, .nspp-profile-dialog') && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector('img')?.alt.trim();
+        if (!id || id === String(ownId) || !name || buttons.has(anchor)) return;
         const button = document.createElement('button'); button.type = 'button'; button.className = 'nspp-block-toggle';
         const hover = userHover(anchor, ctx); hover.element.append(button);
         buttons.set(anchor, { id, name, button, release: hover.release });

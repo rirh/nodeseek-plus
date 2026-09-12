@@ -10140,8 +10140,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		group: "用户",
 		defaults: { enabled: true },
 		mount(ctx) {
-			const ownId = unsafeWindow$1.__config__?.user?.member_id;
-			if (!ownId) return;
 			const buttons = new Map();
 			let blocked = new Set();
 			let loaded = false, checked = 0;
@@ -10176,6 +10174,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				return fetching;
 			}
 			const stop = ctx.watch(() => {
+				const ownId = unsafeWindow$1.__config__?.user?.member_id;
+				if (!ownId) return;
 				for (const [anchor, item] of buttons) if (!anchor.isConnected) {
 					item.button.remove();
 					item.release();
@@ -10183,8 +10183,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				}
 				document.querySelectorAll(userHoverSelector).forEach((anchor) => {
 					if (anchor.closest(".nspp-user-hover, .nspp-profile-dialog")) return;
-					const id = authorId(anchor, location.origin), name = anchor.textContent?.trim();
-					if (!id || id === String(ownId) || !name || anchor.querySelector("img") || buttons.has(anchor)) return;
+					const id = authorId(anchor, location.origin);
+					const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll("a[href*=\"/space/\"], a[href*=\"uid=\"], a[data-uid]")).find((candidate) => !candidate.closest(".nspp-user-hover, .nspp-profile-dialog") && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector("img")?.alt.trim();
+					if (!id || id === String(ownId) || !name || buttons.has(anchor)) return;
 					const button = document.createElement("button");
 					button.type = "button";
 					button.className = "nspp-block-toggle";

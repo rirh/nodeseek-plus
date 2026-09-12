@@ -816,3 +816,25 @@ test('AI launcher defaults visible, opens setup, saves configuration and respect
   try { assert.equal(disabled.window.document.querySelector('[data-nspp-ai-launcher]'), null); }
   finally { await disabled.close(); }
 });
+
+
+test('avatar cards receive synchronized block controls after delayed login initialization', async () => {
+  const f = await fixture({ 'user-level': { enabled: false } }, '<a href="/space/123"><img alt="" /></a><div class="info-author"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
+    Object.assign(window, { __config__: {} });
+    window.fetch = (async () => new window.Response(JSON.stringify({ success: true, data: [{ block_member_id: 123 }] }))) as typeof window.fetch;
+  });
+  try {
+    assert.equal(f.window.document.querySelectorAll('.nspp-block-toggle').length, 0);
+    Object.assign(f.window, { __config__: { user: { member_id: 7 } } });
+    f.window.document.body.append(f.window.document.createElement('div'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const buttons = [...f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-block-toggle')];
+    assert.equal(buttons.length, 2);
+    assert.deepEqual(buttons.map(button => button.textContent), ['取消屏蔽', '取消屏蔽']);
+    f.window.document.querySelector<HTMLAnchorElement>('a')!.dispatchEvent(new f.window.Event('mouseenter'));
+    assert.equal(buttons[0].parentElement!.hidden, false);
+    buttons[0].click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.deepEqual(buttons.map(button => button.textContent), ['屏蔽', '屏蔽']);
+  } finally { await f.close(); }
+});
