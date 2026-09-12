@@ -1,0 +1,3 @@
+[aria-busy="true"], .nspp-sweep-shine { -webkit-text-fill-color: transparent; background: linear-gradient(90deg, currentColor 0%, currentColor 40%, rgba(255,255,255,.9) 50%, currentColor 60%, currentColor 100%) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; animation: nspp-sweep-shine 4s linear infinite; }
+@keyframes nspp-sweep-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { [aria-busy="true"], .nspp-sweep-shine { animation: none; -webkit-text-fill-color: currentColor; background: none; } }

@@ -1,0 +1,349 @@
+#nspp-tools { position: fixed; right: 1rem; bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
+#nspp-tools button, [data-nspp-resolve], .nspp-action { font: inherit; font-size: .8rem; padding: .35rem .6rem; border: 1px solid var(--border-color, #929a9380); border-radius: .4rem; color: var(--text-color, inherit); background: var(--bg-color, Canvas); cursor: pointer; }
+#nspp-tools a, [data-nspp-footprints] a { text-underline-offset: .2em; }
+#nspp-tools a:hover, [data-nspp-footprints] a:hover { text-decoration: underline; }
+#nspp-tools button:disabled, .nspp-compose button:disabled { opacity: .6; cursor: wait; }
+#nspp-tools :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { [class*="nspp-"] { scroll-behavior: auto !important; } }
+.nspp-monitor { width: min(42rem, 92vw); max-height: 85dvh; overflow: auto; padding: 1rem; border: 1px solid var(--border-color, #929a9380); border-radius: .75rem; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); }
+.nspp-monitor::backdrop { background: #0006; }
+.nspp-monitor ul { padding-left: 1.25rem; }
+.nspp-monitor li { margin: .4rem 0; overflow-wrap: anywhere; }
+.nspp-monitor a { text-underline-offset: .2em; }
+.nspp-monitor a:hover { text-decoration: underline; }
+.nspp-block-controls { display: inline-flex; flex-wrap: wrap; gap: .3rem; margin-left: .4rem; font-size: .75rem; }
+.nspp-user-badges { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin-inline-start: 4px; vertical-align: baseline; font: 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nspp-user-badges > span { padding: 0; border: 0; background: transparent; white-space: nowrap; }
+.nspp-level { color: var(--nspp-badge-color, #59636e); font-weight: 600; }
+.nspp-age { color: #59636e; cursor: help; }
+.nspp-user-badges button { font: inherit; color: inherit; padding: 0; min-height: 0; border: 0; border-radius: 2px; background: transparent; box-shadow: none; cursor: pointer; }
+.nspp-user-badges .nspp-trust { color: var(--nspp-badge-color, #59636e); font-weight: 600; }
+.nspp-user-badges .nspp-trust:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-user-badges button:focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.nspp-level[data-level="0"] { --nspp-badge-color: #66717e; }
+.nspp-level[data-level="2"] { --nspp-badge-color: #0969da; }
+.nspp-level[data-level="3"] { --nspp-badge-color: #087f8c; }
+.nspp-level[data-level="4"] { --nspp-badge-color: #218044; }
+.nspp-level[data-level="5"] { --nspp-badge-color: #a66b08; }
+.dark-layout .nspp-level, .dark-layout .nspp-user-badges .nspp-trust { color: var(--nspp-badge-color, #9198a1); }
+.dark-layout .nspp-age { color: #9198a1; }
+.dark-layout .nspp-level[data-level="0"] { --nspp-badge-color: #a3adb8; }
+.dark-layout .nspp-level[data-level="2"] { --nspp-badge-color: #79b8ff; }
+.dark-layout .nspp-level[data-level="3"] { --nspp-badge-color: #56c8ce; }
+.dark-layout .nspp-level[data-level="4"] { --nspp-badge-color: #70cf91; }
+.dark-layout .nspp-level[data-level="5"] { --nspp-badge-color: #dfb653; }
+.nspp-level[data-level="1"], .nspp-trust[data-tier="danger"] { --nspp-badge-color: #cf3434; }
+.nspp-trust[data-tier="warning"] { --nspp-badge-color: #a66b08; }
+.nspp-trust[data-tier="success"] { --nspp-badge-color: #218044; }
+.dark-layout .nspp-level[data-level="1"], .dark-layout .nspp-trust[data-tier="danger"] { --nspp-badge-color: #ff8585; }
+.dark-layout .nspp-trust[data-tier="warning"] { --nspp-badge-color: #dfb653; }
+.dark-layout .nspp-trust[data-tier="success"] { --nspp-badge-color: #70cf91; }
+.nspp-user-badges .nspp-trust[data-tier="perfect"] { --nspp-badge-color: #ffe66d; background: #b82025; padding: 0 4px; border-radius: 3px; }
+.nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #916008; background: #fff3cd; box-shadow: inset 0 0 0 1px #dfba6266; padding: 0 4px; border-radius: 3px; }
+.dark-layout .nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #f0ce78; background: #3c321c; box-shadow: inset 0 0 0 1px #dfba6255; }
+/* Keep native identity labels compact and distinguish roles by color and symbol. */
+.role-tag[data-nspp-role] { display: inline-flex; flex: none; align-items: center; gap: 3px; padding: 0 5px; border: 0; border-radius: 3px; color: #2463a0; background: #eaf3fc; box-shadow: none; font: 600 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; letter-spacing: 0; vertical-align: middle; white-space: nowrap; }
+.role-tag[data-nspp-role]::before { content: ""; flex: none; width: 9px; height: 10px; background: currentColor; clip-path: polygon(50% 0, 95% 17%, 88% 65%, 50% 100%, 12% 65%, 5% 17%); }
+.role-tag[data-nspp-role="founder"] { color: #087f78; background: #e5f4ef; }
+.role-tag[data-nspp-role="founder"]::before { clip-path: polygon(50% 0, 66% 34%, 100% 50%, 66% 66%, 50% 100%, 34% 66%, 0 50%, 34% 34%); }
+.role-tag[data-nspp-role="owner"] { color: #4c596a; background: #eaf0f5; }
+.role-tag[data-nspp-role="owner"]::before { clip-path: polygon(0 15%, 25% 40%, 50% 0, 75% 40%, 100% 15%, 88% 85%, 12% 85%); }
+.dark-layout .role-tag[data-nspp-role="admin"] { color: #9ac7f2; background: #23374b; }
+.dark-layout .role-tag[data-nspp-role="founder"] { color: #7cd4c1; background: #1e3b35; }
+.dark-layout .role-tag[data-nspp-role="owner"] { color: #c1ccd9; background: #303a47; }
+.nspp-history { width: min(640px, calc(100vw - 24px)); max-width: none; max-height: 80dvh; margin: auto; padding: 0; border: 1px solid #d1d9e0; border-radius: 8px; color: #1f2328; background: #fff; box-shadow: 0 8px 28px #1f232833; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+.nspp-history[open] { display: flex; flex-direction: column; }
+.nspp-history::backdrop { background: #1f232866; }
+.nspp-history * { box-sizing: border-box; }
+.nspp-history header { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 0; background: transparent; box-shadow: none; }
+.nspp-history h2 { font-size: 14px; font-weight: 600; margin: 0; }
+.nspp-history button { padding: 2px 8px; min-height: 26px; border: 1px solid #d1d9e0; border-radius: 5px; background: #f6f8fa; color: inherit; font-family: inherit; font-size: 12px; line-height: 20px; cursor: pointer; white-space: nowrap; }
+.nspp-history [hidden] { display: none !important; }
+.nspp-history-toolbar { display: flex; flex: none; gap: 6px; padding: 4px 12px 6px; border-bottom: 0; }
+.nspp-history input { min-width: 0; flex: 1; width: 0; padding: 4px 8px; border: 1px solid #d1d9e0; border-radius: 5px; background: transparent; color: inherit; font: inherit; }
+.nspp-history ol { margin: 0; padding: 0 12px; list-style: none; overflow-y: auto; min-height: 60px; overscroll-behavior: contain; }
+.nspp-history li { display: flex; align-items: center; gap: 8px; margin: 0; padding: 3px 0; border: 0; }
+.nspp-history li button { min-height: 24px; padding: 1px 6px; border-color: transparent; background: transparent; }
+.nspp-history li:hover { background: #818b980c; }
+.nspp-history li a { flex: 1; min-width: 0; color: #0969da; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.nspp-history a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.nspp-history time { font-size: 11px; color: #59636e; flex: none; }
+.nspp-history :focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.dark-layout .nspp-history { background: #0d1117; color: #f0f6fc; border-color: #3d444d; }
+.dark-layout .nspp-history header, .dark-layout .nspp-history button { background: #151b23; }
+.dark-layout .nspp-history a { color: #79c0ff; }
+@media (max-width: 600px) { .nspp-history { width: calc(100vw - 16px); } .nspp-history-toolbar { flex-wrap: wrap; } .nspp-history time { display: none; } }
+
+.nspp-block-toggle { vertical-align: middle; margin-left: 5px; padding: 0 2px; min-width: 0; border: 0; border-radius: 4px; background: transparent; color: #59636e; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; cursor: pointer; }
+.nspp-block-toggle[data-blocked="true"] { color: #cf222e; border-color: #ff818280; }
+.nspp-block-toggle:disabled { opacity: .6; cursor: wait; }
+.dark-layout .nspp-block-toggle { color: #9198a1; border-color: #3d444d; }
+
+.nspp-user-badges[aria-busy="true"] { min-width: 88px; min-height: 16px; border-radius: 4px; color: #59636e; }
+.nspp-trust-dialog { padding: 16px; }
+.nspp-trust-dialog p { white-space: pre-line; line-height: 1.8; }
+.nspp-trust-dialog button { align-self: flex-end; }
+
+.nspp-post-preview { margin: 0; padding: 0; position: fixed; z-index: 2147483644; width: min(340px, calc(100vw - 24px)); height: auto; max-height: min(320px, calc(100dvh - 24px)); display: flex; flex-direction: column; border: 1px solid var(--border-color, #929a9380); border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 3px 12px #00000018; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; text-align: left; overflow: hidden; }
+.nspp-post-preview[hidden] { display: none; }
+.nspp-post-preview header { box-shadow: none !important; text-shadow: none !important; position: static; display: flex; flex-shrink: 0; gap: 8px; align-items: center; padding: 5px 8px; font-size: 12px; line-height: 18px; border-bottom: 1px solid #929a9350; }
+.nspp-post-preview header a { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: none !important; box-shadow: none !important; color: inherit; font-weight: 500; text-decoration: none; }
+.nspp-post-preview button { flex: none; width: 20px; height: 20px; min-height: 0; font: 16px/18px Arial, sans-serif; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
+.nspp-post-preview > p { margin: 0; padding: 5px 8px; font-size: 11px; }
+.nspp-post-preview > p:empty { display: none; }
+.nspp-preview-content { flex: 0 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 7px 8px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.nspp-preview-meta { font-size: 11px; opacity: .65; margin-bottom: 5px; }
+.nspp-preview-content img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; }
+.nspp-preview-content pre { overflow: auto; padding: 6px; background: #818b9814; border-radius: 6px; }
+.nspp-preview-content blockquote { margin: 6px 0; padding-left: 8px; border-left: 3px solid #818b9850; }
+.nspp-preview-content table { display: block; max-width: 100%; overflow: auto; }
+.nspp-preview-content h3 { font-size: 12px; margin: 6px 0; }
+.nspp-preview-comment { padding: 6px 0; border-top: 1px solid #818b9830; }
+.nspp-preview-comment > strong { font-size: 12px; }
+.nspp-post-preview footer { flex-shrink: 0; padding: 4px 8px; background: transparent; line-height: 16px; border-top: 1px solid #818b9830; font-size: 11px; }
+.nspp-post-preview footer a, .nspp-preview-content a { color: var(--link-color, #0969da); }
+.nspp-preview-content article > :first-child { margin-top: 0; }
+.nspp-preview-content article > :last-child { margin-bottom: 0; }
+
+.nspp-post-preview, .nspp-post-preview * { box-sizing: border-box; }
+.nspp-preview-content p { margin: 5px 0; font-size: inherit; line-height: inherit; }
+.nspp-preview-content :is(ul, ol) { margin: 5px 0; padding-left: 18px; }
+.nspp-preview-content :is(h1, h2, h4) { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+.nspp-post-preview button:hover { background: #818b981a; }
+.nspp-post-preview footer a { text-decoration: none; color: inherit; opacity: .7; }
+.nspp-post-preview footer a:hover { opacity: 1; text-decoration: underline; }
+
+/* Keep the site's first two rows and append a compact native-style action row. */
+.post-list-item.nspp-three-line { align-items: flex-start; }
+.nspp-three-line .post-list-content { min-width: 0; flex: 1; }
+.nspp-three-line .post-info { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; height: 18px; font-size: 11px; line-height: 18px; }
+.nspp-three-line .post-info .info-item { display: inline-flex; align-items: center; flex-wrap: nowrap; flex: none; gap: 4px; margin: 0; }
+.nspp-three-line .post-info .iconpark-icon { width: 12px; height: 12px; flex: none; }
+.nspp-meta-label { opacity: .6; font-size: 10px; }
+.nspp-three-line .info-last-commenter { border-left: 1px solid #818b9838; padding-left: 10px; }
+.nspp-three-line .post-info .nspp-user-badges { gap: 7px; margin-left: 3px; }
+.nspp-user-badges :is(.nspp-level, .nspp-age, .nspp-trust) { display: inline-flex; align-items: center; gap: 3px; }
+.nspp-user-badges .iconpark-icon { width: 11px; height: 11px; flex: none; }
+.nspp-list-actions { display: flex; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; align-items: center; gap: 12px; padding-top: 5px; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; color: var(--text-color, #777); }
+.nspp-list-actions button { display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; opacity: .75; }
+.nspp-list-actions .iconpark-icon { width: 13px; height: 13px; }
+.nspp-three-line :is(.post-info a, .post-info button, .nspp-list-actions button) { text-decoration: none; text-underline-offset: 3px; }
+.nspp-three-line :is(.post-info a, .post-info button, .nspp-list-actions button):is(:hover, :focus-visible) { text-decoration: underline; text-decoration-thickness: 1px; opacity: 1; }
+/* The expanded custom view is separate from each three-line list item. */
+.nspp-interaction { list-style: none; margin: 4px 0 12px 52px; padding: 0; border: 1px solid #818b9840; border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.nspp-interaction[hidden], .nspp-interaction form[hidden] { display: none !important; }
+.nspp-interaction header { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #818b9820; }
+.nspp-interaction header a { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit; }
+.nspp-interaction button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.nspp-interaction header button { font-size: 18px; }
+.nspp-interaction p { margin: 0; padding: 6px 10px; font-size: 11px; }
+.nspp-interaction p:empty { display: none; }
+.nspp-interaction form { padding: 8px 10px; }
+.nspp-interaction textarea { box-sizing: border-box; display: block; width: 100%; min-height: 84px; max-height: 240px; resize: vertical; border: 1px solid #818b9850; border-radius: 4px; padding: 8px; font: inherit; background: transparent; color: inherit; }
+.nspp-reply-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.nspp-reply-actions span { opacity: .6; font-size: 10px; }
+.nspp-reply-actions button { padding: 3px 10px; background: #238636; color: white; border-radius: 4px; }
+.nspp-reply-actions button:disabled { opacity: .4; cursor: default; }
+.nspp-three-line .post-title { display: flex; align-items: baseline; min-width: 0; white-space: normal; height: auto; min-height: 24px; text-shadow: none !important; box-shadow: none !important; line-height: 24px; }
+.nspp-three-line .post-title > a:first-child { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: none !important; box-shadow: none !important; }
+.nspp-three-line .post-info .nspp-user-badges { flex-wrap: nowrap; white-space: nowrap; }
+.nspp-three-line .info-last-commenter .nspp-user-badges { display: none; }
+.nspp-three-line .post-info .info-author { min-width: 0; flex: none; }
+.nspp-three-line .info-author > a { flex: none; min-width: 20px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.nspp-three-line .post-info .post-category { display: none; }
+@media (max-width: 900px) { .nspp-three-line .nspp-meta-label { display: none; } }
+@media (max-width: 600px) { .nspp-three-line .post-info .info-last-commenter, .nspp-three-line .post-info .info-last-comment-time, .nspp-three-line .post-info .nspp-block-toggle { display: none; } .nspp-interaction { margin-left: 0; } }
+@media (max-width: 600px) { .nspp-three-line .post-info { gap: 3px 8px; } .nspp-list-actions { gap: 8px; } }
+
+.nspp-list-actions [hidden] { display: none !important; }
+.nspp-block-toggle { display: inline-flex; align-items: center; gap: 3px; }
+.nspp-block-toggle .iconpark-icon { width: 11px; height: 11px; }
+.nspp-block-toggle[hidden], #nspp-tools button[hidden] { display: none !important; }
+
+.nspp-action-category { margin-left: auto; color: inherit; opacity: .65; text-decoration: none; flex: none; }
+.nspp-action-category:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-list-actions button { flex-shrink: 0; }
+
+.nspp-post-preview footer .nspp-list-actions { padding: 2px 0 5px; gap: 10px; }
+.nspp-post-preview footer .nspp-list-actions button { width: auto; height: auto; font: inherit; line-height: 18px; }
+.nspp-post-preview footer .nspp-list-actions button:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.nspp-three-line .nspp-user-badges > * { flex-shrink: 0; }
+
+.nspp-post-preview::backdrop { background: #0006; }
+@media (max-width: 600px), (hover: none) {
+  .nspp-post-preview { inset: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .nspp-post-preview header { padding: 10px 16px; font-size: 14px; }
+  .nspp-post-preview header a { white-space: normal; }
+  .nspp-post-preview button { width: 40px; height: 40px; font-size: 22px; }
+  .nspp-preview-content { padding: 12px 16px; font-size: 14px; line-height: 1.7; }
+  .nspp-post-preview footer { padding: 12px 16px; font-size: 13px; }
+  .nspp-post-preview footer a { display: block; padding: 8px 0; }
+}
+
+/* Compact metadata and a quieter action row. */
+.nspp-three-line .post-info { gap: 10px; color: var(--text-color, #59636e); }
+.nspp-three-line .nspp-meta-label { display: none; }
+.nspp-three-line .post-info .info-author { min-width: 0; flex-shrink: 1; }
+.nspp-three-line .post-info .info-last-commenter { min-width: 0; flex-shrink: 1; padding-left: 10px; opacity: .7; }
+.nspp-three-line .info-last-commenter a { overflow: hidden; text-overflow: ellipsis; }
+.nspp-three-line .info-last-comment-time { margin-left: auto; font-size: 10px; opacity: .65; }
+.nspp-three-line .nspp-time-icon { display: none; }
+.nspp-three-line .nspp-list-actions { gap: 14px; padding-top: 4px; min-height: 22px; scrollbar-width: none; }
+.nspp-three-line .nspp-list-actions button { gap: 4px; min-width: 18px; min-height: 20px; opacity: .6; }
+.nspp-three-line .nspp-list-actions button:is(:hover, :focus-visible) { color: var(--link-color, #0969da); opacity: 1; text-decoration: none; }
+.nspp-three-line .nspp-list-actions button:nth-child(5) { margin-left: 2px; padding-left: 12px; border-left: 1px solid #818b9830; }
+.nspp-three-line .nspp-list-actions .nspp-block-toggle { margin-left: 0; opacity: .45; }
+@media (max-width: 600px) {
+  .nspp-three-line .post-info { gap: 8px; }
+  .nspp-three-line .post-info .info-last-commenter { display: none; }
+  .nspp-three-line .nspp-list-actions { gap: 12px; }
+  .nspp-three-line .nspp-list-actions button { min-height: 28px; }
+}
+
+.nspp-count-loading { font-size: 10px; flex: none; }
+.nspp-quick-replies { box-sizing: border-box; width: min(440px, calc(100vw - 24px)); max-height: 85dvh; margin: auto; padding: 0; border: 1px solid #818b9838; border-radius: 12px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 16px 60px #0003; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+.nspp-quick-replies[open] { display: flex; flex-direction: column; }
+.nspp-quick-replies::backdrop { background: #0005; }
+.nspp-quick-replies [hidden] { display: none !important; }
+.nspp-quick-head, .nspp-quick-pagination { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 6px; background: transparent; color: inherit; }
+.nspp-quick-head strong { font-size: 14px; }
+.nspp-quick-replies button { font: inherit; color: inherit; background: transparent; border: 1px solid #818b9840; border-radius: 6px; padding: 4px 8px; min-height: 28px; cursor: pointer; box-shadow: none; }
+.nspp-quick-replies button:hover:not(:disabled) { background: #818b9814; }
+.nspp-quick-replies :is(button, input, textarea):focus-visible { outline: 2px solid var(--link-color, #0969da); outline-offset: 2px; }
+.nspp-quick-replies button:disabled { opacity: .4; cursor: default; }
+.nspp-quick-head button { border: 0; font-size: 18px; padding: 0; width: 28px; }
+.nspp-quick-replies p { margin: 0; }
+.nspp-quick-replies .nspp-quick-target { padding: 0 12px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .65; font-size: 12px; flex: none; }
+.nspp-quick-toolbar { display: flex; flex: none; gap: 6px; padding: 2px 12px 8px; }
+.nspp-quick-replies input, .nspp-quick-replies textarea { box-sizing: border-box; min-width: 0; padding: 5px 8px; font: inherit; color: inherit; border: 1px solid #818b9850; border-radius: 6px; background: transparent; }
+.nspp-quick-toolbar input { flex: 1; width: 0; }
+.nspp-quick-replies .nspp-quick-primary { color: var(--link-color, #0969da); background: #0969da0c; border-color: #0969da40; flex: none; }
+.nspp-quick-list { overflow-y: auto; min-height: 0; padding: 0 12px; overscroll-behavior: contain; }
+.nspp-quick-item { display: flex; gap: 4px; padding: 2px 0; border-bottom: 1px solid #818b9820; align-items: center; }
+.nspp-quick-item:last-child { border-bottom: 0; }
+.nspp-quick-item .nspp-quick-send { flex: 1; min-width: 0; min-height: 30px; border: 0; padding: 4px 6px; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nspp-quick-item button:not(.nspp-quick-send) { flex: none; font-size: 11px; border-color: transparent; padding: 4px 6px; }
+.nspp-quick-item .nspp-quick-delete:hover:not(:disabled) { color: #cf3434; background: #cf343410; }
+.nspp-quick-list > p { padding: 16px 6px; text-align: center; opacity: .6; }
+.nspp-quick-replies form { flex: none; padding: 8px 12px; border-top: 1px solid #818b9830; }
+.nspp-quick-replies form button + button { margin-left: 8px; }
+.nspp-quick-replies textarea { display: block; width: 100%; max-height: 22dvh; resize: vertical; margin-bottom: 8px; }
+.nspp-quick-pagination { border-top: 1px solid #818b9830; font-size: 11px; padding-top: 6px; padding-bottom: 6px; }
+.nspp-quick-replies .nspp-quick-status { padding: 0 12px 6px; font-size: 11px; opacity: .65; flex: none; }
+@media (max-width: 600px) { .nspp-quick-replies { margin: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); } .nspp-quick-replies button { min-height: 34px; } }
+
+#nspp-tools .nspp-tool-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; flex: none; }
+
+/* Compact membership accents and structured registration details. */
+.nspp-user-badges .nspp-age, .nspp-profile-dialog .nspp-age { color: var(--nspp-age-color, #59636e); }
+.nspp-age[data-tone="new"] { --nspp-age-color: #cf3434; }
+.nspp-age[data-tone="recent"] { --nspp-age-color: #a66b08; }
+.nspp-age[data-tone="member"] { --nspp-age-color: #0969da; }
+.nspp-age[data-tone="longtime"] { --nspp-age-color: #218044; }
+.dark-layout .nspp-age[data-tone="new"] { --nspp-age-color: #ff8585; }
+.dark-layout .nspp-age[data-tone="recent"] { --nspp-age-color: #dfb653; }
+.dark-layout .nspp-age[data-tone="member"] { --nspp-age-color: #79b8ff; }
+.dark-layout .nspp-age[data-tone="longtime"] { --nspp-age-color: #70cf91; }
+.dark-layout .nspp-user-badges .nspp-age, .dark-layout .nspp-profile-dialog .nspp-age { color: var(--nspp-age-color, #9198a1); }
+.nspp-user-badges button.nspp-age { cursor: pointer; }
+.nspp-user-badges button.nspp-age:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-profile-dialog { width: min(320px, calc(100vw - 24px)); }
+.nspp-profile-dialog header { justify-content: space-between; padding: 10px 12px; }
+.nspp-profile-summary { display: flex; align-items: baseline; gap: 8px; padding: 4px 12px 10px; }
+.nspp-profile-summary strong { font-size: 22px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.nspp-profile-summary span { font-size: 11px; }
+.nspp-profile-dialog dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; padding: 10px 12px; border-top: 1px solid #818b9830; }
+.nspp-profile-dialog dt { opacity: .65; }
+.nspp-profile-dialog dd { margin: 0; font-variant-numeric: tabular-nums; }
+.nspp-profile-dialog > p { margin: 0; padding: 0 12px 12px; font-size: 11px; opacity: .75; }
+
+.post-title .nspp-readonly { display: inline-flex !important; flex: none; align-items: center; vertical-align: middle; margin-left: 5px !important; padding: 0 4px !important; border: 0 !important; border-radius: 3px; background: #cf343410 !important; color: #b52b32 !important; font: 500 10px/17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; box-shadow: none !important; }
+.post-title .nspp-pinned { width: 13px !important; height: 13px !important; flex: none; margin-left: 4px; padding: 0 !important; background: transparent !important; color: #768390 !important; border: 0 !important; border-radius: 0 !important; vertical-align: middle; }
+.post-title .nspp-pin-wrap { display: inline-flex; align-items: center; background: transparent !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+.dark-layout .post-title .nspp-readonly { color: #ff8585 !important; background: #ff858514 !important; }
+.dark-layout .post-title .nspp-pinned { color: #9198a1 !important; }
+.nspp-monitor { width: min(560px, calc(100vw - 24px)); max-height: 80dvh; padding: 0; border: 1px solid #818b9840; border-radius: 10px; background: #fff; color: #1f2328; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+.nspp-monitor[open] { display: flex; flex-direction: column; }
+.nspp-monitor * { box-sizing: border-box; }
+.nspp-monitor header, .nspp-monitor footer { display: flex; flex: none; align-items: center; gap: 8px; padding: 8px 12px; }
+.nspp-monitor header { border-bottom: 1px solid #818b9828; justify-content: space-between; }
+.nspp-monitor h3 { margin: 0; font-size: 14px; }
+.nspp-monitor button { padding: 3px 8px; min-height: 28px; border: 1px solid #818b9838; border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+.nspp-monitor button:hover { background: #818b9814; }
+.nspp-monitor button:disabled { opacity: .5; cursor: wait; }
+.nspp-monitor > p { margin: 0; padding: 6px 12px; font-size: 11px; opacity: .65; }
+.nspp-monitor-results { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 0 12px 8px; }
+.nspp-monitor-results section + section { border-top: 1px solid #818b9828; margin-top: 8px; padding-top: 4px; }
+.nspp-monitor h4 { display: flex; align-items: center; gap: 6px; margin: 5px 0; font-size: 11px; color: #768390; }
+.nspp-monitor h4 small { padding: 0 5px; border-radius: 8px; background: #818b9814; font-size: 10px; }
+.nspp-monitor ul { list-style: none; margin: 0; padding: 0; }
+.nspp-monitor li { margin: 0; padding: 4px 0; }
+.nspp-monitor a { color: inherit; text-decoration: none; }
+.nspp-monitor a:hover { color: #0969da; text-decoration: underline; }
+.nspp-monitor section > p { margin: 6px 0; font-size: 11px; opacity: .55; }
+.nspp-monitor footer { border-top: 1px solid #818b9828; flex-wrap: wrap; }
+.nspp-monitor footer span { flex: 1; font-size: 10px; opacity: .6; }
+.nspp-monitor-tracked { padding: 0 12px 8px; overflow: auto; max-height: 25dvh; flex-shrink: 0; }
+.nspp-monitor-tracked[hidden] { display: none; }
+.nspp-monitor-tracked > div { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.nspp-monitor-tracked a { flex: 1; min-width: 0; }
+#nspp-tools button[data-unread="true"] { border-color: #cf3434; color: #cf3434; background: #fff0f0; }
+.dark-layout .nspp-monitor { background: #161b22; color: #e6edf3; }
+@media (max-width: 600px) { .nspp-monitor { width: 100%; max-height: 85dvh; margin: auto 0 0; border-radius: 12px 12px 0 0; padding-bottom: env(safe-area-inset-bottom); } .nspp-monitor button { min-height: 34px; } }
+
+[data-nspp-monitor-match="0"] { background-color: #fff2c9 !important; }
+[data-nspp-monitor-match="1"] { background-color: #dff3e7 !important; }
+[data-nspp-monitor-match="2"] { background-color: #e2efff !important; }
+[data-nspp-monitor-match="3"] { background-color: #ffe8dc !important; }
+.dark-layout [data-nspp-monitor-match="0"] { background-color: #3c3420 !important; }
+.dark-layout [data-nspp-monitor-match="1"] { background-color: #203a2c !important; }
+.dark-layout [data-nspp-monitor-match="2"] { background-color: #23344c !important; }
+.dark-layout [data-nspp-monitor-match="3"] { background-color: #432f26 !important; }
+
+.nspp-monitor header, .nspp-monitor footer, .nspp-monitor-results section + section { border: 0; }
+.nspp-monitor-results section + section { margin-top: 12px; }
+.nspp-monitor footer { background: #818b980a; }
+.nspp-monitor-unread { padding: 6px 12px; max-height: 24dvh; overflow: auto; flex-shrink: 0; background: #0969da08; }
+.nspp-monitor-unread[hidden] { display: none; }
+.nspp-monitor-unread h4 { justify-content: space-between; color: #0969da; }
+.nspp-monitor-unread button { border: 0; font-size: 10px; }
+
+#nspp-tools button[data-monitor-state] { position: relative; }
+#nspp-tools button[data-monitor-state]::before { content: ''; position: absolute; bottom: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: #929aa5; }
+#nspp-tools button[data-monitor-state="running"] { color: #218044; border-color: #21804466; background: #2180440c; }
+#nspp-tools button[data-monitor-state="running"]::before { background: #2da85b; animation: nspp-monitor-pulse 2.4s ease-in-out infinite; }
+#nspp-tools button[data-monitor-state="cooldown"]::before { background: #cc8b16; }
+.dark-layout #nspp-tools button[data-monitor-state="running"] { color: #70cf91; }
+@keyframes nspp-monitor-pulse { 0%, 100% { box-shadow: 0 0 0 0 #2da85b00; } 50% { box-shadow: 0 0 0 3px #2da85b33; } }
+@media (prefers-reduced-motion: reduce) { #nspp-tools button[data-monitor-state]::before { animation: none; } }
+.nspp-monitor-editor { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 4px 12px 8px; flex: none; }
+.nspp-monitor-editor label { flex: 1; min-width: 180px; font-size: 11px; color: inherit; }
+.nspp-monitor-editor textarea { display: block; width: 100%; margin-top: 4px; padding: 6px 8px; border: 0; border-radius: 6px; background: #818b9810; color: inherit; font: inherit; resize: vertical; max-height: 18dvh; }
+.nspp-monitor-editor > span { flex-basis: 100%; font-size: 10px; opacity: .65; }
+.nspp-monitor-editor > span:empty { display: none; }
+@media (prefers-reduced-motion: reduce) { .nspp-monitor[data-checking="true"] > p::before { animation: none; } }
+
+.nspp-monitor-spinner { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid #0969da30; border-top-color: #0969da; border-radius: 50%; vertical-align: -2px; }
+.nspp-monitor-spinner[hidden] { display: none; }
+.nspp-regex-help { display: inline-flex; justify-content: center; align-items: center; width: 16px; height: 16px; margin-left: 6px; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; opacity: .65; text-decoration: none !important; }
+.nspp-regex-help:hover { opacity: 1; }
+.nspp-monitor button, .nspp-footprints-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.nspp-monitor button svg, .nspp-footprints-dialog button svg { width: 13px; height: 13px; flex: none; }
+.nspp-monitor-editor > small { flex-basis: 100%; font-size: 10px; line-height: 1.6; opacity: .65; }
+.nspp-monitor-editor textarea { min-height: 56px; }
+.nspp-footprints-dialog { width: min(480px, calc(100vw - 24px)); padding: 8px; border-radius: 10px; }
+.nspp-footprints-dialog header { padding: 4px 4px 10px; }
+.nspp-footprints-toolbar { display: flex; align-items: center; gap: 6px; padding: 4px; flex-wrap: wrap; }
+.nspp-footprints-toolbar [role="status"] { margin-left: auto; font-size: 11px; opacity: .6; }
+.nspp-footprints-dialog > div:last-child { padding: 8px 4px; }
+.nspp-footprints-dialog a { color: inherit; text-decoration: none; padding: 4px 6px; border-radius: 4px; }
+.nspp-footprints-dialog a:hover { background: #818b9810; }
+.nspp-monitor > header h3 { margin-right: auto; }
+.nspp-monitor-config { width: min(420px, calc(100vw - 24px)); }
+.nspp-monitor-config .nspp-monitor-editor { display: flex; flex-direction: column; align-items: stretch; padding: 8px 14px 14px; gap: 8px; overflow: auto; }
+.nspp-monitor-config .nspp-monitor-editor label { flex: none; min-width: 0; }
+.nspp-monitor-config .nspp-monitor-editor textarea { min-height: 88px; }
+.nspp-monitor-config input { display: block; margin-top: 5px; width: 100%; padding: 7px 8px; font: inherit; color: inherit; border: 0; border-radius: 6px; background: #818b9810; }
+.nspp-monitor-config .nspp-monitor-editor > small, .nspp-monitor-config .nspp-monitor-editor > span { flex-basis: auto; }
+.nspp-monitor-config .nspp-monitor-editor > button { align-self: flex-end; min-width: 72px; }
+@media (max-width: 600px) { .nspp-monitor-config { width: 100%; margin: auto 0 0; border-radius: 12px 12px 0 0; } }

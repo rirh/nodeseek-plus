@@ -1,0 +1,35 @@
+{
+  "name": "nodeseek-plus-plus",
+  "private": true,
+  "version": "26.912.1132",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/tampermonkey": "^5.5.0",
+    "happy-dom": "^20.14.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.11",
+    "vite-plugin-monkey": "^8.0.0"
+  },
+  "description": "Modular NodeSeek and DeepFlood userscript",
+  "keywords": [
+    "userscript",
+    "tampermonkey",
+    "vanilla",
+    "vite",
+    "vite-plugin-monkey",
+    "typescript"
+  ],
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "gsap": "^3.15.0",
+    "highlight.js": "^11.12.0"
+  },
+  "license": "GPL-3.0-only"
+}
