@@ -157,12 +157,12 @@ test('user badges load visible names, share requests and can retry failed profil
   try {
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(calls, 1);
-    assert.deepEqual(Array.from(f.window.document.querySelectorAll('[data-nspp-role]'), tag => tag.getAttribute('data-nspp-role')), ['admin', 'founder', 'owner', 'owner', 'admin']);
+    assert.deepEqual(Array.from(f.window.document.querySelectorAll('.author-info [data-nspp-role]'), tag => tag.getAttribute('data-nspp-role')), ['admin', 'founder', 'owner', 'owner', 'admin']);
     assert.equal(f.window.document.querySelectorAll('.nspp-user-badges button').length, 2);
     for (const button of f.window.document.querySelectorAll('.nspp-user-badges button')) (button as HTMLElement).click();
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(calls, 2);
-    assert.equal(f.window.document.querySelectorAll('.nspp-level').length, 2);
+    assert.equal(f.window.document.querySelectorAll('.author-info .nspp-level').length, 2);
     assert.equal(f.window.document.querySelector('.nspp-level')!.textContent, 'Lv5');
     assert.equal(f.window.document.querySelector('.nspp-age')!.getAttribute('data-tone'), 'longtime');
     assert.equal(f.window.document.querySelector('.nspp-age')!.textContent, '400天');
@@ -195,7 +195,7 @@ test('one block button per name reflects queried state and synchronizes after ch
     await new Promise(resolve => setTimeout(resolve, 50));
     const buttons = [...f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-block-toggle')];
     assert.equal(buttons.length, 2);
-    assert.deepEqual(buttons.map(b => b.textContent), ['解除', '解除']);
+    assert.deepEqual(buttons.map(b => b.textContent), ['取消屏蔽', '取消屏蔽']);
     assert.deepEqual(calls, ['/api/block-list/list']);
     buttons[0].click(); buttons[1].click();
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -300,16 +300,20 @@ test('hover preview preserves the native list and extracts safe reading content 
   } finally { await f.close(); }
 });
 
-test('three-line rows label metadata, read real counts on demand and open native actions', async () => {
+test('native rows retain layout and metadata while preview actions remain available', async () => {
   const html = '<ul class="post-list"><li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">Post</a></div><div class="post-info"><span class="info-author"><a href="/space/8">Alice</a></span><span class="info-views">12</span><span class="info-comments-count">3</span><span class="info-last-commenter">Bob</span><a class="info-last-comment-time" href="/post-42-1#3">now</a></div></div></li></ul>';
   const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html);
   try {
     let reads = 0;
     f.window.fetch = (async () => { reads++; return new f.window.Response('<div class="nsk-post"><div class="comment-menu">' + ['点赞', '加鸡腿', '反对', '收藏'].map((title, i) => `<div class="menu-item" title="${title}"><span>${i + 1}</span></div>`).join('') + '</div></div>'); }) as typeof f.window.fetch;
     const doc = f.window.document;
-    const row = doc.querySelector('.nspp-three-line')!;
+    const row = doc.querySelector('.post-list-item')!;
+    assert.equal(row.classList.contains('nspp-three-line'), false);
+    assert.equal(doc.querySelector<HTMLElement>('.nspp-list-actions')!.hidden, true);
+    assert.ok(doc.querySelector('.post-info > .info-last-comment-time'));
+    assert.equal(row.getAttribute('style'), null);
     assert.equal(doc.querySelectorAll('.nspp-list-actions button').length, 5);
-    assert.deepEqual(Array.from(doc.querySelectorAll('.nspp-meta-label'), el => el.textContent), ['作者', '浏览', '回复', '最后回复']);
+    assert.equal(doc.querySelectorAll('.nspp-meta-label').length, 0);
     assert.equal(reads, 0);
     assert.match(doc.querySelector('.nspp-list-actions')!.textContent!, /点赞/);
     row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
@@ -357,24 +361,23 @@ test('already-signed server response hides attendance and reduced motion skips a
   } finally { await f.close(); }
 });
 
-test('preview footer shares list actions and block control moves out of author metadata', async () => {
+test('preview footer shares list actions while block control stays immediately after the author', async () => {
   const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, '<ul class="post-list"><li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">A long title for the preview</a></div><div class="post-info"><span class="info-author"><a href="/space/8">Alice</a><button class="nspp-block-toggle">屏蔽</button></span></div></div></li></ul>', '/', undefined, window => {
     window.matchMedia = (() => ({ matches: true })) as typeof window.matchMedia;
     window.fetch = (async () => new window.Response('<div class="post-content">Preview body</div>')) as typeof window.fetch;
   });
   try {
     const doc = f.window.document;
-    assert.equal(doc.querySelector('.info-author .nspp-block-toggle'), null);
-    const block = doc.querySelector<HTMLButtonElement>('.post-list-item .nspp-list-actions .nspp-block-toggle')!;
+    assert.ok(doc.querySelector('.info-author a + .nspp-block-toggle'));
+    assert.equal(doc.querySelector('.nspp-list-actions .nspp-block-toggle'), null);
+    const block = doc.querySelector<HTMLButtonElement>('.post-list-item .info-author .nspp-block-toggle')!;
     assert.ok(block);
-    let clicks = 0; block.addEventListener('click', () => clicks++);
     doc.querySelector('.post-title a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
     await new Promise(resolve => setTimeout(resolve, 450));
     const preview = doc.querySelector<HTMLElement>('.nspp-post-preview')!;
-    assert.equal(preview.querySelectorAll('footer button').length, 6);
-    preview.querySelector<HTMLButtonElement>('footer .nspp-block-toggle')!.click();
-    assert.equal(clicks, 1);
-    assert.equal(preview.hidden, true);
+    assert.equal(preview.querySelectorAll('footer button').length, 5);
+    assert.equal(preview.querySelector('footer .nspp-block-toggle'), null);
+    assert.equal(doc.querySelector('.info-author a')!.nextElementSibling, block);
   } finally { await f.close(); }
 });
 
@@ -660,7 +663,7 @@ test('notification categories replace the sidebar notification entry and preserv
     const doc = f.window.document;
     assert.equal(doc.querySelector<HTMLAnchorElement>('a[href="/notification"]')!.hidden, true);
     assert.equal(doc.querySelector<HTMLAnchorElement>('a[href="/board"]')!.hidden, false);
-    assert.deepEqual(Array.from(doc.querySelectorAll('.user-stat .nspp-notification-link')).map(a => [a.getAttribute('href'), a.textContent]), [['/notification#/reply', '回复2'], ['/notification#/message?mode=list', '私信3'], ['/notification#/atMe', '@我0']]);
+    assert.deepEqual(Array.from(doc.querySelectorAll('.user-stat .nspp-notification-link')).map(a => [a.getAttribute('href'), a.textContent]), [['/notification#/reply', '回复2'], ['/notification#/message?mode=list', '私信3'], ['/notification#/atMe', '我0']]);
     assert.equal(doc.querySelectorAll('.nspp-unread-count').length, 2);
     assert.equal(doc.querySelectorAll('.nspp-notification-icon path').length, 3);
     assert.equal(doc.querySelectorAll('.nspp-notification-icon use').length, 0);
@@ -692,4 +695,124 @@ test('busy controls use opaque motion feedback, including the attendance icon', 
   assert.match(css, /opacity: 1 !important/);
   assert.match(css, /\.nspp-action\[aria-busy="true"\] > svg[^}]+animation: nspp-attendance-working/);
   assert.match(css, /prefers-reduced-motion: reduce/);
+});
+
+test('notification categories reuse native typography, badge and bell markup', async () => {
+  const html = '<div class="user-card"><div class="user-stat"><div class="stat-block"><p class="native-row" style="margin-block: 4px"><a class="native-link" href="/notification"><svg class="native-icon" viewBox="0 0 48 48"><use href="#native-bell"/></svg><span>通知 </span><span class="notify-count">474</span></a></p></div><div class="stat-block">收藏 2</div></div></div>';
+  const f = await fixture({ 'notification-categories': { enabled: true } }, html);
+  try {
+    const link = f.window.document.querySelector('.nspp-notification-link')!;
+    assert.ok(link.classList.contains('native-link'));
+    assert.equal(link.querySelector('svg use')?.getAttribute('href'), '#native-bell');
+    assert.equal(link.querySelector('svg')?.getAttribute('viewBox'), '0 0 48 48');
+    assert.equal(link.parentElement?.classList.contains('native-row'), true);
+    assert.equal(link.parentElement?.tagName, 'P');
+    assert.equal(link.parentElement?.style.marginBlock, '4px');
+    const mention = f.window.document.querySelector('.nspp-notification-link[href$="atMe"]')!;
+    assert.equal(mention.children[1]?.textContent, '我 ');
+  } finally { await f.close(); }
+});
+
+test('all usernames show rich hover cards while latest replier has no visible badges', async () => {
+  const calls: string[] = [];
+  const f = await fixture({}, '<div class="post-info"><span class="info-author"><a href="/space/123">Alice</a><span class="role-tag">管理员</span></span><span class="info-last-commenter"><a href="/space/456">Bob</a></span></div>', '/', undefined, window => {
+    window.fetch = (async (url: unknown) => {
+      const path = new URL(String(url)).pathname; calls.push(path);
+      return new window.Response(JSON.stringify(path.endsWith('/list') ? { success: true, data: [] } : { success: true, detail: { rank: 4, created_at: '2024-01-01', nPost: 10, nComment: 20, signature: '测试签名 <b>保持纯文本</b>' } }));
+    }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const doc = f.window.document;
+    const card = doc.querySelector<HTMLElement>('.nspp-user-hover')!;
+    assert.equal(card.hidden, true);
+    assert.equal(doc.querySelector('.info-author .nspp-block-toggle'), null);
+    assert.equal(doc.querySelector<HTMLElement>('.info-last-commenter .nspp-user-badges')!.hidden, true);
+    assert.ok(calls.some(path => path.endsWith('/456')));
+    doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    assert.equal(card.hidden, false);
+    assert.match(card.textContent!, /注册日期/);
+    assert.match(card.textContent!, /信任参考分/);
+    assert.equal(card.querySelector('.nspp-user-hover-signature')?.textContent, '测试签名 <b>保持纯文本</b>');
+    assert.equal(card.querySelector('.nspp-user-hover-signature b'), null);
+    assert.equal(card.querySelector('img')?.getAttribute('src'), '/avatar/123.png');
+    assert.ok(card.dataset.trust);
+    assert.equal(card.querySelectorAll('.nspp-user-hover-rich > div').length, 3);
+    assert.equal(card.querySelector('.nspp-participation')?.textContent, '30');
+    assert.ok(card.querySelector('.nspp-user-hover-header .nspp-user-hover-score strong'));
+    assert.equal(card.querySelector('.nspp-user-hover-tags [data-nspp-role]')?.textContent, '管理员');
+    assert.ok(card.querySelector('.nspp-block-toggle'));
+    doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseleave'));
+    card.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    await new Promise(resolve => setTimeout(resolve, 220));
+    assert.equal(card.hidden, false);
+    doc.dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Escape' }));
+    assert.equal(card.hidden, true);
+    doc.querySelector('.info-last-commenter a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    const visibleCards = Array.from(doc.querySelectorAll<HTMLElement>('.nspp-user-hover')).filter(el => !el.hidden);
+    assert.equal(visibleCards.length, 1);
+    assert.equal(visibleCards[0]!.querySelector('.nspp-user-hover-name')?.textContent, 'Bob');
+    assert.ok(visibleCards[0]!.querySelector('.nspp-block-toggle'));
+  } finally { await f.close(); }
+});
+
+test('quick reply shares a layout group with the native category', async () => {
+  const f = await fixture({}, '<div class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">Post</a></div><div class="post-info"><a class="post-category" style="position:absolute;left:240px;right:20px" href="/categories/daily">日常</a></div></div></div>');
+  try {
+    const doc = f.window.document;
+    const category = doc.querySelector('.nspp-category-actions > .post-category')!;
+    assert.ok(category.parentElement?.classList.contains('nspp-category-actions'));
+    assert.equal(category.parentElement?.parentElement?.className, 'post-info');
+    assert.equal(category.textContent, '日常');
+    assert.equal((category.parentElement as HTMLElement).style.left, 'auto');
+    assert.equal((category.parentElement as HTMLElement).style.right, '20px');
+    assert.equal(doc.querySelectorAll('.post-category').length, 1);
+    assert.equal((category as HTMLElement).style.position, 'static');
+    assert.equal(category.nextElementSibling?.textContent, '快速回复');
+    assert.ok(category.nextElementSibling?.classList.contains('nspp-category-reply'));
+    (category.nextElementSibling as HTMLButtonElement).click();
+    assert.equal(doc.querySelector<HTMLDialogElement>('.nspp-quick-replies')?.open, true);
+  } finally { await f.close(); }
+});
+
+test('username uses shared copy control and the card avoids native header styling', async () => {
+  let copied = '';
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<span class="info-author"><a href="/space/123">Alice</a></span>', '/', undefined, window => {
+    Object.defineProperty(window.navigator, 'clipboard', { value: { writeText: async (value: string) => { copied = value; } }, configurable: true });
+  });
+  try {
+    const doc = f.window.document;
+    const card = doc.querySelector('.nspp-user-hover')!;
+    assert.equal(card.querySelector('header'), null);
+    const button = card.querySelector<HTMLButtonElement>('.nspp-user-hover-header .nspp-copy-button')!;
+    button.click(); await new Promise(resolve => setTimeout(resolve, 5));
+    assert.equal(copied, 'Alice');
+    assert.equal(button.dataset.copied, 'true');
+    assert.equal(button.textContent, '');
+    assert.equal(button.querySelector('path')?.getAttribute('d'), 'M5 12l4 4L19 6');
+    assert.equal(card.querySelector('.nspp-user-hover-signature'), null);
+    assert.equal(button.disabled, false);
+  } finally { await f.close(); }
+});
+
+test('AI launcher defaults visible, opens setup, saves configuration and respects disabled setting', async () => {
+  const f = await fixture();
+  try {
+    const launch = f.window.document.querySelector<HTMLButtonElement>('#nspp-tools [data-nspp-ai-launcher]')!;
+    assert.ok(launch);
+    launch.click();
+    const panel = f.window.document.querySelector('.nspp-ai-dialog')!;
+    assert.equal(panel.querySelector('h2')!.textContent, '配置 AI 写作助手');
+    const inputs = panel.querySelectorAll('input');
+    inputs[0].value = 'https://example.com/v1/chat/completions'; inputs[1].value = 'test-key'; inputs[2].value = 'test-model';
+    panel.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
+    assert.equal(panel.querySelector('h2')!.textContent, 'AI 写作助手');
+    assert.ok(panel.querySelector('[data-nspp-ai]'));
+    assert.ok(panel.querySelector('[aria-label="AI 写作正文"]'));
+    assert.equal((f.storage.get(key) as Record<string, Record<string, unknown>>)['ai-polish'].model, 'test-model');
+    assert.equal(f.requests.length, 0);
+  } finally { await f.close(); }
+  const disabled = await fixture({ 'ai-polish': { enabled: false } });
+  try { assert.equal(disabled.window.document.querySelector('[data-nspp-ai-launcher]'), null); }
+  finally { await disabled.close(); }
 });

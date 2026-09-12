@@ -1,3 +1,4 @@
+import { forumTime } from '../lib/forum-time';
 import type { Feature } from '../core/types';
 import { createPostInteraction } from '../views/post-interaction';
 import { createQuickReplies } from '../views/quick-replies';
@@ -5,19 +6,21 @@ import { readPostCounts } from './read-post-counts';
 import { postURL, reactions, siteIcon } from './post-interaction-data';
 
 export const listInteractions: Feature = {
-  id: 'list-interactions', title: '三行列表与互动', group: '阅读',
-  description: '标题、信息、互动分为三行；第三行提供点赞、加鸡腿、反对、收藏和快捷回复。',
+  id: 'list-interactions', title: '原生列表增强', group: '阅读',
+  description: '保留官网列表布局与分类位置，增强相对时间和悬停预览中的互动操作。',
   defaults: { enabled: true },
   mount(ctx) {
     const rows = new Map<Element, { url: string; bar: HTMLElement; counts: HTMLElement[] }>();
-    const labels: HTMLElement[] = [];
-    const movedBlocks = new Map<HTMLElement, Comment>();
-    const moveBlock = (row: Element, bar: HTMLElement) => {
-      const button = row.querySelector<HTMLElement>('.info-author .nspp-block-toggle');
-      if (!button) return;
-      const marker = document.createComment('nspp-block-position'); button.before(marker); movedBlocks.set(button, marker);
-      bar.insertBefore(button, bar.querySelector('.nspp-action-category'));
+    const categoryGroups: { group: HTMLElement; category: HTMLElement; style: string | null }[] = [];
+    const times = new Map<HTMLElement, { value: string; text: string; title: string | null }>();
+    const refreshTimes = () => {
+      times.forEach((original, el) => {
+        if (!el.isConnected) { times.delete(el); return; }
+        const result = forumTime(original.value);
+        if (result) { if (el.textContent !== result.text) el.textContent = result.text; el.title = result.full; }
+      });
     };
+    const timeTimer = setInterval(refreshTimes, 60000);
     const cache = new Map<string, (number | null)[]>();
     const inflight = new Set<string>();
     const queue = new Map<string, HTMLElement>();
@@ -65,13 +68,12 @@ export const listInteractions: Feature = {
     const stop = ctx.watch(() => {
       for (const [row, state] of rows) if (!row.isConnected) { visible?.unobserve(row); state.bar.remove(); rows.delete(row); }
       ctx.root.querySelectorAll<HTMLElement>('.post-list-item:not(.topic-carousel-item)').forEach(row => {
-        if (rows.has(row)) { moveBlock(row, rows.get(row)!.bar); return; }
+        if (rows.has(row)) return;
         const link = row.querySelector<HTMLAnchorElement>('.post-title a');
         const content = row.querySelector('.post-list-content');
         if (!link || !content) return;
         const url = postURL(link.href, location.origin); if (!url) return;
-        row.classList.add('nspp-three-line');
-        const bar = document.createElement('div'); bar.className = 'nspp-list-actions'; bar.setAttribute('aria-label', '帖子互动');
+        const bar = document.createElement('div'); bar.className = 'nspp-list-actions'; bar.hidden = true; bar.setAttribute('aria-label', '帖子互动');
         const counts: HTMLElement[] = [];
         const actions = reactions;
         actions.forEach(({ title, icon }, index) => {
@@ -81,24 +83,41 @@ export const listInteractions: Feature = {
           if (index < 4) { const count = document.createElement('span'); count.textContent = cache.get(url.href)?.[index] == null ? '' : String(cache.get(url.href)![index]); counts.push(count); button.append(count); }
           button.addEventListener('click', () => view.open(link, title), { signal: ctx.signal }); bar.append(button);
         });
-        const quick = document.createElement('button'); quick.type = 'button'; quick.title = '快速回复'; quick.setAttribute('aria-label', '快速回复'); quick.append(siteIcon('lightning'));
+        const quick = document.createElement('button'); quick.type = 'button'; quick.title = '快速回复'; quick.setAttribute('aria-label', '快速回复'); quick.textContent = '快速回复';
         quick.addEventListener('click', () => quickReplies.open(link), { signal: ctx.signal }); bar.append(quick);
+        const category = row.querySelector<HTMLElement>('.post-category');
+        if (category) {
+          const shortcut = quick.cloneNode(true) as HTMLButtonElement; shortcut.className = 'nspp-category-reply';
+          const computed = getComputedStyle(category);
+          for (const property of ['font', 'color', 'background-color', 'border', 'border-radius', 'box-shadow', 'padding', 'line-height']) {
+            shortcut.style.setProperty(property, computed.getPropertyValue(property));
+          }
+          shortcut.addEventListener('click', () => quickReplies.open(link), { signal: ctx.signal });
+          const group = document.createElement('span'); group.className = 'nspp-category-actions';
+          for (const property of ['position', 'top', 'right', 'bottom', 'left', 'transform', 'float', 'margin', 'z-index']) {
+            group.style.setProperty(property, computed.getPropertyValue(property));
+          }
+          // Computed styles resolve both insets; keep the right edge anchored as the group grows.
+          if (computed.position === 'absolute' || computed.position === 'fixed') group.style.left = 'auto';
+          const style = category.getAttribute('style');
+          for (const [property, value] of Object.entries({ position: 'static', inset: 'auto', transform: 'none', float: 'none', margin: '0', width: 'auto', minWidth: 'max-content', maxWidth: 'none', flex: '0 0 auto' })) {
+            category.style.setProperty(property.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`), value, 'important');
+          }
+          category.before(group); group.append(category, shortcut); categoryGroups.push({ group, category, style });
+        }
         const loading = document.createElement('span'); loading.className = 'nspp-count-loading'; loading.textContent = '加载中'; loading.setAttribute('role', 'status'); loading.hidden = true; bar.append(loading);
-        const category = row.querySelector<HTMLAnchorElement>('.post-category');
-        if (category) { const link = document.createElement('a'); link.className = 'nspp-action-category'; link.href = category.href; link.textContent = category.textContent?.trim() || ''; bar.append(link); }
-        content.append(bar); moveBlock(row, bar); rows.set(row, { url: url.href, bar, counts });
+        content.append(bar); rows.set(row, { url: url.href, bar, counts });
         if (visible) visible.observe(row); else load(url.href, bar);
         row.addEventListener('mouseenter', () => { void load(url.href, bar); }, { signal: ctx.signal });
         bar.addEventListener('focusin', () => { void load(url.href, bar); }, { signal: ctx.signal });
-        for (const [selector, text] of [['.info-author', '作者'], ['.info-views', '浏览'], ['.info-comments-count', '回复'], ['.info-last-commenter', '最后回复']] as const) {
-          const group = row.querySelector(selector); if (!group) continue;
-          const label = document.createElement('span'); label.className = 'nspp-meta-label'; label.textContent = text;
-          const icon = group.querySelector('svg'); if (icon) icon.after(label); else group.prepend(label); labels.push(label);
+        const time = row.querySelector<HTMLElement>('.info-last-comment-time');
+        if (time) {
+          const text = time.textContent || '';
+          const value = [time.getAttribute('datetime'), time.getAttribute('title'), text].find(value => value && forumTime(value));
+          if (value) { times.set(time, { value, text, title: time.getAttribute('title') }); refreshTimes(); }
         }
-        const time = row.querySelector('.info-last-comment-time');
-        if (time) { const icon = siteIcon('calendar-thirty'); icon.classList.add('nspp-time-icon'); time.prepend(icon); }
       });
     });
-    return () => { disposed = true; queue.clear(); visible?.disconnect(); stop(); quickReplies.destroy(); view.destroy(); movedBlocks.forEach((marker, button) => { if (marker.isConnected) marker.replaceWith(button); }); rows.forEach((state, row) => { state.bar.remove(); row.classList.remove('nspp-three-line'); row.querySelector('.nspp-time-icon')?.remove(); }); labels.forEach(label => label.remove()); };
+    return () => { categoryGroups.forEach(({ group, category, style }) => { group.before(category); if (style === null) category.removeAttribute('style'); else category.setAttribute('style', style); group.remove(); }); clearInterval(timeTimer); times.forEach((original, el) => { el.textContent = original.text; if (original.title === null) el.removeAttribute('title'); else el.title = original.title; }); disposed = true; queue.clear(); visible?.disconnect(); stop(); quickReplies.destroy(); view.destroy(); rows.forEach(state => state.bar.remove()); };
   },
 };

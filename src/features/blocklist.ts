@@ -1,3 +1,4 @@
+import { userHover, userHoverSelector } from '../views/user-hover';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
 import { unsafeWindow } from '../lib/userscript';
@@ -19,7 +20,7 @@ export const officialBlocklist: Feature = {
   mount(ctx) {
     const ownId = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
     if (!ownId) return;
-    const buttons = new Map<HTMLAnchorElement, { id: string; name: string; button: HTMLButtonElement }>();
+    const buttons = new Map<HTMLAnchorElement, { id: string; name: string; button: HTMLButtonElement; release(): void }>();
     let blocked = new Set<string>();
     let loaded = false, checked = 0;
     let fetching: Promise<void> | undefined;
@@ -27,7 +28,7 @@ export const officialBlocklist: Feature = {
     function render() {
       buttons.forEach(({ id, name, button }) => {
         button.disabled = !!fetching || pending.has(id);
-        const label = button.disabled ? '…' : !loaded ? '重试' : blocked.has(id) ? '解除' : '屏蔽';
+        const label = button.disabled ? '…' : !loaded ? '重试' : blocked.has(id) ? '取消屏蔽' : '屏蔽';
         if (button.textContent !== label) button.replaceChildren(siteIcon('forbid'), document.createTextNode(label));
         button.title = button.disabled ? '查询中' : !loaded ? '重试查询黑名单' : `${blocked.has(id) ? '解除屏蔽' : '屏蔽'} ${name}`;
         button.setAttribute('aria-label', button.title);
@@ -44,12 +45,14 @@ export const officialBlocklist: Feature = {
       render(); return fetching;
     }
     const stop = ctx.watch(() => {
-      for (const [anchor, item] of buttons) if (!anchor.isConnected) { item.button.remove(); buttons.delete(anchor); }
-      document.querySelectorAll<HTMLAnchorElement>('.author-info a[href], a.info-author, .info-author a[href], a.post-author').forEach(anchor => {
+      for (const [anchor, item] of buttons) if (!anchor.isConnected) { item.button.remove(); item.release(); buttons.delete(anchor); }
+      document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(anchor => {
+        if (anchor.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
         const id = authorId(anchor, location.origin), name = anchor.textContent?.trim();
         if (!id || id === String(ownId) || !name || anchor.querySelector('img') || buttons.has(anchor)) return;
         const button = document.createElement('button'); button.type = 'button'; button.className = 'nspp-block-toggle';
-        buttons.set(anchor, { id, name, button }); anchor.after(button);
+        const hover = userHover(anchor, ctx); hover.element.append(button);
+        buttons.set(anchor, { id, name, button, release: hover.release });
         button.addEventListener('click', async () => {
           if (pending.has(id) || fetching) return;
           if (!loaded) { try { await refresh(); } catch { ctx.notify('黑名单查询失败'); } return; }
@@ -72,6 +75,6 @@ export const officialBlocklist: Feature = {
       render();
       if (buttons.size && !checked && !fetching) { checked = Date.now(); void refresh().catch(() => {}); }
     });
-    return () => { stop(); buttons.forEach(({ button }) => button.remove()); };
+    return () => { stop(); buttons.forEach(({ button, release }) => { button.remove(); release(); }); };
   },
 };

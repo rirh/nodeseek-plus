@@ -1,3 +1,5 @@
+import { copyButton } from '../views/copy-button';
+import { forumTime } from '../lib/forum-time';
 import { toolIcon } from '../lib/tool-icon';
 import type { Context, Feature } from '../core/types';
 import { format, formatDistance, subMonths } from 'date-fns';
@@ -261,22 +263,8 @@ const content: Feature = {
                     if (processed.has(pre))
                         return;
                     processed.add(pre);
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.textContent = '复制代码';
+                    const button = copyButton(ctx, () => pre.querySelector('code')?.textContent || pre.textContent || '', '复制代码');
                     button.dataset.nsppCopy = 'true';
-                    button.addEventListener('click', async () => { button.disabled = true; button.textContent = '复制中…'; button.setAttribute('aria-busy', 'true'); try {
-                        await navigator.clipboard.writeText(pre.querySelector('code')?.textContent || pre.textContent || '');
-                        ctx.notify('代码已复制');
-                    }
-                    catch {
-                        ctx.notify('复制失败，请手动选择代码');
-                    }
-                    finally {
-                        button.disabled = false;
-                        button.removeAttribute('aria-busy');
-                        button.textContent = '复制代码';
-                    } }, { signal: ctx.signal });
                     pre.before(button);
                     undo.push(() => button.remove());
                 });
@@ -286,10 +274,9 @@ const content: Feature = {
                         return;
                     processed.add(el);
                     const old = el.textContent;
-                    const date = new Date(el.getAttribute('datetime') || '');
                     const units: Record<string, string> = { y: '年', mo: '月', d: '天', h: '小时', min: '分钟', s: '秒' };
                     const translated = (old || '').replace(/just now/gi, '刚刚').replace(/^edited\s*/i, '编辑于 ').replace(/(\d+)\s*(mo(?:nths?)?|min(?:utes?)?|y(?:ears?)?|d(?:ays?)?|h(?:ours?)?|s(?:econds?)?)\b/gi, (_, n: string, unit: string) => `${n}${units[unit.toLowerCase().startsWith('mo') ? 'mo' : unit.toLowerCase().startsWith('min') ? 'min' : unit[0]!.toLowerCase()]}`).replace(/\s*ago/gi, '前');
-                    const value = Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN') : translated;
+                    const value = forumTime(el.getAttribute('datetime') || old || '')?.text || translated;
                     if (old !== value) {
                         el.textContent = value;
                         undo.push(() => { el.textContent = old; });

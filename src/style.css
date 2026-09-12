@@ -112,23 +112,12 @@
 .nspp-post-preview button:hover { background: #818b981a; }
 .nspp-post-preview footer a { text-decoration: none; color: inherit; opacity: .7; }
 .nspp-post-preview footer a:hover { opacity: 1; text-decoration: underline; }
-
-/* Keep the site's first two rows and append a compact native-style action row. */
-.post-list-item.nspp-three-line { align-items: flex-start; }
-.nspp-three-line .post-list-content { min-width: 0; flex: 1; }
-.nspp-three-line .post-info { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; height: 18px; font-size: 11px; line-height: 18px; }
-.nspp-three-line .post-info .info-item { display: inline-flex; align-items: center; flex-wrap: nowrap; flex: none; gap: 4px; margin: 0; }
-.nspp-three-line .post-info .iconpark-icon { width: 12px; height: 12px; flex: none; }
 .nspp-meta-label { opacity: .6; font-size: 10px; }
-.nspp-three-line .info-last-commenter { border-left: 1px solid #818b9838; padding-left: 10px; }
-.nspp-three-line .post-info .nspp-user-badges { gap: 7px; margin-left: 3px; }
 .nspp-user-badges :is(.nspp-level, .nspp-age, .nspp-trust) { display: inline-flex; align-items: center; gap: 3px; }
 .nspp-user-badges .iconpark-icon { width: 11px; height: 11px; flex: none; }
 .nspp-list-actions { display: flex; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; align-items: center; gap: 12px; padding-top: 5px; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; color: var(--text-color, #777); }
 .nspp-list-actions button { display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; opacity: .75; }
 .nspp-list-actions .iconpark-icon { width: 13px; height: 13px; }
-.nspp-three-line :is(.post-info a, .post-info button, .nspp-list-actions button) { text-decoration: none; text-underline-offset: 3px; }
-.nspp-three-line :is(.post-info a, .post-info button, .nspp-list-actions button):is(:hover, :focus-visible) { text-decoration: underline; text-decoration-thickness: 1px; opacity: 1; }
 /* The expanded custom view is separate from each three-line list item. */
 .nspp-interaction { list-style: none; margin: 4px 0 12px 52px; padding: 0; border: 1px solid #818b9840; border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .nspp-interaction[hidden], .nspp-interaction form[hidden] { display: none !important; }
@@ -144,16 +133,9 @@
 .nspp-reply-actions span { opacity: .6; font-size: 10px; }
 .nspp-reply-actions button { padding: 3px 10px; background: #238636; color: white; border-radius: 4px; }
 .nspp-reply-actions button:disabled { opacity: .4; cursor: default; }
-.nspp-three-line .post-title { display: flex; align-items: baseline; min-width: 0; white-space: normal; height: auto; min-height: 24px; text-shadow: none !important; box-shadow: none !important; line-height: 24px; }
-.nspp-three-line .post-title > a:first-child { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: none !important; box-shadow: none !important; }
-.nspp-three-line .post-info .nspp-user-badges { flex-wrap: nowrap; white-space: nowrap; }
-.nspp-three-line .info-last-commenter .nspp-user-badges { display: none; }
-.nspp-three-line .post-info .info-author { min-width: 0; flex: none; }
-.nspp-three-line .info-author > a { flex: none; min-width: 20px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
-.nspp-three-line .post-info .post-category { display: none; }
-@media (max-width: 900px) { .nspp-three-line .nspp-meta-label { display: none; } }
-@media (max-width: 600px) { .nspp-three-line .post-info .info-last-commenter, .nspp-three-line .post-info .info-last-comment-time, .nspp-three-line .post-info .nspp-block-toggle { display: none; } .nspp-interaction { margin-left: 0; } }
-@media (max-width: 600px) { .nspp-three-line .post-info { gap: 3px 8px; } .nspp-list-actions { gap: 8px; } }
+
+@media (max-width: 600px) { .nspp-interaction { margin-left: 0; } }
+@media (max-width: 600px) { .nspp-list-actions { gap: 8px; } }
 
 .nspp-list-actions [hidden] { display: none !important; }
 .nspp-block-toggle { display: inline-flex; align-items: center; gap: 3px; }
@@ -167,7 +149,6 @@
 .nspp-post-preview footer .nspp-list-actions { padding: 2px 0 5px; gap: 10px; }
 .nspp-post-preview footer .nspp-list-actions button { width: auto; height: auto; font: inherit; line-height: 18px; }
 .nspp-post-preview footer .nspp-list-actions button:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
-.nspp-three-line .nspp-user-badges > * { flex-shrink: 0; }
 
 .nspp-post-preview::backdrop { background: #0006; }
 @media (max-width: 600px), (hover: none) {
@@ -180,25 +161,6 @@
   .nspp-post-preview footer a { display: block; padding: 8px 0; }
 }
 
-/* Compact metadata and a quieter action row. */
-.nspp-three-line .post-info { gap: 10px; color: var(--text-color, #59636e); }
-.nspp-three-line .nspp-meta-label { display: none; }
-.nspp-three-line .post-info .info-author { min-width: 0; flex-shrink: 1; }
-.nspp-three-line .post-info .info-last-commenter { min-width: 0; flex-shrink: 1; padding-left: 10px; opacity: .7; }
-.nspp-three-line .info-last-commenter a { overflow: hidden; text-overflow: ellipsis; }
-.nspp-three-line .info-last-comment-time { margin-left: auto; font-size: 10px; opacity: .65; }
-.nspp-three-line .nspp-time-icon { display: none; }
-.nspp-three-line .nspp-list-actions { gap: 14px; padding-top: 4px; min-height: 22px; scrollbar-width: none; }
-.nspp-three-line .nspp-list-actions button { gap: 4px; min-width: 18px; min-height: 20px; opacity: .6; }
-.nspp-three-line .nspp-list-actions button:is(:hover, :focus-visible) { color: var(--link-color, #0969da); opacity: 1; text-decoration: none; }
-.nspp-three-line .nspp-list-actions button:nth-child(5) { margin-left: 2px; padding-left: 12px; border-left: 1px solid #818b9830; }
-.nspp-three-line .nspp-list-actions .nspp-block-toggle { margin-left: 0; opacity: .45; }
-@media (max-width: 600px) {
-  .nspp-three-line .post-info { gap: 8px; }
-  .nspp-three-line .post-info .info-last-commenter { display: none; }
-  .nspp-three-line .nspp-list-actions { gap: 12px; }
-  .nspp-three-line .nspp-list-actions button { min-height: 28px; }
-}
 
 .nspp-count-loading { font-size: 10px; flex: none; }
 .nspp-quick-replies { box-sizing: border-box; width: min(440px, calc(100vw - 24px)); max-height: 85dvh; margin: auto; padding: 0; border: 1px solid #818b9838; border-radius: 12px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 16px 60px #0003; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
@@ -350,12 +312,7 @@
 
 .nspp-notifications { display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 100%; min-width: 0; flex: 0 0 100%; padding: 10px 0; font: inherit; }
 .nspp-notifications > span { display: flex; flex: 1; min-width: 0; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-.nspp-notification-link { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font: inherit; color: inherit; text-decoration: none; }
-.nspp-notification-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .nspp-notifications :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.nspp-unread-count, .nspp-read-count { box-sizing: border-box; min-width: 20px; padding: 0 5px; border-radius: 10px; text-align: center; font: inherit; line-height: inherit; font-variant-numeric: tabular-nums; }
-.nspp-unread-count { color: white; background: #d43d4d; }
-.nspp-read-count { color: inherit; background: none; }
 .nspp-ai-compose { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; align-items: start; }
 .nspp-ai-compose textarea { flex: 1; min-width: 180px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; padding: 6px; }
 .nspp-ai-compose small { width: 100%; opacity: .7; }
@@ -366,11 +323,136 @@
 @keyframes nspp-ecg-scan { from { stroke-dashoffset: 18; } to { stroke-dashoffset: -118; } }
 @media (prefers-reduced-motion: reduce) { #nspp-tools button[data-monitor-state="running"] .nspp-ecg-shine { display: none; animation: none; } }
 
-.nspp-notification-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 
-.nspp-notification-icon { width: 1em; height: 1em; flex: none; }
 
 .user-stat .stat-block:has(> .nspp-notification-row) > :has(> .nspp-original-notification:only-child) { display: none; }
-.user-stat .nspp-notification-link { gap: .3em; }
-.user-stat .nspp-notification-icon { display: block; width: 1em; height: 1em; }
-.user-stat .nspp-notification-link > :is(.nspp-unread-count, .nspp-read-count) { min-width: 0; line-height: 1.25; padding-inline: .35em; }
+
+.nspp-notifications .nspp-notification-icon { width: 1em; height: 1em; }
+
+
+
+.nspp-list-actions[hidden] { display: none !important; }
+
+.nspp-user-hover { position: fixed; z-index: 10010; box-sizing: border-box; width: 260px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow: auto; padding: 12px; border: 1px solid var(--border-color, #818b9840); border-radius: 8px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 6px 24px #0002; font: 12px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.nspp-user-hover[hidden] { display: none !important; }
+.nspp-user-hover-name { font-weight: 600; color: inherit; text-decoration: none; }
+.nspp-user-hover dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 10px 0; }
+.nspp-user-hover dt { opacity: .65; }
+.nspp-user-hover dd { margin: 0; font-variant-numeric: tabular-nums; }
+.nspp-user-hover > .nspp-block-toggle { display: flex; margin: 8px 0 0; padding: 4px 8px; border: 1px solid #818b9840; border-radius: 4px; font: inherit; color: inherit; background: transparent; }
+
+.nspp-user-hover { width: 280px; padding: 12px; border-radius: 12px; box-shadow: 0 12px 36px #0002, 0 2px 6px #0001; }
+.nspp-user-hover .nspp-user-hover-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.nspp-user-hover .nspp-user-hover-header > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.nspp-user-hover-name { font-size: 14px; overflow-wrap: anywhere; }
+.nspp-user-hover-monogram { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 10px; background: #0969da10; color: #0969da; font-size: 18px; font-weight: 600; }
+.nspp-user-hover .nspp-user-hover-rich { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; padding: 7px 6px; border: 1px solid #818b9824; border-radius: 8px; background: #818b9808; font-size: 13px; line-height: 22px; }
+.nspp-user-hover-rich > div { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.nspp-user-hover-rich small { font-size: 11px; line-height: 16px; opacity: .6; }
+.nspp-user-hover-rich .iconpark-icon { width: 13px; height: 13px; }
+.nspp-user-hover-rich .nspp-age { font-weight: 600; }
+.nspp-user-hover dl { margin: 0; gap: 4px 10px; }
+.nspp-user-hover dd { text-align: right; font-weight: 500; }
+.nspp-user-hover-note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid #818b9824; font-size: 10px; line-height: 1.6; color: #768390; }
+.nspp-user-hover-note[data-tone="danger"], .nspp-user-hover-note[data-tone="new"] { color: #cf3434; }
+.nspp-user-hover > .nspp-block-toggle { justify-content: center; width: 100%; margin-top: 12px; padding: 5px 8px; border-radius: 6px; }
+.nspp-user-hover > .nspp-block-toggle:hover { background: #cf343410; color: #cf3434; border-color: #cf343440; }
+.dark-layout .nspp-user-hover { background: #161b22; color: #e6edf3; }
+.dark-layout .nspp-user-hover-monogram { color: #79b8ff; background: #79b8ff18; }
+.dark-layout .nspp-user-hover-note[data-tone="danger"], .dark-layout .nspp-user-hover-note[data-tone="new"] { color: #ff8585; }
+
+.nspp-user-badges[hidden], .nspp-user-hover-tags[hidden] { display: none !important; }
+.nspp-user-hover-tags { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; }
+
+.nspp-user-hover-avatar { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; object-fit: cover; }
+.nspp-user-hover-avatar[hidden], .nspp-user-hover-monogram[hidden] { display: none !important; }
+.nspp-user-hover-signature { margin: -2px 0 10px; color: inherit; opacity: .7; font-size: 11px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 5.1em; overflow: auto; }
+.nspp-user-hover[data-trust="danger"] { background: #fff3f3; border-color: #e9b9bf; }
+.nspp-user-hover[data-trust="warning"] { background: #fff9ed; border-color: #e7d5ae; }
+.nspp-user-hover[data-trust="success"] { background: #f0faf4; border-color: #b8ddc5; }
+.nspp-user-hover[data-trust="perfect"] { background: #fff8e3; border-color: #ddbc6a; }
+.dark-layout .nspp-user-hover[data-trust="danger"] { background: #2b1c22; border-color: #643740; }
+.dark-layout .nspp-user-hover[data-trust="warning"] { background: #29251b; border-color: #605234; }
+.dark-layout .nspp-user-hover[data-trust="success"] { background: #182820; border-color: #355c45; }
+.dark-layout .nspp-user-hover[data-trust="perfect"] { background: #2d2617; border-color: #756031; }
+
+.nspp-user-hover .nspp-user-hover-header { position: static; width: auto; height: auto; min-height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.nspp-copy-button { padding: 2px 5px; border: 0; border-radius: 4px; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.nspp-copy-button:hover { background: #818b9820; }
+.nspp-user-hover .nspp-copy-button { font-size: 10px; opacity: .65; }
+.nspp-category-actions { display: inline-flex; align-items: center; gap: 5px; width: max-content; max-width: none; flex: none; white-space: nowrap; }
+.nspp-category-reply { position: static; flex: none; margin: 0; font-family: inherit; cursor: pointer; white-space: nowrap; }
+
+.nspp-copy-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.nspp-copy-button[data-copied="true"] { color: #218044; opacity: 1; }
+.nspp-user-hover { width: 270px; padding: 10px; }
+.nspp-user-hover .nspp-user-hover-header { gap: 8px; margin-bottom: 8px; }
+.nspp-user-hover .nspp-user-hover-header > div { flex: 1; }
+.nspp-user-hover .nspp-user-hover-score { display: flex; flex: none; flex-direction: column; align-items: center; gap: 0; padding: 0; margin: 0 0 0 auto; border: 0; background: transparent; color: #768390; cursor: pointer; }
+.nspp-user-hover-score strong { font: 700 30px/1 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.nspp-user-hover-score small { font-size: 9px; line-height: 16px; opacity: .75; }
+.nspp-user-hover[data-trust="danger"] .nspp-user-hover-score { color: #c63849; }
+.nspp-user-hover[data-trust="warning"] .nspp-user-hover-score { color: #a66b08; }
+.nspp-user-hover[data-trust="success"] .nspp-user-hover-score { color: #218044; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score { color: #a56b00; }
+.dark-layout .nspp-user-hover .nspp-user-hover-score { filter: brightness(1.5); }
+.nspp-user-hover .nspp-user-hover-rich { margin-bottom: 8px; padding: 5px 4px; gap: 4px; }
+.nspp-user-hover-rich > div { gap: 2px; }
+.nspp-participation { font-weight: 600; font-variant-numeric: tabular-nums; }
+.nspp-user-hover-note { margin-top: 8px; padding-top: 6px; }
+.nspp-user-hover > .nspp-block-toggle { margin-top: 8px; padding: 3px 6px; }
+.nspp-user-hover-signature { margin: 0 0 8px; }
+
+/* A dedicated graphite-and-champagne finish for the 100-point card. */
+.nspp-user-hover[data-trust="perfect"],
+.dark-layout .nspp-user-hover[data-trust="perfect"] {
+  color: #eee9df;
+  background: radial-gradient(ellipse at 100% 0, #c8a5651c, transparent 65%), linear-gradient(145deg, #26272b, #191a1e);
+  border-color: #ac8e555c;
+  box-shadow: inset 0 1px 0 #e8ce9133, 0 16px 40px #0004, 0 3px 10px #0002;
+  padding: 12px;
+  border-radius: 12px;
+  color-scheme: dark;
+}
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-header { margin-bottom: 12px; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-name { color: #f5efe2; font-weight: 600; }
+.nspp-user-hover[data-trust="perfect"] :is(.nspp-user-hover-avatar, .nspp-user-hover-monogram) { border-radius: 9px; outline: 1px solid #d3b57566; outline-offset: 2px; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-monogram { background: #d3b57514; color: #e8ce96; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score { color: #ebce91; filter: none; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score strong { font-size: 36px; font-weight: 600; letter-spacing: -1.8px; text-shadow: 0 2px 14px #d6b46c20; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score small { color: #c6b899; font-size: 9px; opacity: 1; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich { padding: 8px 4px; margin-bottom: 10px; background: #d3b57508; border-color: #d3b57526; border-radius: 7px; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich > div + div { border-left: 1px solid #d3b57520; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich small { color: #b9b3a7; opacity: 1; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-badges :is(.nspp-age, .nspp-level, .nspp-participation) { --nspp-badge-color: #e5ce9c; --nspp-age-color: #b9d0be; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-badges .nspp-level[data-level="6"] { background: #d3b57518; box-shadow: inset 0 0 0 1px #d3b57538; }
+.nspp-user-hover[data-trust="perfect"] dt { color: #b9b3a7; opacity: 1; }
+.nspp-user-hover[data-trust="perfect"] dd { color: #eee6d6; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-note { color: #aaa69b; border-color: #d3b57524; }
+.nspp-user-hover[data-trust="perfect"] .nspp-copy-button { color: #cabb9c; opacity: 1; }
+.nspp-user-hover[data-trust="perfect"] .nspp-copy-button[data-copied="true"] { color: #9cd3ac; }
+.nspp-user-hover[data-trust="perfect"] > .nspp-block-toggle { color: #c7bcaa; border-color: #d3b57530; background: transparent; }
+.nspp-user-hover[data-trust="perfect"] > .nspp-block-toggle:hover { color: #ffb4b4; border-color: #c978785c; background: #c9787810; }
+.nspp-user-hover[data-trust="perfect"] :focus-visible { outline: 2px solid #e8ce96; outline-offset: 2px; }
+
+.nspp-ai-dialog { width: min(600px, calc(100vw - 32px)); max-height: 85dvh; box-sizing: border-box; overflow: auto; color: var(--text-color, #24292f); background: var(--bg-color, #fff); border: 1px solid #8884; border-radius: 10px; padding: 20px; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; box-shadow: 0 16px 48px #0002; }
+.nspp-ai-dialog.nspp-ai-config { width: min(460px, calc(100vw - 32px)); }
+.nspp-ai-dialog::backdrop { background: #0005; }
+.nspp-ai-dialog .nspp-ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.nspp-ai-dialog h2 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
+.nspp-ai-dialog .nspp-ai-hint { margin: 0 0 18px; opacity: .65; font-size: 12px; }
+.nspp-ai-dialog label { display: grid; gap: 6px; margin-bottom: 14px; font-size: 12px; font-weight: 500; }
+.nspp-ai-dialog :is(input, textarea, select) { box-sizing: border-box; padding: 7px 10px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; font: inherit; line-height: 20px; }
+.nspp-ai-dialog :is(input, textarea) { width: 100%; }
+.nspp-ai-dialog textarea { resize: vertical; }
+.nspp-ai-dialog input::placeholder, .nspp-ai-dialog textarea::placeholder { color: inherit; opacity: .4; }
+.nspp-ai-dialog button { appearance: none; min-height: 32px; padding: 5px 12px; border: 1px solid #8885; border-radius: 6px; background: #8881; color: inherit; font: inherit; cursor: pointer; }
+.nspp-ai-dialog button:hover { background: #8882; }
+.nspp-ai-dialog :is(.nspp-ai-primary, [data-nspp-ai]) { background: #24292f; border-color: #24292f; color: #fff; }
+.nspp-ai-dialog :is(.nspp-ai-primary, [data-nspp-ai]):hover { background: #39414a; }
+.nspp-ai-dialog :focus-visible { outline: 2px solid #5989ba; outline-offset: 2px; }
+.nspp-ai-dialog .nspp-ai-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #8883; }
+.nspp-ai-dialog .nspp-ai-compose { padding: 12px 0 0; gap: 8px; }
+.dark-layout .nspp-ai-dialog { color: #dce1e7; background: #202428; color-scheme: dark; }
+.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary, [data-nspp-ai]) { background: #e0e5eb; border-color: #e0e5eb; color: #24292f; }
+@media (max-width: 480px) { .nspp-ai-dialog { padding: 16px; } .nspp-ai-dialog .nspp-ai-compose textarea { min-width: 100%; } }

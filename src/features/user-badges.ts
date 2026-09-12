@@ -1,8 +1,10 @@
+import { userHover, userHoverSelector } from '../views/user-hover';
+import { format } from 'date-fns';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
 import { authorId, forumAge, registration, trustScore, type UserProfile } from './user-profile';
 
-const selector = '.author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a[href*="/space/"], .post-list-item a[href*="/space/"]:not(:has(img))';
+
 export const userBadges: Feature = {
   id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true },
   mount(ctx) {
@@ -10,7 +12,7 @@ export const userBadges: Feature = {
     const roles = new Map<Element, string | null>();
     const cache = new Map<string, UserProfile>();
     const inflight = new Map<string, Promise<UserProfile>>();
-    const nodes = new Map<Element, { id: string; badge: HTMLElement }>();
+    const nodes = new Map<Element, { id: string; badge: HTMLElement; details: HTMLElement; release(): void }>();
     const queue: (() => Promise<void>)[] = [];
     let active = 0;
     const drain = () => {
@@ -44,6 +46,13 @@ export const userBadges: Feature = {
         const user = await getProfile(id);
         if (ctx.signal.aborted || !author.isConnected || nodes.get(author)?.badge !== badge) return;
         const info = registration(user);
+        const profileDetails = nodes.get(author)!.details;
+        profileDetails.replaceChildren();
+        for (const [label, value] of [
+          ['注册日期', info.days === null ? '未知' : format(new Date(info.timestamp), 'yyyy-MM-dd')],
+          ['主题帖', String(user.nPost ?? '—')], ['评论', String(user.nComment ?? '—')],
+        ]) { const term = document.createElement('dt'); term.textContent = label; const valueNode = document.createElement('dd'); valueNode.textContent = value; profileDetails.append(term, valueNode); }
+
         badge.replaceChildren();
         const level = document.createElement('span');
         level.className = 'nspp-level';
@@ -113,9 +122,40 @@ export const userBadges: Feature = {
           close.addEventListener('click', () => scoreDialog?.close(), { signal: ctx.signal });
           scoreDialog.append(heading, body, close); document.body.append(scoreDialog); scoreDialog.showModal();
         }, { signal: ctx.signal });
-        badge.append(level, score, age);
+        badge.append(score, age, level);
+        const card = profileDetails.parentElement!;
+        card.dataset.trust = !trust ? 'unknown' : trust.score === 100 ? 'perfect' : trust.score >= 70 ? 'success' : trust.score >= 40 ? 'warning' : 'danger';
+        card.querySelector('.nspp-user-hover-signature')?.remove();
+        if (typeof user.signature === 'string' && user.signature.trim()) {
+          const signature = document.createElement('p'); signature.className = 'nspp-user-hover-signature'; signature.textContent = user.signature.trim();
+          card.querySelector('.nspp-user-hover-header')!.after(signature);
+        }
+        card.querySelector('.nspp-user-hover-score')?.remove();
+        const headline = document.createElement('button'); headline.type = 'button'; headline.className = 'nspp-user-hover-score'; headline.title = score.title;
+        headline.setAttribute('aria-label', `信任参考分 ${trust?.score ?? '未知'}，查看评分依据`);
+        const number = document.createElement('strong'); number.textContent = trust ? String(trust.score) : '—';
+        const scoreLabel = document.createElement('small'); scoreLabel.textContent = '信任参考分'; headline.append(number, scoreLabel);
+        headline.addEventListener('click', () => score.click(), { signal: ctx.signal }); card.querySelector('.nspp-user-hover-header')!.append(headline);
+        const participation = document.createElement('span'); participation.className = 'nspp-participation';
+        participation.textContent = Number.isSafeInteger(user.nPost) && Number.isSafeInteger(user.nComment) && user.nPost! >= 0 && user.nComment! >= 0 ? String(user.nPost! + user.nComment!) : '—';
+        participation.title = '主题帖数 + 评论数';
+        card.querySelector('.nspp-user-hover-rich')?.remove();
+        const rich = document.createElement('div'); rich.className = 'nspp-user-hover-rich nspp-user-badges';
+        for (const [label, source] of [['加入天数', age], ['参与次数', participation], ['用户等级', level]] as const) {
+          const cell = document.createElement('div');
+          const caption = document.createElement('small'); caption.textContent = label;
+          const value = source.cloneNode(true) as HTMLElement;
+          if (source instanceof HTMLButtonElement) value.addEventListener('click', () => { source.click(); }, { signal: ctx.signal });
+          cell.append(caption, value); rich.append(cell);
+        }
+        card.insertBefore(rich, profileDetails);
+        card.querySelector('.nspp-user-hover-note')?.remove();
+        const note = document.createElement('p'); note.className = 'nspp-user-hover-note'; note.dataset.tone = info.level === 1 || (trust && trust.score < 40) ? 'danger' : info.tone;
+        note.textContent = risk || `${info.label} · 本地参与度参考分，非官方信用评分`;
+        note.title = details; profileDetails.after(note);
       } catch {
         if (ctx.signal.aborted || !badge.isConnected) return;
+        const details = nodes.get(author)?.details; if (details) details.textContent = '资料读取失败，可点击用户名旁的重试。';
         const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '重试资料';
         retry.addEventListener('click', () => { void load(author, id, badge); }, { signal: ctx.signal });
         badge.replaceChildren(retry);
@@ -143,16 +183,20 @@ export const userBadges: Feature = {
         }
       });
       for (const tag of roles.keys()) if (!tag.isConnected) roles.delete(tag);
-      for (const [author, state] of nodes) if (!author.isConnected) { observer?.unobserve(author); state.badge.remove(); nodes.delete(author); }
-      document.querySelectorAll(selector).forEach(author => {
-        if (!author.textContent?.trim() || author.querySelector('img')) return;
+      for (const [author, state] of nodes) if (!author.isConnected) { observer?.unobserve(author); state.badge.remove(); state.details.remove(); state.release(); nodes.delete(author); }
+      document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(author => {
+        if (author.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
+        if (!author.textContent?.trim() && !author.querySelector('img')) return;
         const id = authorId(author, location.origin); if (!id) return;
         const previous = nodes.get(author);
         if (previous?.id === id && previous.badge.isConnected) return;
-        previous?.badge.remove();
+        previous?.badge.remove(); previous?.details.remove(); previous?.release();
         const badge = document.createElement('span'); badge.className = 'nspp-user-badges';
         badge.setAttribute('aria-label', '用户资料');
-        author.after(badge); nodes.set(author, { id, badge });
+        badge.hidden = !!author.closest('.info-last-commenter') || !!author.querySelector('img') || !author.matches('.author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a');
+        const hover = userHover(author, ctx);
+        const details = document.createElement('dl'); details.textContent = '正在读取用户资料…'; hover.element.insertBefore(details, hover.element.querySelector(':scope > .nspp-block-toggle'));
+        author.after(badge); nodes.set(author, { id, badge, details, release: hover.release });
         // Start visible names immediately, even if the observer callback is delayed.
         const rect = author.getBoundingClientRect();
         if (!observer || (rect.bottom >= 0 && rect.top <= innerHeight + 200)) void load(author, id, badge);
@@ -160,6 +204,6 @@ export const userBadges: Feature = {
       });
     };
     const stop = ctx.watch(scan);
-    return () => { stop(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); queue.length = 0; nodes.forEach(({ badge }) => badge.remove()); };
+    return () => { stop(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); queue.length = 0; nodes.forEach(({ badge, details, release }) => { badge.remove(); details.remove(); release(); }); };
   },
 };
