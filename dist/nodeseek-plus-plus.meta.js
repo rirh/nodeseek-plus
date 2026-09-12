@@ -7,6 +7,7 @@
 // @match        https://www.nodeseek.com/*
 // @match        https://www.deepflood.com/*
 // @connect      api.nodeimage.com
+// @connect      rss.nodeseek.com
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand

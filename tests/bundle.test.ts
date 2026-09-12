@@ -496,7 +496,12 @@ test('monitor establishes a baseline and notifies once for a new matching post',
       if (delay === 60000) poll = callback;
       return originalInterval(callback, delay);
     }) as typeof window.setInterval;
-    window.fetch = (async () => new window.Response(invalid ? '<title>Just a moment...</title>' : `<div class="post-title"><a href="/post-1-1">抽奖 基线帖子</a></div>${fresh ? '<div class="post-title"><a href="/post-2-1">抽奖 新的帖子</a></div>' : ''}`)) as typeof window.fetch;
+    Object.assign(window, { GM_xmlhttpRequest: (options: { url: string; onload: (response: unknown) => void }) => {
+      assert.equal(options.url, 'https://rss.nodeseek.com/');
+      const item = (id: number) => `<item><title>抽奖 帖子 ${id}</title><link>https://www.nodeseek.com/post-${id}-1</link></item>`;
+      queueMicrotask(() => options.onload({ status: 200, responseText: invalid ? '<html>验证页</html>' : `<rss><channel>${item(1)}${fresh ? item(2) : ''}</channel></rss>` }));
+      return { abort() {} };
+    } });
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
@@ -529,7 +534,7 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     assert.equal(f.window.document.querySelectorAll('.nspp-monitor-results li').length, 0);
     await new Promise(resolve => setTimeout(resolve, 30));
     const monitorState = f.storage.get('nspp:state:www.nodeseek.com:monitor') as Record<string, { at: number }>;
-    assert.equal(monitorState['snapshot:7'].at, clock, 'update checks immediately in a background tab');
+    assert.equal(monitorState['rss-snapshot:7'].at, clock, 'update checks immediately in a background tab');
     assert.equal((f.storage.get(key) as { monitor: { interval: number } }).monitor.interval, 600);
     const before = f.window.document.querySelector('.nspp-monitor-results')!.textContent;
     invalid = true; clock += 601000; poll!();
@@ -560,19 +565,20 @@ test('post status styling keeps titles intact and marks readonly and pin icons',
   } finally { await f.close(); }
 });
 
-test('monitor matches main body and highlights dynamic list rows without matching comments', async () => {
-  const requestTimes: number[] = [];
-  const f = await fixture({ monitor: { enabled: true, trades: false, lotteries: false, keywords: 'VPS\n/香港.*年付/i' }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false }, 'list-interactions': { enabled: false } }, '<li class="post-list-item"><div class="post-title"><a href="/post-72-1">出售机器</a></div></li>', '/', undefined, window => {
-    window.fetch = (async url => { requestTimes.push(Date.now()); return new window.Response(String(url).includes('/post-72-1') ? '<div class="post-content">香港机器年付</div>' : String(url).includes('/post-73-1') ? '<div class="post-content">普通正文</div><div class="comment-content">VPS</div>' : '<div class="post-title"><a href="/post-72-1">出售机器</a></div>'); }) as typeof window.fetch;
+test('RSS titles highlight list rows without fetching individual posts', async () => {
+  let calls = 0;
+  const f = await fixture({ monitor: { enabled: true, keywords: '/香港.*年付/i' }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false }, 'list-interactions': { enabled: false } }, '<li class="post-list-item"><div class="post-title"><a href="/post-72-1">出售机器</a></div></li>', '/', undefined, window => {
+    Object.assign(window, { GM_xmlhttpRequest: (options: { onload: (response: unknown) => void }) => {
+      calls++;
+      queueMicrotask(() => options.onload({ status: 200, responseText: '<rss><channel><item><title>香港机器年付</title><link>https://www.nodeseek.com/post-72-1</link></item></channel></rss>' }));
+      return { abort() {} };
+    } });
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 5200));
-    assert.equal(f.window.document.querySelector('.post-list-item')!.getAttribute('data-nspp-monitor-match'), '1');
-    f.window.document.body.insertAdjacentHTML('beforeend', '<li class="post-list-item"><div class="post-title"><a href="/post-73-1">普通帖子</a></div></li>');
-    await new Promise(resolve => setTimeout(resolve, 5200));
-    assert.equal(f.window.document.querySelectorAll('.post-list-item')[1].hasAttribute('data-nspp-monitor-match'), false);
-    assert.ok(requestTimes.length >= 3);
-    for (let i = 1; i < requestTimes.length; i++) assert.ok(requestTimes[i] - requestTimes[i - 1] >= 4900, 'monitor requests must be spaced at least five seconds apart');
+    await new Promise(resolve => setTimeout(resolve, 150));
+    assert.equal(f.window.document.querySelector('.post-list-item')!.getAttribute('data-nspp-monitor-match'), '0');
+    assert.equal(calls, 1);
+    assert.equal(f.requests.length, 0);
   } finally { await f.close(); }
 });
 

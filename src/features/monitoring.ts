@@ -1,3 +1,5 @@
+import { parseMonitorRSS } from './monitor-rss';
+import { requestMonitorRSS } from './monitor-rss-request';
 import { gsap } from 'gsap';
 import { GM_getValue } from '../lib/userscript';
 import { compileMonitorRules } from './monitor-rules';
@@ -6,7 +8,7 @@ import { withTabLock } from '../lib/tab-lock';
 import type { Context, Feature } from '../core/types';
 import { currentUser } from './actions';
 
-type Post = { id: string; title: string; url: string; content?: string };
+type Post = { id: string; title: string; url: string };
 type Tracked = Post & { added: number; checked?: number; signal?: string };
 export function parsePosts(doc: Document): Post[] {
   const seen = new Set<string>(); const posts: Post[] = [];
@@ -27,13 +29,13 @@ function control(label: string, fn: () => void, ctx: Context) {
   el.addEventListener('click', fn, { signal: ctx.signal }); return el;
 }
 const monitor: Feature = {
-  id: 'monitor', title: '帖子监控与抽奖追踪', description: '后台标签页每隔至少 60 秒检查；交易、抽奖和关键词共用请求。开奖提示仅为线索，需人工核实中奖。', group: '监控',
-  defaults: { enabled: true, trades: true, lotteries: true, interval: 300 },
+  id: 'monitor', title: '帖子监控与抽奖追踪', description: '使用 NodeSeek RSS 监控新帖，正则匹配标题，后台标签页可运行。开奖提示仅为线索，需人工核实中奖。', group: '监控',
+  defaults: { enabled: true, interval: 300 },
   fields: {
-    trades: { label: '显示最新交易', type: 'text' }, lotteries: { label: '显示最新抽奖', type: 'text' },
     interval: { label: '刷新间隔（秒，60–3600）', type: 'number' },
   },
   mount(ctx) {
+    if (location.hostname !== 'www.nodeseek.com') return;
     const panel = document.createElement('dialog'); panel.className = 'nspp-monitor'; panel.setAttribute('aria-label', '帖子监控');
     const header = document.createElement('header');
     const title = document.createElement('h3'); title.textContent = '帖子监控'; header.append(title, control('关闭', () => panel.close(), ctx)); panel.append(header);
@@ -93,7 +95,7 @@ const monitor: Feature = {
     if (user) renderTracks();
     let interval = Math.min(3600, Math.max(60, Number(ctx.get<number>('interval')) || 300)) * 1000;
     let busy = false; let last = 0; let paused = false; let manualCheck = false;
-    const cooldownKey = 'request-cooldown';
+    const cooldownKey = 'rss-request-cooldown';
     const hasWork = () => !!(rules.length || readTracked().length);
     const cooling = () => (ctx.get<number>(cooldownKey) || 0) > Date.now();
     function renderState() {
@@ -132,13 +134,6 @@ const monitor: Feature = {
       requests = result.then(() => {}, () => { renderState(); });
       return result;
     }
-    async function getPosts(path: string) {
-      const text = await requestPage(path);
-      const doc = new DOMParser().parseFromString(text, 'text/html');
-      const posts = parsePosts(doc);
-      if (!posts.length && !doc.querySelector('.post-list')) { ctx.set(cooldownKey, Date.now() + 600000); throw new Error('列表不可用，可能需要完成站点验证'); }
-      return posts;
-    }
     function render(label: string, posts: Post[]) {
       const section = document.createElement('section'); output.append(section);
       const heading = document.createElement('h4'); heading.textContent = label;
@@ -163,7 +158,7 @@ const monitor: Feature = {
       }
     }
     type Snapshot = { home: Post[]; trades: Post[]; at: number };
-    const snapshotKey = `snapshot:${user || 'guest'}`;
+    const snapshotKey = `rss-snapshot:${user || 'guest'}`;
     const legacy = GM_getValue<Record<string, { keywords?: string }>>(`nspp:settings:${location.hostname}`, {});
     let keywordText = ctx.get<string | undefined>('match-keywords') ?? legacy.monitor?.keywords ?? '';
     ctx.set('match-keywords', keywordText);
@@ -175,7 +170,7 @@ const monitor: Feature = {
     label.append(help, input);
     const apply = control('更新', () => {}, ctx); apply.type = 'submit';
     const feedback = document.createElement('span'); feedback.setAttribute('role', 'status');
-    const explanation = document.createElement('small'); explanation.textContent = '每行一个正则，任意命中标题或正文即收录。默认忽略大小写；例如 vmiss|搬瓦工，或 /香港.*年付/i。更新会清空旧结果并重新检查。';
+    const explanation = document.createElement('small'); explanation.textContent = '每行一个正则，任意命中RSS 标题即收录。默认忽略大小写；例如 vmiss|搬瓦工，或 /香港.*年付/i。更新会清空旧结果并重新检查。';
     const configDialog = document.createElement('dialog'); configDialog.className = 'nspp-monitor nspp-monitor-config'; configDialog.setAttribute('aria-label', '监控配置');
     const configHeader = document.createElement('header'); const configTitle = document.createElement('h3'); configTitle.textContent = '监控配置';
     configHeader.append(configTitle, control('关闭', () => configDialog.close(), ctx));
@@ -195,38 +190,16 @@ const monitor: Feature = {
       if (compiled.errors.length) { feedback.textContent = `无效规则：${compiled.errors.join('、')}`; ctx.notify(feedback.textContent); return; }
       interval = seconds * 1000; ctx.set('interval', seconds);
       clearInterval(timer); timer = setInterval(() => { void refresh(); }, interval);
-      hint.textContent = `${seconds} 秒 / 次 · 请求间隔 ≥5秒 · 每5分钟最多12次`; refreshButton.title = '立即检查一次（不等待自动刷新周期）';
+      hint.textContent = `${seconds} 秒 / 次 · NodeSeek RSS`; refreshButton.title = '立即检查一次（不等待自动刷新周期）';
       keywordText = input.value; rules = compiled.rules; errors = compiled.errors;
       ctx.set('match-keywords', keywordText); ctx.set(unreadKey, []); ctx.set(`seen-posts:${user || 'guest'}`, undefined);
       highlighted.forEach(node => node.removeAttribute('data-nspp-monitor-match')); highlighted.clear(); scanned.clear();
-      ctx.set(snapshotKey, undefined); output.replaceChildren(); contentCache.clear();
+      ctx.set(snapshotKey, undefined); output.replaceChildren();
       paused = false; pause.replaceChildren(toolIcon('stop'), document.createTextNode('停止'));
       renderUnread(); feedback.textContent = '已更新，正在重新检查';
       configDialog.close(); void refresh(true, '配置已更新，旧结果已清空，开始检查');
     }, { signal: ctx.signal });
-    const match = (post: Post) => rules.find(rule => rule.matches(post.title) || (!!post.content && rule.matches(post.content)));
-    const contentCache = new Map<string, { at: number; result: Promise<string> }>();
-    const waiting: (() => void)[] = []; let active = 0;
-    async function content(post: Post): Promise<string> {
-      const cached = contentCache.get(post.id);
-      if (cached && Date.now() - cached.at < 1800000) return cached.result;
-      const result = (async () => {
-        if (active >= 2) await new Promise<void>(resolve => waiting.push(resolve));
-        active++;
-        try {
-          if (ctx.signal.aborted) return '';
-          const html = await requestPage(post.url);
-          const doc = new DOMParser().parseFromString(html, 'text/html');
-          const body = doc.querySelector('.nsk-post .post-content, .post-content, .nsk-post .markdown-body');
-          if (!body) { ctx.set(cooldownKey, Date.now() + 600000); throw new Error('主帖正文不可用'); }
-          body.querySelectorAll('script, style').forEach(node => node.remove());
-          return body.textContent?.trim() || '';
-        } finally { active--; waiting.shift()?.(); }
-      })();
-      contentCache.set(post.id, { at: Date.now(), result });
-      if (contentCache.size > 200) contentCache.delete(contentCache.keys().next().value!);
-      return result;
-    }
+    const match = (post: Post) => rules.find(rule => rule.matches(post.title));
     const highlighted = new Set<HTMLElement>();
     function highlight(node: HTMLElement, post: Post) {
       const rule = match(post);
@@ -243,11 +216,10 @@ const monitor: Feature = {
         const link = Array.from(document.querySelectorAll<HTMLAnchorElement>('.post-title a')).find(link => link.href === post.url);
         const row = link?.closest<HTMLElement>('.post-list-item');
         if (!row || scanned.get(row) === post.title) continue;
-        scanned.set(row, post.title); highlight(row, post);
-        if (match(post) !== rules[0]) void content(post).then(body => { if (!ctx.signal.aborted && row.isConnected && scanned.get(row) === post.title) highlight(row, { ...post, content: body }); }).catch(() => { /* Retry on the next monitoring cycle. */ });
+        scanned.set(row, post.title);
+        const cached = ctx.get<Snapshot>(snapshotKey)?.home.find(item => item.url === post.url);
+        highlight(row, cached || post);
       }
-      const body = document.querySelector<HTMLElement>('.nsk-post .post-content, .post-content');
-      if (body) highlight(body, { id: currentId || '', title: document.title, url: location.href, content: body.textContent || '' });
     };
     function display(snapshot: Snapshot) {
       output.replaceChildren();
@@ -268,13 +240,11 @@ const monitor: Feature = {
       try {
         const executed = await withTabLock(`monitor:${user || 'guest'}`, force ? 0 : interval, async () => {
           if (ctx.signal.aborted) return;
-          const home = ctx.get<boolean>('lotteries') || rules.length ? await getPosts('/') : [];
-          const trades = ctx.get<boolean>('trades') ? await getPosts('/categories/trade') : [];
+          const home = parseMonitorRSS(await requestMonitorRSS(ctx.signal));
+          const trades: Post[] = [];
           if (ctx.signal.aborted) return;
-          if (rules.length) await Promise.all([...new Map([...home, ...trades].map(post => [post.id, post])).values()].map(async post => { if (match(post) !== rules[0]) { try { post.content = await content(post); } catch { /* Keep title matches when a detail request fails. */ } } }));
-          if (ctx.signal.aborted) return;
-          scanned.clear(); scan();
           const snapshot = { home, trades, at: Date.now() }; ctx.set(snapshotKey, snapshot); display(snapshot);
+          scanned.clear(); scan();
           const matches = [...new Map([...home, ...trades].map(post => [post.id, post])).values()].filter(post => match(post));
           const seenKey = `seen-posts:${user || 'guest'}`;
           const seen = ctx.get<Record<string, number> | undefined>(seenKey);
@@ -284,7 +254,7 @@ const monitor: Feature = {
           ctx.set(seenKey, Object.fromEntries(Object.entries(next).sort((a, b) => b[1] - a[1]).slice(0, 5000)));
           if (seen && fresh.length) {
             const message = `发现 ${fresh.length} 条新帖：${fresh.slice(0, 2).map(post => post.title).join('；')}`;
-            ctx.set(unreadKey, [...new Map([...fresh.map(post => ({ id: post.id, title: post.title, url: post.url, content: post.content, found: Date.now() })), ...readUnread()].map(post => [post.id, post])).values()].slice(0, 200));
+            ctx.set(unreadKey, [...new Map([...fresh.map(post => ({ id: post.id, title: post.title, url: post.url, found: Date.now() })), ...readUnread()].map(post => [post.id, post])).values()].slice(0, 200));
             renderUnread();
             notify(message);
           }
@@ -297,6 +267,7 @@ const monitor: Feature = {
           if (cached) { display(cached); renderUnread(); } else statusText.textContent = '其他标签页正在刷新，下个周期读取共享结果';
         }
       } catch { if (!ctx.signal.aborted) {
+        ctx.set(cooldownKey, Date.now() + 60000);
         if (force) ctx.notify('检查未完成，请检查登录、站点验证或冷却状态');
         const cached = ctx.get<Snapshot>(snapshotKey);
         statusText.textContent = `检查未完成，将在冷却结束后的监控周期重试${cached ? ` · 保留 ${new Date(cached.at).toLocaleTimeString()} 的结果` : ' · 请确认论坛可正常访问'}；可检查登录或站点验证`;
@@ -325,7 +296,7 @@ const monitor: Feature = {
     if (ctx.get<boolean>('desktop-notifications') && typeof Notification !== 'undefined' && Notification.permission === 'granted') permission.textContent = '关闭系统通知';
     const refreshButton = control('刷新', () => { void refresh(true); }, ctx);
     refreshButton.title = '立即检查一次（不等待自动刷新周期）';
-    const hint = document.createElement('span'); hint.textContent = `${interval / 1000} 秒 / 次 · 请求间隔 ≥5秒 · 每5分钟最多12次`;
+    const hint = document.createElement('span'); hint.textContent = `${interval / 1000} 秒 / 次 · NodeSeek RSS`;
     const pause = control('停止', () => { paused = !paused; pause.replaceChildren(toolIcon(paused ? 'play' : 'stop'), document.createTextNode(paused ? '启动' : '停止')); statusText.textContent = paused ? '监控已暂停' : '监控已恢复'; renderState(); if (!paused) void refresh(); }, ctx);
     footer.append(hint, pause, permission, refreshButton); panel.append(footer);
     document.body.append(panel, configDialog); (document.querySelector('#nspp-tools') || document.body).prepend(launch);

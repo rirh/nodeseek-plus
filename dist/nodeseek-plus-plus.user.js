@@ -7,6 +7,7 @@
 // @match        https://www.nodeseek.com/*
 // @match        https://www.deepflood.com/*
 // @connect      api.nodeimage.com
+// @connect      rss.nodeseek.com
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
@@ -8067,6 +8068,67 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		},
 		imageUpload
 	];
+	function parseMonitorRSS(xml) {
+		const doc = new DOMParser().parseFromString(xml, "application/xml");
+		if (doc.querySelector("parsererror") || !doc.querySelector("rss > channel")) throw new Error("RSS 内容无效");
+		const posts = new Map();
+		for (const item of doc.querySelectorAll("channel > item")) {
+			const text = (name) => item.getElementsByTagName(name)[0]?.textContent?.trim() || "";
+			const title = text("title");
+			let url;
+			try {
+				url = new URL(text("link"));
+			} catch {
+				continue;
+			}
+			const id = url.pathname.match(/^\/post-(\d+)(?:-\d+)?$/)?.[1];
+			if (!id || !title || url.origin !== "https://www.nodeseek.com") continue;
+			posts.set(id, {
+				id,
+				title,
+				url: url.href,
+				category: text("category")
+			});
+		}
+		return [...posts.values()];
+	}
+	function requestMonitorRSS(signal) {
+		return new Promise((resolve, reject) => {
+			if (signal.aborted) {
+				reject(new Error("已取消"));
+				return;
+			}
+			const cleanup = () => signal.removeEventListener("abort", cancel);
+			const request = _GM_xmlhttpRequest({
+				method: "GET",
+				url: "https://rss.nodeseek.com/",
+				anonymous: true,
+				timeout: 2e4,
+				headers: { Accept: "application/rss+xml, application/xml, text/xml" },
+				onload: (response) => {
+					cleanup();
+					if (response.status === 200) resolve(response.responseText);
+					else reject(new Error(`RSS HTTP ${response.status}`));
+				},
+				onerror: () => {
+					cleanup();
+					reject(new Error("RSS 连接失败"));
+				},
+				ontimeout: () => {
+					cleanup();
+					reject(new Error("RSS 请求超时"));
+				},
+				onabort: () => {
+					cleanup();
+					reject(new Error("已取消"));
+				}
+			});
+			function cancel() {
+				request.abort();
+			}
+			signal.addEventListener("abort", cancel, { once: true });
+		});
+	}
 	function compileMonitorRules(value) {
 		const errors = [];
 		return {
@@ -8133,29 +8195,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	var monitoringFeatures = [{
 		id: "monitor",
 		title: "帖子监控与抽奖追踪",
-		description: "后台标签页每隔至少 60 秒检查；交易、抽奖和关键词共用请求。开奖提示仅为线索，需人工核实中奖。",
+		description: "使用 NodeSeek RSS 监控新帖，正则匹配标题，后台标签页可运行。开奖提示仅为线索，需人工核实中奖。",
 		group: "监控",
 		defaults: {
 			enabled: true,
-			trades: true,
-			lotteries: true,
 			interval: 300
 		},
-		fields: {
-			trades: {
-				label: "显示最新交易",
-				type: "text"
-			},
-			lotteries: {
-				label: "显示最新抽奖",
-				type: "text"
-			},
-			interval: {
-				label: "刷新间隔（秒，60–3600）",
-				type: "number"
-			}
-		},
+		fields: { interval: {
+			label: "刷新间隔（秒，60–3600）",
+			type: "number"
+		} },
 		mount(ctx) {
+			if (location.hostname !== "www.nodeseek.com") return;
 			const panel = document.createElement("dialog");
 			panel.className = "nspp-monitor";
 			panel.setAttribute("aria-label", "帖子监控");
@@ -8277,7 +8328,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			let last = 0;
 			let paused = false;
 			let manualCheck = false;
-			const cooldownKey = "request-cooldown";
+			const cooldownKey = "rss-request-cooldown";
 			const hasWork = () => !!(rules.length || readTracked().length);
 			const cooling = () => (ctx.get(cooldownKey) || 0) > Date.now();
 			function renderState() {
@@ -8342,16 +8393,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				});
 				return result;
 			}
-			async function getPosts(path) {
-				const text = await requestPage(path);
-				const doc = new DOMParser().parseFromString(text, "text/html");
-				const posts = parsePosts(doc);
-				if (!posts.length && !doc.querySelector(".post-list")) {
-					ctx.set(cooldownKey, Date.now() + 6e5);
-					throw new Error("列表不可用，可能需要完成站点验证");
-				}
-				return posts;
-			}
 			function render(label, posts) {
 				const section = document.createElement("section");
 				output.append(section);
@@ -8397,7 +8438,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					renderTracks();
 				}
 			}
-			const snapshotKey = `snapshot:${user || "guest"}`;
+			const snapshotKey = `rss-snapshot:${user || "guest"}`;
 			const legacy = GM_getValue$1(`nspp:settings:${location.hostname}`, {});
 			let keywordText = ctx.get("match-keywords") ?? legacy.monitor?.keywords ?? "";
 			ctx.set("match-keywords", keywordText);
@@ -8424,7 +8465,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const feedback = document.createElement("span");
 			feedback.setAttribute("role", "status");
 			const explanation = document.createElement("small");
-			explanation.textContent = "每行一个正则，任意命中标题或正文即收录。默认忽略大小写；例如 vmiss|搬瓦工，或 /香港.*年付/i。更新会清空旧结果并重新检查。";
+			explanation.textContent = "每行一个正则，任意命中RSS 标题即收录。默认忽略大小写；例如 vmiss|搬瓦工，或 /香港.*年付/i。更新会清空旧结果并重新检查。";
 			const configDialog = document.createElement("dialog");
 			configDialog.className = "nspp-monitor nspp-monitor-config";
 			configDialog.setAttribute("aria-label", "监控配置");
@@ -8482,7 +8523,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				timer = setInterval(() => {
 					refresh();
 				}, interval);
-				hint.textContent = `${seconds} 秒 / 次 · 请求间隔 ≥5秒 · 每5分钟最多12次`;
+				hint.textContent = `${seconds} 秒 / 次 · NodeSeek RSS`;
 				refreshButton.title = "立即检查一次（不等待自动刷新周期）";
 				keywordText = input.value;
 				rules = compiled.rules;
@@ -8495,7 +8536,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				scanned.clear();
 				ctx.set(snapshotKey, void 0);
 				output.replaceChildren();
-				contentCache.clear();
 				paused = false;
 				pause.replaceChildren(toolIcon("stop"), document.createTextNode("停止"));
 				renderUnread();
@@ -8503,38 +8543,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				configDialog.close();
 				refresh(true, "配置已更新，旧结果已清空，开始检查");
 			}, { signal: ctx.signal });
-			const match = (post) => rules.find((rule) => rule.matches(post.title) || !!post.content && rule.matches(post.content));
-			const contentCache = new Map();
-			const waiting = [];
-			let active = 0;
-			async function content(post) {
-				const cached = contentCache.get(post.id);
-				if (cached && Date.now() - cached.at < 18e5) return cached.result;
-				const result = (async () => {
-					if (active >= 2) await new Promise((resolve) => waiting.push(resolve));
-					active++;
-					try {
-						if (ctx.signal.aborted) return "";
-						const html = await requestPage(post.url);
-						const body = new DOMParser().parseFromString(html, "text/html").querySelector(".nsk-post .post-content, .post-content, .nsk-post .markdown-body");
-						if (!body) {
-							ctx.set(cooldownKey, Date.now() + 6e5);
-							throw new Error("主帖正文不可用");
-						}
-						body.querySelectorAll("script, style").forEach((node) => node.remove());
-						return body.textContent?.trim() || "";
-					} finally {
-						active--;
-						waiting.shift()?.();
-					}
-				})();
-				contentCache.set(post.id, {
-					at: Date.now(),
-					result
-				});
-				if (contentCache.size > 200) contentCache.delete(contentCache.keys().next().value);
-				return result;
-			}
+			const match = (post) => rules.find((rule) => rule.matches(post.title));
 			const highlighted = new Set();
 			function highlight(node, post) {
 				const rule = match(post);
@@ -8557,21 +8566,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const row = Array.from(document.querySelectorAll(".post-title a")).find((link) => link.href === post.url)?.closest(".post-list-item");
 					if (!row || scanned.get(row) === post.title) continue;
 					scanned.set(row, post.title);
-					highlight(row, post);
-					if (match(post) !== rules[0]) content(post).then((body) => {
-						if (!ctx.signal.aborted && row.isConnected && scanned.get(row) === post.title) highlight(row, {
-							...post,
-							content: body
-						});
-					}).catch(() => {});
+					const cached = ctx.get(snapshotKey)?.home.find((item) => item.url === post.url);
+					highlight(row, cached || post);
 				}
-				const body = document.querySelector(".nsk-post .post-content, .post-content");
-				if (body) highlight(body, {
-					id: currentId || "",
-					title: document.title,
-					url: location.href,
-					content: body.textContent || ""
-				});
 			};
 			function display(snapshot) {
 				output.replaceChildren();
@@ -8615,17 +8612,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				try {
 					if (!await withTabLock(`monitor:${user || "guest"}`, force ? 0 : interval, async () => {
 						if (ctx.signal.aborted) return;
-						const home = ctx.get("lotteries") || rules.length ? await getPosts("/") : [];
-						const trades = ctx.get("trades") ? await getPosts("/categories/trade") : [];
+						const home = parseMonitorRSS(await requestMonitorRSS(ctx.signal));
+						const trades = [];
 						if (ctx.signal.aborted) return;
-						if (rules.length) await Promise.all([...new Map([...home, ...trades].map((post) => [post.id, post])).values()].map(async (post) => {
-							if (match(post) !== rules[0]) try {
-								post.content = await content(post);
-							} catch {}
-						}));
-						if (ctx.signal.aborted) return;
-						scanned.clear();
-						scan();
 						const snapshot = {
 							home,
 							trades,
@@ -8633,6 +8622,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						};
 						ctx.set(snapshotKey, snapshot);
 						display(snapshot);
+						scanned.clear();
+						scan();
 						const matches = [...new Map([...home, ...trades].map((post) => [post.id, post])).values()].filter((post) => match(post));
 						const seenKey = `seen-posts:${user || "guest"}`;
 						const seen = ctx.get(seenKey);
@@ -8646,7 +8637,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								id: post.id,
 								title: post.title,
 								url: post.url,
-								content: post.content,
 								found: Date.now()
 							})), ...readUnread()].map((post) => [post.id, post])).values()].slice(0, 200));
 							renderUnread();
@@ -8664,6 +8654,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					}
 				} catch {
 					if (!ctx.signal.aborted) {
+						ctx.set(cooldownKey, Date.now() + 6e4);
 						if (force) ctx.notify("检查未完成，请检查登录、站点验证或冷却状态");
 						const cached = ctx.get(snapshotKey);
 						statusText.textContent = `检查未完成，将在冷却结束后的监控周期重试${cached ? ` · 保留 ${new Date(cached.at).toLocaleTimeString()} 的结果` : " · 请确认论坛可正常访问"}；可检查登录或站点验证`;
@@ -8720,7 +8711,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}, ctx);
 			refreshButton.title = "立即检查一次（不等待自动刷新周期）";
 			const hint = document.createElement("span");
-			hint.textContent = `${interval / 1e3} 秒 / 次 · 请求间隔 ≥5秒 · 每5分钟最多12次`;
+			hint.textContent = `${interval / 1e3} 秒 / 次 · NodeSeek RSS`;
 			const pause = control("停止", () => {
 				paused = !paused;
 				pause.replaceChildren(toolIcon(paused ? "play" : "stop"), document.createTextNode(paused ? "启动" : "停止"));
