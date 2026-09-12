@@ -347,3 +347,10 @@
 .nspp-monitor-config .nspp-monitor-editor > small, .nspp-monitor-config .nspp-monitor-editor > span { flex-basis: auto; }
 .nspp-monitor-config .nspp-monitor-editor > button { align-self: flex-end; min-width: 72px; }
 @media (max-width: 600px) { .nspp-monitor-config { width: 100%; margin: auto 0 0; border-radius: 12px 12px 0 0; } }
+.md-editor .nspp-upload-status { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-left: auto; padding: 0 6px; border: 0; background: transparent; font-size: 11px; line-height: 24px; }
+.nspp-upload-status [hidden] { display: none !important; }
+.nspp-upload-status [role="status"] { font-size: 11px; opacity: .7; overflow-wrap: anywhere; }
+.nspp-upload-status a { color: inherit; font-size: 11px; text-decoration: none; }
+.nspp-upload-status a:hover { text-decoration: underline; }
+.nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
+.nspp-upload-status button svg { width: 16px; height: 16px; }

@@ -1,3 +1,4 @@
+import { siteIcon } from './post-interaction-data';
 import { getNodeImageKey, uploadNodeImage } from './nodeimage-upload';
 import { uploadRequest, uploadResult } from './actions-upload-protocol';
 import type { Feature } from '../core/types';
@@ -22,7 +23,7 @@ export const imageUpload: Feature = {
     const checkLogin = () => {
       if (ctx.get<string>('provider') !== 'NodeImage' || apiKey || !bars.length || Date.now() - lastCheck < 3000) return;
       lastCheck = Date.now();
-      void ensureKey().then(() => { if (!ctx.signal.aborted) bars.forEach(bar => { bar.querySelector<HTMLElement>('[role="status"]')!.textContent = 'NodeImage 已连接，可选择、粘贴或拖拽图片'; }); }).catch(() => { /* Login link and manual key remain available. */ });
+      void ensureKey().then(() => { if (!ctx.signal.aborted) bars.forEach(bar => { bar.querySelector<HTMLElement>('[role="status"]')!.textContent = 'NodeImage 已连接'; bar.querySelector<HTMLElement>('a')!.hidden = true; }); }).catch(() => { /* The login link remains available. */ });
     };
     window.addEventListener('focus', checkLogin, { signal: ctx.signal });
     function scan() {
@@ -31,11 +32,12 @@ export const imageUpload: Feature = {
         const cm = (host.querySelector('.CodeMirror') as (HTMLElement & { CodeMirror?: Editor }) | null)?.CodeMirror;
         const ta = host.querySelector<HTMLTextAreaElement>('textarea'); if (!cm && !ta) return;
         bound.add(host);
-        const bar = document.createElement('div'); bar.className = 'nspp-compose';
-        const official = document.createElement('a'); official.href = 'https://www.nodeimage.com/'; official.target = '_blank'; official.rel = 'noopener noreferrer'; official.textContent = '登录 NodeImage（官方图床）'; official.hidden = ctx.get<string>('provider') !== 'NodeImage';
+        const bar = document.createElement('div'); bar.className = 'nspp-compose nspp-upload-status';
+        const nodeImage = ctx.get<string>('provider') === 'NodeImage';
+        const official = document.createElement('a'); official.href = 'https://www.nodeimage.com/'; official.target = '_blank'; official.rel = 'noopener noreferrer'; official.textContent = '登录 NodeImage'; official.hidden = ctx.get<string>('provider') !== 'NodeImage';
         const key = document.createElement('input'); key.type = 'password'; key.placeholder = '图床 API Key / Token（不保存）'; key.autocomplete = 'off'; key.setAttribute('aria-label', '图床 API Key / Token');
         key.addEventListener('input', () => { apiKey = key.value.trim(); }, { signal: ctx.signal });
-        const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.accept = 'image/*'; input.setAttribute('aria-label', '选择要上传至所选图床的图片');
+        const input = document.createElement('input'); input.type = 'file'; input.hidden = true; input.multiple = true; input.accept = 'image/*'; input.setAttribute('aria-label', '选择要上传至所选图床的图片');
         const status = document.createElement('span'); status.setAttribute('role', 'status');
         let uploading = false;
         async function uploadFiles(files: File[]) {
@@ -70,11 +72,23 @@ export const imageUpload: Feature = {
             const markdown = `![image](<${url.href.replace(/>/g, '%3E')}>)`;
             if (cm) { cm.replaceSelection(markdown); cm.focus(); }
             else { ta!.setRangeText(markdown, ta!.selectionStart, ta!.selectionEnd, 'end'); ta!.dispatchEvent(new Event('input', { bubbles: true })); }
-            status.textContent = '上传完成，图片链接已插入'; return true;
-          } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; } if (!ctx.signal.aborted) status.textContent = ctx.get<string>('provider') === 'NodeImage' && error instanceof Error ? error.message : '上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持'; return false; }
+            status.textContent = '上传完成'; if (nodeImage) official.hidden = true; return true;
+          } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; official.hidden = false; } if (!ctx.signal.aborted) status.textContent = ctx.get<string>('provider') === 'NodeImage' && error instanceof Error ? error.message : '上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持'; return false; }
           finally { input.disabled = false; key.disabled = false; input.value = ''; status.removeAttribute('aria-busy'); }
         }
-        bar.append(official, key, input, status); host.prepend(bar); bars.push(bar);
+        bar.append(official); if (!nodeImage) bar.append(key); bar.append(input, status);
+        const toolbar = host.querySelector<HTMLElement>('.mde-toolbar');
+        const imageSelector = '.toolbar-item.i-icon.i-icon-pic[title="图片"]';
+        host.addEventListener('click', event => {
+          if (!(event.target instanceof Element) || !event.target.closest(imageSelector)) return;
+          event.preventDefault(); event.stopImmediatePropagation();
+          if (!uploading) input.click();
+        }, { signal: ctx.signal, capture: true });
+        if (!host.querySelector(imageSelector)) {
+          const choose = document.createElement('button'); choose.type = 'button'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title); choose.append(siteIcon('pic'));
+          choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal }); bar.prepend(choose);
+        }
+        (toolbar || host).append(bar); bars.push(bar);
       });
     }
     scan(); checkLogin(); const unwatch = ctx.watch(() => { const count = bars.length; scan(); if (bars.length > count) checkLogin(); });
