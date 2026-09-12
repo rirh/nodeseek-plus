@@ -1,7 +1,7 @@
 {
   "name": "nodeseek-plus-plus",
   "private": true,
-  "version": "26.912.2343",
+  "version": "26.913.0717",
   "type": "module",
   "scripts": {
     "dev": "vite",
