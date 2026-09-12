@@ -140,3 +140,26 @@ pnpm build --mode stage
 项目声明使用 [GPL-3.0-only](LICENSE)。第三方依赖适用各自许可证，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。
 
 上游功能对照和参考来源见 [功能矩阵](docs/feature-matrix.md)；`references/upstream/` 用于保留参考材料，不作为运行时入口。
+
+
+### 一键发布与油叉同步
+
+先提交源码修改，再执行：
+
+```bash
+make deploy
+```
+
+命令要求位于 `main` 且工作区干净，依次检查远端、递增版本、类型检查、构建、测试，自动提交版本及两个 dist 文件，然后推送 `origin/main`。不会强制推送或自动合并远端修改。同一分钟连续发布也会递增版本。
+
+只生成本地产物可使用 `make deploy-local`。发布中途失败会保留文件和提交；检查并处理当前状态后重试。若只是推送失败，可直接重试 `git push origin main`。
+
+油叉需完成一次性绑定：
+
+1. 在已发布脚本的管理/同步页面设置代码同步地址：
+   `https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js`
+2. 在油叉账户的 Webhook 同步页面取得专属接收地址及配置说明。
+3. 在 GitHub 仓库 Settings → Webhooks 中按油叉说明添加接收地址，订阅 push 事件。
+4. 发布后检查 GitHub Webhook 的最近投递，以及油叉脚本页面的版本号与同步错误。
+
+Webhook 接收地址可能包含账户凭据，不要提交到仓库。`make deploy` 推送成功只代表 GitHub 已更新，油叉异步同步仍需检查；首次发布与同步绑定不会由该命令自动创建。

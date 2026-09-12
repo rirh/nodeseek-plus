@@ -1,10 +1,13 @@
-# Existing userscript convention: deployment prepares local installable artifacts.
-# No remote publishing endpoint has been configured.
-.PHONY: deploy deploy-stage
-deploy: update-version
+.PHONY: deploy deploy-local deploy-stage
+# Source changes must be committed before publishing.
+deploy:
+	@node scripts/deploy.mjs
+
+deploy-local: update-version
 	@$(PKG_BIN) run typecheck
 	@$(PKG_BIN) run build
 	@echo '本地分发文件已生成：dist/nodeseek-plus-plus.user.js'
+
 deploy-stage: update-version
 	@$(PKG_BIN) run typecheck
 	@$(PKG_BIN) run build --mode stage
