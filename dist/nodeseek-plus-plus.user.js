@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.912.1132
+// @version      26.912.1525
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @match        https://www.nodeseek.com/*
@@ -18,31 +18,48 @@
 /*!
 # Third-party notices
 
-This project is based on the behavior and relevant source of these userscripts. Original snapshots are retained under `references/upstream/`; they are not bundled as three independently running scripts.
+NodeSeek++ uses the following third-party libraries. Their respective license
+terms apply to those components.
 
-- **Nodeseek Pro 1.0.8** — GPL-3.0 in source metadata; no author metadata in this snapshot. Source: https://update.greasyfork.org/scripts/567109/Nodeseek%20Pro.user.js
-- **NodeSeek X 1.1.5**, **dabao** — GPL-3.0. Source: https://update.greasyfork.org/scripts/479426/NodeSeek%20X.user.js
-- **NodeSeek 增强助手 2.6.0**, **weiruankeji2025** — MIT. Source: https://update.greasyfork.org/scripts/559310/NodeSeek%20%E5%A2%9E%E5%BC%BA%E5%8A%A9%E6%89%8B.user.js
+## date-fns 4.4.0
 
-NodeSeek++ is distributed under GPL-3.0-only; see LICENSE. Preserve this notice and the corresponding source when redistributing the generated userscript.
+Source: https://github.com/date-fns/date-fns
 
-## MIT permission notice (NodeSeek 增强助手)
+MIT License
 
-Copyright holders: the original authors and contributors, including weiruankeji2025.
+Copyright (c) 2021 Sasha Koss and Lesha Koss https://kossnocorp.mit-license.org
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-## highlight.js
 
-Bundled code highlighting uses highlight.js (BSD-3-Clause). Its exact package license is reproduced in `references/highlight.js.LICENSE`. Only core and selected languages are bundled. Happy DOM, Vite, TypeScript and vite-plugin-monkey are development/build tools, not additional page runtimes.
+## GSAP 3.15.0
 
-## GSAP
+Source: https://gsap.com/
+License: Standard "no charge" license, https://gsap.com/standard-license
+See the copyright and license notices retained in the bundled GSAP source.
 
-Attendance animations bundle GSAP core and CSSPlugin 3.15.0, copyright GreenSock. GSAP retains its own Standard License: https://gsap.com/standard-license. The project GPL notice does not replace the bundled dependency's license. No external runtime script is loaded.
+## highlight.js 11.12.0
+
+Source: https://github.com/highlightjs/highlight.js
+License: BSD 3-Clause.
+The full license is preserved in references/highlight.js.LICENSE and appended
+to this notice in the generated userscript banner by vite.config.ts.
 
 
 BSD 3-Clause License
@@ -317,7 +334,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element("small", `v26.912.1132`));
+		heading.append(title, element("small", `v26.912.1525`));
 		const close = element("button", "关闭");
 		close.type = "button";
 		header.append(heading);
