@@ -6,9 +6,9 @@ import { authorId, forumAge, registration, trustScore, type UserProfile } from '
 
 
 export const userBadges: Feature = {
-  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, colors: 'muted', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
+  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
   fields: {
-    colors: { label: '徽章配色', type: 'select', options: [{ label: '柔和单色', value: 'muted' }, { label: '自定义', value: 'custom' }, { label: '原有彩色', value: 'original' }] },
+    colors: { label: '徽章配色', type: 'select', options: [{ label: '原有彩色（默认）', value: 'original' }, { label: '自定义', value: 'custom' }, { label: '柔和单色', value: 'muted' }] },
     levelColor: { label: '等级与加入天数颜色', type: 'color' }, trustColor: { label: '信任分颜色', type: 'color' }, roleColor: { label: '身份徽章颜色', type: 'color' },
   },
   mount(ctx) {

@@ -208,6 +208,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	async function request(url, options = {}) {
 		const target = new URL(url, location.origin);
 		if (!/^https?:$/.test(target.protocol)) throw new Error("不支持的请求地址");
+		const profile = target.pathname.startsWith("/api/account/getInfo/");
 		const { responseType = "json", ...init } = options;
 		const execute = async () => {
 			init.signal?.throwIfAborted();
@@ -235,10 +236,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		return enqueue(async () => {
 			const scheduled = async () => {
 				const cooldownKey = `nspp:request-cooldown:${location.host}`;
-				const lastKey = `nspp:request-last:${location.host}`;
+				const lastKey = `nspp:profile-completed:${location.host}`;
 				init.signal?.throwIfAborted();
 				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
-				const delay = GM_getValue$1(lastKey, 0) + 3e3 - Date.now();
+				const delay = profile ? GM_getValue$1(lastKey, 0) + 300 - Date.now() : 0;
 				if (delay > 0) await new Promise((resolve, reject) => {
 					const abort = () => {
 						clearTimeout(timer);
@@ -252,11 +253,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				});
 				init.signal?.throwIfAborted();
 				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
-				GM_setValue$1(lastKey, Date.now());
-				return execute();
+				try {
+					return await execute();
+				} finally {
+					if (profile) GM_setValue$1(lastKey, Date.now());
+				}
 			};
 			return navigator.locks?.request ? navigator.locks.request("nspp:forum-requests", { signal: init.signal ?? void 0 }, scheduled) : scheduled();
-		}, target.pathname.startsWith("/api/account/getInfo/") ? 1 : 0);
+		}, profile ? 1 : 0);
 	}
 	var validObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 	function normalizeSettings(features, value) {
@@ -3704,7 +3708,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		group: "用户",
 		defaults: {
 			enabled: true,
-			colors: "muted",
+			colors: "original",
 			levelColor: "#9198a1",
 			trustColor: "#9198a1",
 			roleColor: "#9198a1"
@@ -3715,16 +3719,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				type: "select",
 				options: [
 					{
-						label: "柔和单色",
-						value: "muted"
+						label: "原有彩色（默认）",
+						value: "original"
 					},
 					{
 						label: "自定义",
 						value: "custom"
 					},
 					{
-						label: "原有彩色",
-						value: "original"
+						label: "柔和单色",
+						value: "muted"
 					}
 				]
 			},

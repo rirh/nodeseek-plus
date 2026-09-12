@@ -101,7 +101,7 @@ test('attendance failure does not cache success; retry succeeds once per account
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
     assert.equal(calls, 1, 'failed attempts are briefly throttled across tabs');
     f.storage.delete('nspp:lock:www.nodeseek.com:attendance:7');
-    f.storage.delete('nspp:request-last:www.nodeseek.com');
+    f.storage.delete('nspp:profile-completed:www.nodeseek.com');
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
     assert.ok(f.storage.get('nspp:state:www.nodeseek.com:attendance'));
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
@@ -160,7 +160,7 @@ test('user badges load visible names, share requests and can retry failed profil
     assert.equal(calls, 1);
     assert.deepEqual(Array.from(f.window.document.querySelectorAll('.author-info [data-nspp-role]'), tag => tag.getAttribute('data-nspp-role')), ['admin', 'founder', 'owner', 'owner', 'admin']);
     assert.equal(f.window.document.querySelectorAll('.nspp-user-badges button').length, 2);
-    f.storage.delete('nspp:request-last:www.nodeseek.com');
+    f.storage.delete('nspp:profile-completed:www.nodeseek.com');
     for (const button of f.window.document.querySelectorAll('.nspp-user-badges button')) (button as HTMLElement).click();
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(calls, 2);
@@ -200,7 +200,7 @@ test('one block button per name reflects queried state and synchronizes after ch
     assert.deepEqual(buttons.map(b => b.textContent), ['取消屏蔽', '取消屏蔽']);
     assert.deepEqual(calls, ['/api/block-list/list']);
     buttons[0].click(); buttons[1].click();
-    await new Promise(resolve => setTimeout(resolve, 3100));
+    await new Promise(resolve => setTimeout(resolve, 50));
     assert.deepEqual(calls, ['/api/block-list/list', '/api/block-list/del']);
     assert.deepEqual(buttons.map(b => b.textContent), ['屏蔽', '屏蔽']);
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -422,7 +422,7 @@ test('visible rows load counts automatically and queue beyond the concurrency li
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 6300));
+    await new Promise(resolve => setTimeout(resolve, 800));
     assert.equal(reads, 3);
     assert.equal(peak, 1);
     for (const bar of f.window.document.querySelectorAll('.post-list-item .nspp-list-actions')) {
@@ -724,7 +724,7 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 6300));
+    await new Promise(resolve => setTimeout(resolve, 800));
     const doc = f.window.document;
     const card = doc.querySelector<HTMLElement>('.nspp-user-hover')!;
     assert.equal(card.hidden, true);
@@ -836,7 +836,7 @@ test('avatar cards receive synchronized block controls after delayed login initi
     f.window.document.querySelector<HTMLAnchorElement>('a')!.dispatchEvent(new f.window.Event('mouseenter'));
     assert.equal(buttons[0].parentElement!.hidden, false);
     buttons[0].click();
-    await new Promise(resolve => setTimeout(resolve, 3100));
+    await new Promise(resolve => setTimeout(resolve, 50));
     assert.deepEqual(buttons.map(button => button.textContent), ['屏蔽', '屏蔽']);
   } finally { await f.close(); }
 });
@@ -953,15 +953,16 @@ test('rate-limited profile requests stop queued traffic and retain Retry-After',
   } finally { await f.close(); }
 });
 
-test('forum profile requests have a minimum three second gap', async () => {
+test('forum profile requests use a 300ms gap instead of a three second delay', async () => {
   const times: number[] = [];
   const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
     window.fetch = (async () => { times.push(Date.now()); return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } })); }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 3200));
+    await new Promise(resolve => setTimeout(resolve, 800));
     assert.equal(times.length, 2);
-    assert.ok(times[1]! - times[0]! >= 2990);
+    assert.ok(times[1]! - times[0]! >= 290);
+    assert.ok(times[1]! - times[0]! < 750);
   } finally { await f.close(); }
 });
 
@@ -977,5 +978,16 @@ test('list counts are on demand and missing counts never create a hidden page', 
     await new Promise(resolve => setTimeout(resolve, 550));
     assert.equal(calls, 1);
     assert.equal(f.window.document.querySelectorAll('iframe[src]').length, 0);
+  } finally { await f.close(); }
+});
+
+test('badge colors retain the original style by default', async () => {
+  const f = await fixture({ 'official-blocklist': { enabled: false } });
+  try {
+    const settings = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
+    settings.querySelector<HTMLButtonElement>('.launcher')!.click();
+    const select = [...settings.querySelectorAll('select')].find(control => [...control.options].some(option => option.value === 'original'))!;
+    assert.equal(select.value, 'original');
+    assert.equal([...f.window.document.querySelectorAll('style')].some(style => style.textContent?.includes('color:var(--nspp-muted, #9198a1)!important')), false);
   } finally { await f.close(); }
 });

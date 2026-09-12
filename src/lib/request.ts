@@ -6,6 +6,7 @@ const enqueue = createRequestQueue();
 export async function request<T>(url: string, options: RequestInit & { responseType?: "json" | "text" } = {}): Promise<T> {
   const target = new URL(url, location.origin);
   if (!/^https?:$/.test(target.protocol)) throw new Error("不支持的请求地址");
+  const profile = target.pathname.startsWith('/api/account/getInfo/');
   const { responseType = "json", ...init } = options;
   const execute = async () => {
     init.signal?.throwIfAborted();
@@ -28,10 +29,10 @@ export async function request<T>(url: string, options: RequestInit & { responseT
   return enqueue(async () => {
     const scheduled = async () => {
       const cooldownKey = `nspp:request-cooldown:${location.host}`;
-      const lastKey = `nspp:request-last:${location.host}`;
+      const lastKey = `nspp:profile-completed:${location.host}`;
       init.signal?.throwIfAborted();
       if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
-      const delay = GM_getValue(lastKey, 0) + 3000 - Date.now();
+      const delay = profile ? GM_getValue(lastKey, 0) + 300 - Date.now() : 0;
       if (delay > 0) await new Promise<void>((resolve, reject) => {
         const abort = () => { clearTimeout(timer); reject(init.signal?.reason); };
         const timer = setTimeout(() => { init.signal?.removeEventListener('abort', abort); resolve(); }, delay);
@@ -39,11 +40,11 @@ export async function request<T>(url: string, options: RequestInit & { responseT
       });
       init.signal?.throwIfAborted();
       if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
-      GM_setValue(lastKey, Date.now());
-      return execute();
+      try { return await execute(); }
+      finally { if (profile) GM_setValue(lastKey, Date.now()); }
     };
     return navigator.locks?.request
       ? navigator.locks.request('nspp:forum-requests', { signal: init.signal ?? undefined }, scheduled)
       : scheduled();
-  }, target.pathname.startsWith('/api/account/getInfo/') ? 1 : 0);
+  }, profile ? 1 : 0);
 }
