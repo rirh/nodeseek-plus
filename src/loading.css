@@ -1,3 +1,5 @@
-[aria-busy="true"], .nspp-sweep-shine { -webkit-text-fill-color: transparent; background: linear-gradient(90deg, currentColor 0%, currentColor 40%, rgba(255,255,255,.9) 50%, currentColor 60%, currentColor 100%) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; animation: nspp-sweep-shine 4s linear infinite; }
-@keyframes nspp-sweep-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { [aria-busy="true"], .nspp-sweep-shine { animation: none; -webkit-text-fill-color: currentColor; background: none; } }
+[aria-busy="true"], .nspp-sweep-shine { opacity: 1 !important; -webkit-text-fill-color: currentColor; cursor: progress; background-image: linear-gradient(110deg, transparent 35%, #ffffff80 50%, transparent 65%); background-size: 250% 100%; background-repeat: no-repeat; animation: nspp-busy-feedback 1.8s linear infinite; }
+@keyframes nspp-busy-feedback { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+.nspp-action[aria-busy="true"] > svg { transform-origin: center; animation: nspp-attendance-working .7s ease-in-out infinite; }
+@keyframes nspp-attendance-working { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-3px) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { [aria-busy="true"], .nspp-sweep-shine, .nspp-action[aria-busy="true"] > svg { animation: none; background-image: none; } }

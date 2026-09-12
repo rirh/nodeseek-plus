@@ -2,7 +2,7 @@
 #nspp-tools button, [data-nspp-resolve], .nspp-action { font: inherit; font-size: .8rem; padding: .35rem .6rem; border: 1px solid var(--border-color, #929a9380); border-radius: .4rem; color: var(--text-color, inherit); background: var(--bg-color, Canvas); cursor: pointer; }
 #nspp-tools a, [data-nspp-footprints] a { text-underline-offset: .2em; }
 #nspp-tools a:hover, [data-nspp-footprints] a:hover { text-decoration: underline; }
-#nspp-tools button:disabled, .nspp-compose button:disabled { opacity: .6; cursor: wait; }
+#nspp-tools button:disabled, .nspp-compose button:disabled { opacity: 1; cursor: wait; }
 #nspp-tools :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { [class*="nspp-"] { scroll-behavior: auto !important; } }
 .nspp-monitor { width: min(42rem, 92vw); max-height: 85dvh; overflow: auto; padding: 1rem; border: 1px solid var(--border-color, #929a9380); border-radius: .75rem; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); }
@@ -76,7 +76,7 @@
 
 .nspp-block-toggle { vertical-align: middle; margin-left: 5px; padding: 0 2px; min-width: 0; border: 0; border-radius: 4px; background: transparent; color: #59636e; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; cursor: pointer; }
 .nspp-block-toggle[data-blocked="true"] { color: #cf222e; border-color: #ff818280; }
-.nspp-block-toggle:disabled { opacity: .6; cursor: wait; }
+.nspp-block-toggle:disabled { opacity: 1; cursor: wait; }
 .dark-layout .nspp-block-toggle { color: #9198a1; border-color: #3d444d; }
 
 .nspp-user-badges[aria-busy="true"] { min-width: 88px; min-height: 16px; border-radius: 4px; color: #59636e; }
@@ -270,8 +270,10 @@
 .nspp-monitor h3 { margin: 0; font-size: 14px; }
 .nspp-monitor button { padding: 3px 8px; min-height: 28px; border: 1px solid #818b9838; border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
 .nspp-monitor button:hover { background: #818b9814; }
-.nspp-monitor button:disabled { opacity: .5; cursor: wait; }
+.nspp-monitor button:disabled { opacity: 1; cursor: wait; }
 .nspp-monitor > p { margin: 0; padding: 6px 12px; font-size: 11px; opacity: .65; }
+.nspp-monitor-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.nspp-monitor-results:empty { display: none; }
 .nspp-monitor-results { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 0 12px 8px; }
 .nspp-monitor-results section + section { border-top: 1px solid #818b9828; margin-top: 8px; padding-top: 4px; }
 .nspp-monitor h4 { display: flex; align-items: center; gap: 6px; margin: 5px 0; font-size: 11px; color: #768390; }
@@ -303,19 +305,10 @@
 .nspp-monitor header, .nspp-monitor footer, .nspp-monitor-results section + section { border: 0; }
 .nspp-monitor-results section + section { margin-top: 12px; }
 .nspp-monitor footer { background: #818b980a; }
-.nspp-monitor-unread { padding: 6px 12px; max-height: 24dvh; overflow: auto; flex-shrink: 0; background: #0969da08; }
-.nspp-monitor-unread[hidden] { display: none; }
-.nspp-monitor-unread h4 { justify-content: space-between; color: #0969da; }
-.nspp-monitor-unread button { border: 0; font-size: 10px; }
 
 #nspp-tools button[data-monitor-state] { position: relative; }
-#nspp-tools button[data-monitor-state]::before { content: ''; position: absolute; bottom: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: #929aa5; }
-#nspp-tools button[data-monitor-state="running"] { color: #218044; border-color: #21804466; background: #2180440c; }
-#nspp-tools button[data-monitor-state="running"]::before { background: #2da85b; animation: nspp-monitor-pulse 2.4s ease-in-out infinite; }
-#nspp-tools button[data-monitor-state="cooldown"]::before { background: #cc8b16; }
+#nspp-tools button[data-monitor-state="running"] { color: #218044; border-color: #218044; background: var(--bg-color, Canvas); }
 .dark-layout #nspp-tools button[data-monitor-state="running"] { color: #70cf91; }
-@keyframes nspp-monitor-pulse { 0%, 100% { box-shadow: 0 0 0 0 #2da85b00; } 50% { box-shadow: 0 0 0 3px #2da85b33; } }
-@media (prefers-reduced-motion: reduce) { #nspp-tools button[data-monitor-state]::before { animation: none; } }
 .nspp-monitor-editor { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 4px 12px 8px; flex: none; }
 .nspp-monitor-editor label { flex: 1; min-width: 180px; font-size: 11px; color: inherit; }
 .nspp-monitor-editor textarea { display: block; width: 100%; margin-top: 4px; padding: 6px 8px; border: 0; border-radius: 6px; background: #818b9810; color: inherit; font: inherit; resize: vertical; max-height: 18dvh; }
@@ -354,3 +347,30 @@
 .nspp-upload-status a:hover { text-decoration: underline; }
 .nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
 .nspp-upload-status button svg { width: 16px; height: 16px; }
+
+.nspp-notifications { display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 100%; min-width: 0; flex: 0 0 100%; padding: 10px 0; font: inherit; }
+.nspp-notifications > span { display: flex; flex: 1; min-width: 0; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.nspp-notification-link { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font: inherit; color: inherit; text-decoration: none; }
+.nspp-notification-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-notifications :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.nspp-unread-count, .nspp-read-count { box-sizing: border-box; min-width: 20px; padding: 0 5px; border-radius: 10px; text-align: center; font: inherit; line-height: inherit; font-variant-numeric: tabular-nums; }
+.nspp-unread-count { color: white; background: #d43d4d; }
+.nspp-read-count { color: inherit; background: none; }
+.nspp-ai-compose { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; align-items: start; }
+.nspp-ai-compose textarea { flex: 1; min-width: 180px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; padding: 6px; }
+.nspp-ai-compose small { width: 100%; opacity: .7; }
+
+.nspp-original-notification { display: none !important; }
+.nspp-ecg-shine { display: none; }
+#nspp-tools button[data-monitor-state="running"] .nspp-ecg-shine { display: block; stroke: #8ce9aa; stroke-dasharray: 18 118; animation: nspp-ecg-scan 1.8s linear infinite; }
+@keyframes nspp-ecg-scan { from { stroke-dashoffset: 18; } to { stroke-dashoffset: -118; } }
+@media (prefers-reduced-motion: reduce) { #nspp-tools button[data-monitor-state="running"] .nspp-ecg-shine { display: none; animation: none; } }
+
+.nspp-notification-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.nspp-notification-icon { width: 1em; height: 1em; flex: none; }
+
+.user-stat .stat-block:has(> .nspp-notification-row) > :has(> .nspp-original-notification:only-child) { display: none; }
+.user-stat .nspp-notification-link { gap: .3em; }
+.user-stat .nspp-notification-icon { display: block; width: 1em; height: 1em; }
+.user-stat .nspp-notification-link > :is(.nspp-unread-count, .nspp-read-count) { min-width: 0; line-height: 1.25; padding-inline: .35em; }

@@ -39,9 +39,9 @@ const monitor: Feature = {
     const panel = document.createElement('dialog'); panel.className = 'nspp-monitor'; panel.setAttribute('aria-label', '帖子监控');
     const header = document.createElement('header');
     const title = document.createElement('h3'); title.textContent = '帖子监控'; header.append(title, control('关闭', () => panel.close(), ctx)); panel.append(header);
-    const launch = control('帖子监控', () => { renderUnread(); panel.showModal(); }, ctx);
+    const launch = control('帖子监控', () => { ctx.set(unreadKey, []); renderUnread(); panel.showModal(); }, ctx);
     launch.className = 'nspp-tool-icon'; launch.title = '帖子监控'; launch.setAttribute('aria-label', launch.title); launch.replaceChildren(toolIcon('monitor'));
-    const status = document.createElement('p'); status.setAttribute('role', 'status');
+    const status = document.createElement('p'); status.className = 'nspp-monitor-summary'; status.setAttribute('role', 'status');
     const spinner = document.createElement('span'); spinner.className = 'nspp-monitor-spinner'; spinner.hidden = true; spinner.setAttribute('aria-hidden', 'true');
     const statusText = document.createElement('span'); status.append(spinner, statusText); panel.append(status);
     let spin: gsap.core.Tween | undefined;
@@ -53,26 +53,16 @@ const monitor: Feature = {
       else if (!spin) spin = gsap.to(spinner, { rotation: 360, duration: .8, repeat: -1, ease: 'none' });
     }
     reducedMotion.addEventListener('change', syncAnimation, { signal: ctx.signal });
+    const stats = document.createElement('span'); stats.textContent = '0 轮 · 累计 0 帖 · 符合 0 · 不符合 0'; status.append(stats);
     const output = document.createElement('div'); output.className = 'nspp-monitor-results'; panel.append(output);
     const user = currentUser()?.member_id; const trackKey = `tracked:${user}`;
     const unreadKey = `unread-posts:${user || 'guest'}`;
-    const unreadList = document.createElement('section'); unreadList.className = 'nspp-monitor-unread'; output.before(unreadList);
     const readUnread = () => (ctx.get<(Post & { found: number })[]>(unreadKey) || []).filter(post => match(post));
     function renderUnread() {
       const posts = readUnread();
-      unreadList.replaceChildren(); unreadList.hidden = !posts.length;
       launch.toggleAttribute('data-unread', posts.length > 0);
       if (posts.length) launch.dataset.unread = 'true';
       renderState();
-      const heading = document.createElement('h4'); heading.textContent = `新发现 · ${posts.length}`;
-      heading.append(control('全部已读', () => { ctx.set(unreadKey, []); renderUnread(); }, ctx)); unreadList.append(heading);
-      const list = document.createElement('ul');
-      for (const post of posts) {
-        const item = document.createElement('li'); const link = document.createElement('a'); link.href = post.url; link.textContent = post.title;
-        link.addEventListener('click', () => { ctx.set(unreadKey, readUnread().filter(x => x.id !== post.id)); renderUnread(); }, { signal: ctx.signal });
-        item.append(link); list.append(item);
-      }
-      unreadList.append(list);
     }
     const readTracked = () => (ctx.get<Tracked[]>(trackKey) || []).filter(x => x.added > Date.now() - 30 * 86400000).slice(0, 50);
     const trackList = document.createElement('section'); trackList.className = 'nspp-monitor-tracked'; panel.append(trackList);
@@ -100,6 +90,7 @@ const monitor: Feature = {
     const cooling = () => (ctx.get<number>(cooldownKey) || 0) > Date.now();
     function renderState() {
       syncAnimation();
+      renderCountdown();
       const state = !hasWork() ? 'idle' : paused ? 'paused' : cooling() ? 'cooldown' : 'running';
       if (launch.dataset.monitorState !== state) launch.dataset.monitorState = state;
       const label = { idle: '未配置监控', paused: '监控已暂停', cooldown: '监控冷却中', running: '监控中' }[state];
@@ -134,11 +125,9 @@ const monitor: Feature = {
       requests = result.then(() => {}, () => { renderState(); });
       return result;
     }
-    function render(label: string, posts: Post[]) {
-      const section = document.createElement('section'); output.append(section);
-      const heading = document.createElement('h4'); heading.textContent = label;
-      const count = document.createElement('small'); count.textContent = String(posts.length); heading.append(count); section.append(heading);
-      if (!posts.length) { const empty = document.createElement('p'); empty.textContent = '暂无匹配帖子'; section.append(empty); return; }
+    function render(posts: Post[]) {
+      if (!posts.length) return;
+      const section = document.createElement('section'); section.setAttribute('aria-label', '符合要求的帖子'); output.append(section);
       const list = document.createElement('ul');
       for (const post of posts) { const item = document.createElement('li'); const link = document.createElement('a'); link.href = post.url; link.textContent = post.title; item.append(link); highlight(item, post); list.append(item); }
       section.append(list);
@@ -157,7 +146,7 @@ const monitor: Feature = {
         ctx.set(trackKey, updated); renderTracks();
       }
     }
-    type Snapshot = { home: Post[]; trades: Post[]; at: number };
+    type Snapshot = { home: Post[]; trades: Post[]; at: number; rounds?: number; cursor?: string; checked?: number; matched?: number; results?: Post[] };
     const snapshotKey = `rss-snapshot:${user || 'guest'}`;
     const legacy = GM_getValue<Record<string, { keywords?: string }>>(`nspp:settings:${location.hostname}`, {});
     let keywordText = ctx.get<string | undefined>('match-keywords') ?? legacy.monitor?.keywords ?? '';
@@ -189,12 +178,11 @@ const monitor: Feature = {
       const compiled = compileMonitorRules(input.value);
       if (compiled.errors.length) { feedback.textContent = `无效规则：${compiled.errors.join('、')}`; ctx.notify(feedback.textContent); return; }
       interval = seconds * 1000; ctx.set('interval', seconds);
-      clearInterval(timer); timer = setInterval(() => { void refresh(); }, interval);
-      hint.textContent = `${seconds} 秒 / 次 · NodeSeek RSS`; refreshButton.title = '立即检查一次（不等待自动刷新周期）';
+      renderCountdown(); refreshButton.title = '立即检查一次（不等待自动刷新周期）';
       keywordText = input.value; rules = compiled.rules; errors = compiled.errors;
       ctx.set('match-keywords', keywordText); ctx.set(unreadKey, []); ctx.set(`seen-posts:${user || 'guest'}`, undefined);
       highlighted.forEach(node => node.removeAttribute('data-nspp-monitor-match')); highlighted.clear(); scanned.clear();
-      ctx.set(snapshotKey, undefined); output.replaceChildren();
+      ctx.set(snapshotKey, undefined); output.replaceChildren(); stats.textContent = '0 轮 · 累计 0 帖 · 符合 0 · 不符合 0'; stats.title = '';
       paused = false; pause.replaceChildren(toolIcon('stop'), document.createTextNode('停止'));
       renderUnread(); feedback.textContent = '已更新，正在重新检查';
       configDialog.close(); void refresh(true, '配置已更新，旧结果已清空，开始检查');
@@ -224,7 +212,13 @@ const monitor: Feature = {
     function display(snapshot: Snapshot) {
       output.replaceChildren();
       for (const node of highlighted) if (!node.isConnected) highlighted.delete(node);
-      render('匹配帖子', [...new Map([...snapshot.home, ...snapshot.trades].map(post => [post.id, post])).values()].filter(post => match(post)));
+      const posts = [...new Map([...snapshot.home, ...snapshot.trades].map(post => [post.id, post])).values()];
+      const matches = posts.filter(post => match(post));
+      const checked = snapshot.checked ?? posts.length;
+      const matched = snapshot.matched ?? matches.length;
+      stats.textContent = `${snapshot.rounds ?? 0} 轮 · 累计 ${checked} 帖 · 符合 ${matched} · 不符合 ${checked - matched}`;
+      stats.title = snapshot.cursor ? `上次检查位置：帖子 #${snapshot.cursor}；下方保留最近 200 条匹配结果` : '';
+      render(snapshot.results ?? matches);
       statusText.textContent = busy ? '正在检查匹配帖子…' : `更新于 ${new Date(snapshot.at).toLocaleTimeString()}${errors.length ? ` · 无效正则：${errors.join('、')}` : ''}`;
       renderTracks();
     }
@@ -236,23 +230,35 @@ const monitor: Feature = {
       if (cooling()) { statusText.textContent = '请求冷却中，请稍后手动刷新'; if (force) ctx.notify(statusText.textContent); return; }
       if (!force && Date.now() - last < interval) { statusText.textContent = `等待下次检查 · 约 ${Math.ceil((interval - (Date.now() - last)) / 1000)} 秒后可刷新`; return; }
       if (force) ctx.notify(message);
-      manualCheck = force; busy = true; syncAnimation(); apply.disabled = true; panel.dataset.checking = 'true'; status.setAttribute('aria-busy', 'true'); last = Date.now(); statusText.textContent = '正在检查匹配帖子…'; refreshButton.disabled = true; refreshButton.setAttribute('aria-busy', 'true');
+      manualCheck = force; busy = true; syncAnimation(); renderCountdown(); apply.disabled = true; panel.dataset.checking = 'true'; status.setAttribute('aria-busy', 'true'); last = Date.now(); statusText.textContent = '正在检查匹配帖子…'; refreshButton.disabled = true; refreshButton.setAttribute('aria-busy', 'true');
       try {
         const executed = await withTabLock(`monitor:${user || 'guest'}`, force ? 0 : interval, async () => {
           if (ctx.signal.aborted) return;
           const home = parseMonitorRSS(await requestMonitorRSS(ctx.signal));
           const trades: Post[] = [];
           if (ctx.signal.aborted) return;
-          const snapshot = { home, trades, at: Date.now() }; ctx.set(snapshotKey, snapshot); display(snapshot);
+          const previous = ctx.get<Snapshot>(snapshotKey);
+          const previousPosts = [...new Map([...(previous?.home ?? []), ...(previous?.trades ?? [])].map(post => [post.id, post])).values()];
+          const previousMatches = previousPosts.filter(post => match(post));
+          const cursor = previous?.cursor ?? previousPosts.reduce((id, post) => BigInt(post.id) > BigInt(id) ? post.id : id, '0');
+          const incoming = home.filter(post => BigInt(post.id) > BigInt(cursor));
+          const matches = incoming.filter(post => match(post));
+          const snapshot: Snapshot = {
+            home, trades, at: Date.now(), rounds: (previous?.rounds ?? 0) + 1,
+            cursor: home.reduce((id, post) => BigInt(post.id) > BigInt(id) ? post.id : id, cursor),
+            checked: (previous?.checked ?? previousPosts.length) + incoming.length,
+            matched: (previous?.matched ?? previousMatches.length) + matches.length,
+            results: [...matches.sort((a, b) => Number(b.id) - Number(a.id)), ...(previous?.results ?? previousMatches)].slice(0, 200),
+          };
+          ctx.set(snapshotKey, snapshot); display(snapshot);
           scanned.clear(); scan();
-          const matches = [...new Map([...home, ...trades].map(post => [post.id, post])).values()].filter(post => match(post));
           const seenKey = `seen-posts:${user || 'guest'}`;
           const seen = ctx.get<Record<string, number> | undefined>(seenKey);
           const next = Object.fromEntries(Object.entries(seen || {}).filter(([, time]) => Date.now() - time < 30 * 86400000));
           const fresh = [...new Map(matches.map(post => [post.id, post])).values()].filter(post => !seen?.[post.id]);
           for (const post of matches) next[post.id] = Date.now();
           ctx.set(seenKey, Object.fromEntries(Object.entries(next).sort((a, b) => b[1] - a[1]).slice(0, 5000)));
-          if (seen && fresh.length) {
+          if (BigInt(cursor) > 0n && fresh.length) {
             const message = `发现 ${fresh.length} 条新帖：${fresh.slice(0, 2).map(post => post.title).join('；')}`;
             ctx.set(unreadKey, [...new Map([...fresh.map(post => ({ id: post.id, title: post.title, url: post.url, found: Date.now() })), ...readUnread()].map(post => [post.id, post])).values()].slice(0, 200));
             renderUnread();
@@ -296,13 +302,21 @@ const monitor: Feature = {
     if (ctx.get<boolean>('desktop-notifications') && typeof Notification !== 'undefined' && Notification.permission === 'granted') permission.textContent = '关闭系统通知';
     const refreshButton = control('刷新', () => { void refresh(true); }, ctx);
     refreshButton.title = '立即检查一次（不等待自动刷新周期）';
-    const hint = document.createElement('span'); hint.textContent = `${interval / 1000} 秒 / 次 · NodeSeek RSS`;
+    const hint = document.createElement('span');
+    function renderCountdown() {
+      const remaining = Math.max(0, Math.ceil((Math.max(last + interval, ctx.get<number>(cooldownKey) || 0) - Date.now()) / 1000));
+      const label = busy ? '正在检查…' : !hasWork() ? '未配置监控' : paused ? '已暂停' : cooling() ? `冷却中 · ${remaining} 秒后检查` : `下次检查 ${remaining} 秒`;
+      hint.textContent = `${label} · NodeSeek RSS`;
+    }
     const pause = control('停止', () => { paused = !paused; pause.replaceChildren(toolIcon(paused ? 'play' : 'stop'), document.createTextNode(paused ? '启动' : '停止')); statusText.textContent = paused ? '监控已暂停' : '监控已恢复'; renderState(); if (!paused) void refresh(); }, ctx);
     footer.append(hint, pause, permission, refreshButton); panel.append(footer);
     document.body.append(panel, configDialog); (document.querySelector('#nspp-tools') || document.body).prepend(launch);
     const cached = ctx.get<Snapshot>(snapshotKey); if (cached) display(cached); renderUnread(); void refresh();
     const stopScan = ctx.watch(scan);
-    let timer = setInterval(() => { void refresh(); }, interval);
+    const timer = setInterval(() => {
+      renderState();
+      if (hasWork() && !busy && !paused && !cooling() && Date.now() - last >= interval) void refresh();
+    }, 1000);
     document.addEventListener('visibilitychange', () => { void refresh(); }, { signal: ctx.signal });
     return () => { configDialog.remove(); spin?.kill(); stopScan(); highlighted.forEach(node => node.removeAttribute('data-nspp-monitor-match')); clearInterval(timer); panel.close(); panel.remove(); launch.remove(); };
   },

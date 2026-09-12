@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Window } from 'happy-dom';
 
-const bundle = readFileSync(new URL('../dist/nodeseek-plus-plus.user.js', import.meta.url), 'utf8');
+const bundle = readFileSync(process.env.NSPP_TEST_BUNDLE || new URL('../dist/nodeseek-plus-plus.user.js', import.meta.url), 'utf8');
 const key = 'nspp:settings:www.nodeseek.com';
 async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void) {
   // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
   const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: { enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true } });
-  const storage = shared || new Map<string, unknown>([[key, { monitor: { enabled: false }, ...settings }]]);
+  const storage = shared || new Map<string, unknown>([[key, { monitor: { enabled: false }, 'notification-categories': { enabled: false }, ...settings }]]);
   const requests: string[] = [];
   const menus: (() => void)[] = [];
   Object.assign(window, {
@@ -335,7 +335,7 @@ test('three-line rows label metadata, read real counts on demand and open native
 
 test('cached attendance is hidden on boot and no automatic request is made', async () => {
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
-  const storage = new Map<string, unknown>([[key, { monitor: { enabled: false }, attendance: { enabled: true, automatic: true } }], ['nspp:state:www.nodeseek.com:attendance', { 'day:7': day }]]);
+  const storage = new Map<string, unknown>([[key, { monitor: { enabled: false }, 'notification-categories': { enabled: false }, attendance: { enabled: true, automatic: true } }], ['nspp:state:www.nodeseek.com:attendance', { 'day:7': day }]]);
   const f = await fixture({}, '', '/', storage);
   try {
     const button = [...f.window.document.querySelectorAll('button')].find(el => el.getAttribute('aria-label') === '签到')!;
@@ -493,13 +493,13 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     window.Date = class extends NativeDate { static now() { return clock; } } as typeof window.Date;
     const originalInterval = window.setInterval.bind(window);
     window.setInterval = ((callback: () => void, delay?: number) => {
-      if (delay === 60000) poll = callback;
+      if (delay === 1000) poll = callback;
       return originalInterval(callback, delay);
     }) as typeof window.setInterval;
     Object.assign(window, { GM_xmlhttpRequest: (options: { url: string; onload: (response: unknown) => void }) => {
       assert.equal(options.url, 'https://rss.nodeseek.com/');
       const item = (id: number) => `<item><title>抽奖 帖子 ${id}</title><link>https://www.nodeseek.com/post-${id}-1</link></item>`;
-      queueMicrotask(() => options.onload({ status: 200, responseText: invalid ? '<html>验证页</html>' : `<rss><channel>${item(1)}${fresh ? item(2) : ''}</channel></rss>` }));
+      queueMicrotask(() => options.onload({ status: 200, responseText: invalid ? '<html>验证页</html>' : `<rss><channel>${item(1)}${item(1)}<item><title>普通帖子</title><link>https://www.nodeseek.com/post-3-1</link></item>${fresh ? item(4) : ''}</channel></rss>` }));
       return { abort() {} };
     } });
   });
@@ -508,18 +508,29 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     const launch = f.window.document.querySelector<HTMLButtonElement>('[data-monitor-state]')!;
     assert.equal(launch.dataset.unread, undefined);
     assert.equal(launch.dataset.monitorState, 'running');
+    const countdown = f.window.document.querySelector('.nspp-monitor footer > span')!;
+    assert.match(countdown.textContent!, /下次检查 60 秒/);
+    clock += 1000; poll!();
+    assert.match(countdown.textContent!, /下次检查 59 秒/);
+    const pause = Array.from(f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-monitor footer button')).find(button => button.textContent?.includes('停止'))!;
+    pause.click();
+    assert.match(countdown.textContent!, /已暂停/);
+    pause.click();
+    assert.match(countdown.textContent!, /下次检查 59 秒/);
     clock += 61000; poll!();
     await new Promise(resolve => setTimeout(resolve, 10));
     assert.equal(launch.dataset.unread, undefined);
     assert.ok(f.storage.has('nspp:state:www.nodeseek.com:monitor'));
+    assert.match(f.window.document.querySelector('.nspp-monitor-summary')!.textContent!, /2 轮 · 累计 2 帖 · 符合 1 · 不符合 1/);
+    assert.equal((f.storage.get('nspp:state:www.nodeseek.com:monitor') as Record<string, { cursor: string }>)['rss-snapshot:7'].cursor, '3');
     fresh = true; clock += 301000; poll!();
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(launch.dataset.unread, 'true');
     assert.match(launch.title, /1 条未读/);
     launch.click();
-    assert.equal(launch.dataset.unread, 'true', 'opening does not discard unread posts');
-    assert.equal(f.window.document.querySelectorAll('.nspp-monitor-unread li').length, 1);
-    f.window.document.querySelector<HTMLButtonElement>('.nspp-monitor-unread button')!.click();
+    assert.equal(f.window.document.querySelector('.nspp-monitor-unread'), null);
+    assert.equal(f.window.document.querySelectorAll('.nspp-monitor-results li').length, 2);
+    assert.match(f.window.document.querySelector('.nspp-monitor')!.textContent!, /3 轮 · 累计 3 帖 · 符合 2 · 不符合 1/);
     assert.equal(launch.dataset.unread, undefined);
     assert.ok(f.window.document.querySelector('.nspp-monitor footer'));
     clock += 301000; poll!();
@@ -534,14 +545,18 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     assert.equal(f.window.document.querySelectorAll('.nspp-monitor-results li').length, 0);
     await new Promise(resolve => setTimeout(resolve, 30));
     const monitorState = f.storage.get('nspp:state:www.nodeseek.com:monitor') as Record<string, { at: number }>;
+    assert.equal((monitorState['rss-snapshot:7'] as { at: number; cursor: string }).cursor, '4');
     assert.equal(monitorState['rss-snapshot:7'].at, clock, 'update checks immediately in a background tab');
     assert.equal((f.storage.get(key) as { monitor: { interval: number } }).monitor.interval, 600);
+    assert.match(f.window.document.querySelector('.nspp-monitor')!.textContent!, /1 轮 · 累计 3 帖 · 符合 2 · 不符合 1/);
     const before = f.window.document.querySelector('.nspp-monitor-results')!.textContent;
     invalid = true; clock += 601000; poll!();
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(f.window.document.querySelector('.nspp-monitor-results')!.textContent, before);
     assert.match(f.window.document.querySelector('.nspp-monitor > p')!.textContent!, /检查未完成/);
     assert.equal(launch.dataset.monitorState, 'cooldown');
+    assert.match(countdown.textContent!, /冷却中 · 600 秒后检查/);
+    assert.match(f.window.document.querySelector('.nspp-monitor')!.textContent!, /1 轮 · 累计 3 帖 · 符合 2 · 不符合 1/);
     const editor = f.window.document.querySelector<HTMLFormElement>('.nspp-monitor-editor')!;
     const input = editor.querySelector<HTMLTextAreaElement>('textarea')!;
     assert.equal(input.value, '抽奖', 'legacy keywords migrate into the panel');
@@ -554,6 +569,37 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     assert.match(editor.textContent!, /无效规则/);
 
   } finally { await f.close(); }
+});
+
+test('monitor resumes its saved cursor across reloads and never rewinds on stale or empty feeds', async () => {
+  const stateKey = 'nspp:state:www.nodeseek.com:monitor';
+  const post = (id: string, title: string) => ({ id, title, url: `https://www.nodeseek.com/post-${id}-1` });
+  const saved = post('10', '抽奖 已收录');
+  const storage = new Map<string, unknown>([
+    [key, { monitor: { enabled: true, interval: 60 } }],
+    [stateKey, { 'match-keywords': '抽奖', 'rss-snapshot:7': { home: [saved], trades: [], at: Date.now(), rounds: 1, cursor: '10', checked: 1, matched: 1, results: [saved] } }],
+  ]);
+  let clock = Date.now();
+  const batches = [[post('12', '抽奖 新帖子'), post('11', '普通帖子'), saved], [post('9', '抽奖 旧数据')], []];
+  for (const batch of batches) {
+    clock += 301000;
+    const f = await fixture({}, '', '/', storage, window => {
+      const NativeDate = window.Date;
+      window.Date = class extends NativeDate { static now() { return clock; } } as typeof window.Date;
+      Object.assign(window, { GM_xmlhttpRequest: (options: { onload: (response: unknown) => void }) => {
+        queueMicrotask(() => options.onload({ status: 200, responseText: `<rss><channel>${batch.map(post => `<item><title>${post.title}</title><link>${post.url}</link></item>`).join('')}</channel></rss>` }));
+        return { abort() {} };
+      } });
+    });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const snapshot = (storage.get(stateKey) as Record<string, { cursor: string; checked: number; matched: number }>)['rss-snapshot:7'];
+      assert.equal(snapshot.cursor, '12');
+      assert.equal(snapshot.checked, 3);
+      assert.equal(snapshot.matched, 2);
+      assert.equal(f.window.document.querySelectorAll('.nspp-monitor-results li').length, 2);
+    } finally { await f.close(); }
+  }
 });
 
 test('post status styling keeps titles intact and marks readonly and pin icons', async () => {
@@ -603,4 +649,47 @@ test('NodeImage upload uses the official privileged endpoint and inserts the ret
     assert.equal(uploadUrl, 'https://api.nodeimage.com/api/upload');
     assert.match(doc.querySelector<HTMLTextAreaElement>('.md-editor textarea')!.value, /https:\/\/example.com\/test.png/);
   } finally { await f.close(); }
+});
+
+test('notification categories replace the sidebar notification entry and preserve unrelated links', async () => {
+  const f = await fixture({ 'notification-categories': { enabled: true } }, '<div class="user-card"><div class="user-stat"><div class="stat-block"><a href="/notification">通知</a><a href="/board">签到</a></div><div class="stat-block">收藏 2</div></div></div>', '/', undefined, window => {
+    Object.assign(window, { fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 2, atMe: 0, message: 3 } }), { headers: { 'Content-Type': 'application/json' } }) });
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    const doc = f.window.document;
+    assert.equal(doc.querySelector<HTMLAnchorElement>('a[href="/notification"]')!.hidden, true);
+    assert.equal(doc.querySelector<HTMLAnchorElement>('a[href="/board"]')!.hidden, false);
+    assert.deepEqual(Array.from(doc.querySelectorAll('.user-stat .nspp-notification-link')).map(a => [a.getAttribute('href'), a.textContent]), [['/notification#/reply', '回复2'], ['/notification#/message?mode=list', '私信3'], ['/notification#/atMe', '@我0']]);
+    assert.equal(doc.querySelectorAll('.nspp-unread-count').length, 2);
+    assert.equal(doc.querySelectorAll('.nspp-notification-icon path').length, 3);
+    assert.equal(doc.querySelectorAll('.nspp-notification-icon use').length, 0);
+    assert.equal(doc.querySelector('.nspp-notification-row button'), null);
+    assert.equal(doc.querySelector('.user-stat')!.children.length, 2);
+    assert.equal(doc.querySelectorAll('.user-stat > .stat-block').length, 2);
+    assert.equal(doc.querySelector('.user-stat > .nspp-notifications'), null);
+  } finally { await f.close(); }
+});
+
+test('notification categories start by default after delayed login and sidebar insertion', async () => {
+  const f = await fixture({ 'notification-categories': undefined, unread: { enabled: false } }, '', '/', undefined, window => {
+    Object.assign(window, { __config__: {}, fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 1, atMe: 2, message: 0 } })) });
+  });
+  try {
+    assert.equal(f.window.document.querySelector('.nspp-notifications'), null);
+    Object.assign(f.window, { __config__: { user: { member_id: 7 } } });
+    f.window.document.body.insertAdjacentHTML('beforeend', '<div class="user-card"><div class="user-stat"><div class="stat-block"><a href="/notification">通知</a></div><div class="stat-block">收藏 2</div></div></div>');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(f.window.document.querySelectorAll('.user-stat .nspp-notification-link').length, 3);
+    assert.equal(f.window.document.querySelectorAll('.nspp-notification-row').length, 3);
+    assert.equal(f.window.document.querySelector('.nspp-original-notification')?.textContent, '通知');
+  } finally { await f.close(); }
+});
+
+test('busy controls use opaque motion feedback, including the attendance icon', () => {
+  const css = readFileSync(new URL('../src/loading.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /text-fill-color:\s*transparent|background-clip:\s*text/);
+  assert.match(css, /opacity: 1 !important/);
+  assert.match(css, /\.nspp-action\[aria-busy="true"\] > svg[^}]+animation: nspp-attendance-working/);
+  assert.match(css, /prefers-reduced-motion: reduce/);
 });
