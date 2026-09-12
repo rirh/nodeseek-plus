@@ -838,3 +838,40 @@ test('avatar cards receive synchronized block controls after delayed login initi
     assert.deepEqual(buttons.map(button => button.textContent), ['屏蔽', '屏蔽']);
   } finally { await f.close(); }
 });
+
+test('system notifications detect category increases in background and do not replay across tabs', async () => {
+  const shared = new Map<string, unknown>([
+    [key, { monitor: { enabled: false }, 'notification-categories': { enabled: true } }],
+    ['nspp:state:www.nodeseek.com:notification-categories', { 'counts:7': { reply: 4, atMe: 0, message: 0 } }],
+  ]);
+  const notifications: { text: string; url: string; tag: string }[] = [];
+  const setup = (window: Window) => {
+    Object.defineProperty(window.document, 'hidden', { configurable: true, value: true });
+    Object.assign(window, {
+      GM_notification: (details: typeof notifications[number]) => notifications.push(details),
+      fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 2, atMe: 1, message: 1 } })),
+    });
+  };
+  const f = await fixture({}, '', '/', shared, setup);
+  const second = await fixture({}, '', '/', shared, setup);
+  try {
+    assert.equal(notifications.length, 2);
+    assert.match(notifications[0]!.text, /新的 @我 1 条/);
+    assert.equal(notifications[1]!.url, 'https://www.nodeseek.com/notification#/message?mode=list');
+    assert.notEqual(notifications[0]!.tag, notifications[1]!.tag);
+    shared.delete('nspp:lock:www.nodeseek.com:unread:7');
+    const third = await fixture({}, '', '/', shared, setup);
+    try { assert.equal(notifications.length, 2); } finally { await third.close(); }
+  } finally { await f.close(); await second.close(); }
+});
+
+test('first unread snapshot does not notify historical messages', async () => {
+  const notifications: unknown[] = [];
+  const f = await fixture({ 'notification-categories': { enabled: true } }, '', '/', undefined, window => {
+    Object.assign(window, {
+      GM_notification: (details: unknown) => notifications.push(details),
+      fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 2, atMe: 1, message: 3 } })),
+    });
+  });
+  try { assert.equal(notifications.length, 0); } finally { await f.close(); }
+});

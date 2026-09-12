@@ -1,10 +1,10 @@
 import { toolIcon } from '../lib/tool-icon';
-import { unsafeWindow } from '../lib/userscript';
+import { systemNotify, unsafeWindow } from '../lib/userscript';
 import { withTabLock } from '../lib/tab-lock';
 import type { Feature } from '../core/types';
 export const serviceFeatures: Feature[] = [
   {
-    id: 'notification-categories', title: '通知分类', description: '侧边卡片分别显示回复、@我、私信；可见页面每60秒刷新，失败保留上次结果。', group: '操作辅助', defaults: { enabled: true },
+    id: 'notification-categories', title: '通知分类', description: '侧边卡片分别显示回复、@我、私信；每60秒检查，新回复、@我和私信使用系统通知，失败保留上次结果。', group: '操作辅助', defaults: { enabled: true },
     mount(ctx) {
       const initialize = () => {
         const uid = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
@@ -34,12 +34,12 @@ export const serviceFeatures: Feature[] = [
             anchor.hidden = true; anchor.classList.add('nspp-original-notification');
           });
         };
-        let pending = false; let previous = -1; let failed = false; let lastAttempt = 0;
+        let pending = false; let failed = false; let lastAttempt = 0;
         const render = (counts?: Record<string, number>) => {
           if (!counts) return;
-          let total = 0; const links: HTMLAnchorElement[] = [];
+          const links: HTMLAnchorElement[] = [];
           for (const [key, label, path] of [['reply', '回复', 'reply'], ['atMe', '我', 'atMe'], ['message', '私信', 'message?mode=list']]) {
-            const count = counts[key]; if (!Number.isFinite(count) || count < 0) throw new Error('Invalid count'); total += count;
+            const count = counts[key]; if (!Number.isFinite(count) || count < 0) throw new Error('Invalid count');
             const a = document.createElement('a'); a.href = `/notification#/${path}`; a.className = 'nspp-notification-link';
             const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('fill', 'none'); icon.setAttribute('stroke', 'currentColor');
@@ -78,16 +78,25 @@ export const serviceFeatures: Feature[] = [
               const text = document.createElement('span'); text.textContent = label!; a.append(icon, text); const badge = document.createElement('span'); badge.textContent = String(count); badge.className = count > 0 ? 'notify-count nspp-unread-count' : 'nspp-read-count'; a.append(badge); links.push(a);
             }
           }
-          links.forEach((link, index) => { const old = rows[index]!.querySelector('a'); if (old) old.replaceWith(link); else rows[index]!.prepend(link); }); if (previous >= 0 && total > previous) ctx.notify(`有新消息，当前未读 ${total} 条`); previous = total;
+          links.forEach((link, index) => { const old = rows[index]!.querySelector('a'); if (old) old.replaceWith(link); else rows[index]!.prepend(link); });
         };
         const run = async () => {
-          if (pending || document.hidden || ctx.signal.aborted || Date.now() - lastAttempt < 5_000) return;
+          if (pending || ctx.signal.aborted || Date.now() - lastAttempt < 5_000) return;
           lastAttempt = Date.now(); pending = true;
           try {
             await withTabLock(`unread:${uid}`, 60_000, async () => {
               const result = await ctx.request<{ success: boolean; unreadCount?: Record<string, number> }>('/api/notification/unread-count');
               if (!result.success || !result.unreadCount) throw new Error('Invalid response');
+              const previous = ctx.get<Record<string, number> | undefined>(cacheKey);
               render(result.unreadCount); ctx.set(cacheKey, result.unreadCount); failed = false;
+              if (previous && !ctx.signal.aborted) {
+                for (const [key, label, path] of [['reply', '新回复', 'reply'], ['atMe', '新的 @我', 'atMe'], ['message', '新私信', 'message?mode=list']]) {
+                  const before = previous[key]; const count = result.unreadCount[key];
+                  if (!Number.isFinite(before) || before < 0 || count <= before) continue;
+                  const message = `${label} ${count - before} 条，当前未读 ${count} 条`;
+                  if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`)) ctx.notify(message);
+                }
+              }
             });
             render(ctx.get<Record<string, number>>(cacheKey));
           } catch {
@@ -95,7 +104,7 @@ export const serviceFeatures: Feature[] = [
             failed = true;
           } finally { pending = false; }
         };
-        render({ reply: 0, atMe: 0, message: 0 }); previous = -1;
+        render({ reply: 0, atMe: 0, message: 0 });
         try { render(ctx.get<Record<string, number>>(cacheKey)); } catch { /* Invalid old cache is ignored. */ }
         const stopPlacement = ctx.watch(place);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) void run(); }, { signal: ctx.signal }); void run();

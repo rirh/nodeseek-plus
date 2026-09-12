@@ -1,4 +1,4 @@
-import { GM_getValue as importedGet, GM_setValue as importedSet, GM_registerMenuCommand as importedMenu, unsafeWindow as importedWindow, monkeyWindow } from '$';
+import { GM_notification as importedNotification, GM_getValue as importedGet, GM_setValue as importedSet, GM_registerMenuCommand as importedMenu, unsafeWindow as importedWindow, monkeyWindow } from '$';
 
 // The dev bridge can be absent or not populated when a Vite module first runs.
 const memory = new Map<string, unknown>();
@@ -18,4 +18,13 @@ export function GM_setValue(key: string, value: unknown): void {
 export function GM_registerMenuCommand(label: string, callback: () => void): void {
   const register = typeof importedMenu === 'function' ? importedMenu : monkeyWindow.GM_registerMenuCommand;
   if (typeof register === 'function') register(label, callback);
+}
+
+export function systemNotify(text: string, url: string, tag: string): boolean {
+  const notify = typeof importedNotification === 'function' ? importedNotification : monkeyWindow.GM_notification;
+  if (typeof notify !== 'function') return false;
+  try {
+    notify({ title: 'NodeSeek++ 新消息', text, url, tag, timeout: 10000 });
+    return true;
+  } catch { return false; }
 }

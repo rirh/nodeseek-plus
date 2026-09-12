@@ -10,6 +10,7 @@
 // @connect      rss.nodeseek.com
 // @grant        GM_addStyle
 // @grant        GM_getValue
+// @grant        GM_notification
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest

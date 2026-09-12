@@ -10,6 +10,7 @@
 // @connect      rss.nodeseek.com
 // @grant        GM_addStyle
 // @grant        GM_getValue
+// @grant        GM_notification
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
@@ -129,6 +130,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		enumerable: true
 	}) : target, mod));
 	var _GM_getValue = (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
+	var _GM_notification = (() => typeof GM_notification != "undefined" ? GM_notification : void 0)();
 	var _GM_registerMenuCommand = (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
 	var _GM_setValue = (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
 	var _GM_xmlhttpRequest = (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
@@ -153,6 +155,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function GM_registerMenuCommand$1(label, callback) {
 		const register = typeof _GM_registerMenuCommand === "function" ? _GM_registerMenuCommand : _monkeyWindow.GM_registerMenuCommand;
 		if (typeof register === "function") register(label, callback);
+	}
+	function systemNotify(text, url, tag) {
+		const notify = typeof _GM_notification === "function" ? _GM_notification : _monkeyWindow.GM_notification;
+		if (typeof notify !== "function") return false;
+		try {
+			notify({
+				title: "NodeSeek++ 新消息",
+				text,
+				url,
+				tag,
+				timeout: 1e4
+			});
+			return true;
+		} catch {
+			return false;
+		}
 	}
 	async function request(url, options = {}) {
 		const target = new URL(url, location.origin);
@@ -9574,7 +9592,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		{
 			id: "notification-categories",
 			title: "通知分类",
-			description: "侧边卡片分别显示回复、@我、私信；可见页面每60秒刷新，失败保留上次结果。",
+			description: "侧边卡片分别显示回复、@我、私信；每60秒检查，新回复、@我和私信使用系统通知，失败保留上次结果。",
 			group: "操作辅助",
 			defaults: { enabled: true },
 			mount(ctx) {
@@ -9620,12 +9638,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						});
 					};
 					let pending = false;
-					let previous = -1;
 					let failed = false;
 					let lastAttempt = 0;
 					const render = (counts) => {
 						if (!counts) return;
-						let total = 0;
 						const links = [];
 						for (const [key, label, path] of [
 							[
@@ -9646,7 +9662,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						]) {
 							const count = counts[key];
 							if (!Number.isFinite(count) || count < 0) throw new Error("Invalid count");
-							total += count;
 							const a = document.createElement("a");
 							a.href = `/notification#/${path}`;
 							a.className = "nspp-notification-link";
@@ -9722,20 +9737,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 							if (old) old.replaceWith(link);
 							else rows[index].prepend(link);
 						});
-						if (previous >= 0 && total > previous) ctx.notify(`有新消息，当前未读 ${total} 条`);
-						previous = total;
 					};
 					const run = async () => {
-						if (pending || document.hidden || ctx.signal.aborted || Date.now() - lastAttempt < 5e3) return;
+						if (pending || ctx.signal.aborted || Date.now() - lastAttempt < 5e3) return;
 						lastAttempt = Date.now();
 						pending = true;
 						try {
 							await withTabLock(`unread:${uid}`, 6e4, async () => {
 								const result = await ctx.request("/api/notification/unread-count");
 								if (!result.success || !result.unreadCount) throw new Error("Invalid response");
+								const previous = ctx.get(cacheKey);
 								render(result.unreadCount);
 								ctx.set(cacheKey, result.unreadCount);
 								failed = false;
+								if (previous && !ctx.signal.aborted) for (const [key, label, path] of [
+									[
+										"reply",
+										"新回复",
+										"reply"
+									],
+									[
+										"atMe",
+										"新的 @我",
+										"atMe"
+									],
+									[
+										"message",
+										"新私信",
+										"message?mode=list"
+									]
+								]) {
+									const before = previous[key];
+									const count = result.unreadCount[key];
+									if (!Number.isFinite(before) || before < 0 || count <= before) continue;
+									const message = `${label} ${count - before} 条，当前未读 ${count} 条`;
+									if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`)) ctx.notify(message);
+								}
 							});
 							render(ctx.get(cacheKey));
 						} catch {
@@ -9750,7 +9787,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						atMe: 0,
 						message: 0
 					});
-					previous = -1;
 					try {
 						render(ctx.get(cacheKey));
 					} catch {}

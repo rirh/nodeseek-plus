@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
       description: '模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。',
       match: ['https://www.nodeseek.com/*', 'https://www.deepflood.com/*'],
       connect: ['api.nodeimage.com', 'rss.nodeseek.com'],
-      grant: ['GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'unsafeWindow'],
+      grant: ['GM_notification', 'GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'unsafeWindow'],
       license: 'GPL-3.0-only',
       'run-at': 'document-end',
       noframes: true,
