@@ -1,5 +1,5 @@
 export function uploadRequest(provider: string, configuredBase: string, key: string, file: Blob) {
-  const base = new URL(configuredBase || (provider === 'NodeImage' ? 'https://api.nodeimage.com' : ''));
+  const base = new URL(provider === 'NodeImage' ? 'https://api.nodeimage.com' : configuredBase);
   if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) throw new Error('Invalid service URL');
   const root = base.href.replace(/\/$/, '');
   const body = new FormData(); const headers: Record<string, string> = { Accept: 'application/json' };

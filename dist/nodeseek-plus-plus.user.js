@@ -1,15 +1,17 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.912.1525
+// @version      26.912.1650
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @match        https://www.nodeseek.com/*
 // @match        https://www.deepflood.com/*
+// @connect      api.nodeimage.com
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
+// @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @run-at       document-end
 // @noframes
@@ -128,6 +130,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	var _GM_getValue = (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
 	var _GM_registerMenuCommand = (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
 	var _GM_setValue = (() => typeof GM_setValue != "undefined" ? GM_setValue : void 0)();
+	var _GM_xmlhttpRequest = (() => typeof GM_xmlhttpRequest != "undefined" ? GM_xmlhttpRequest : void 0)();
 	var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
 	var _monkeyWindow = (() => window)();
 	var memory = new Map();
@@ -334,7 +337,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element("small", `v26.912.1525`));
+		heading.append(title, element("small", `v26.912.1650`));
 		const close = element("button", "关闭");
 		close.type = "button";
 		header.append(heading);
@@ -7496,8 +7499,101 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (navigator.locks?.request) return navigator.locks.request(key, { ifAvailable: true }, (lock) => lock ? execute() : false);
 		return execute();
 	}
+	function uploadNodeImage(body, headers, signal) {
+		return new Promise((resolve, reject) => {
+			if (signal.aborted) {
+				reject(new Error("上传已取消"));
+				return;
+			}
+			if (typeof _GM_xmlhttpRequest !== "function") {
+				reject(new Error("请重新安装最新版脚本，授予 NodeImage 连接权限"));
+				return;
+			}
+			const cleanup = () => signal.removeEventListener("abort", cancel);
+			const request = _GM_xmlhttpRequest({
+				method: "POST",
+				url: "https://api.nodeimage.com/api/upload",
+				data: body,
+				headers,
+				anonymous: true,
+				responseType: "json",
+				timeout: 12e4,
+				onload: (response) => {
+					cleanup();
+					if (response.status === 401 || response.status === 403) {
+						reject(new Error("NodeImage 密钥无效或无权限，请到官网 API 页面检查"));
+						return;
+					}
+					if (response.status < 200 || response.status >= 300) {
+						reject(new Error(`NodeImage 上传失败（HTTP ${response.status}）`));
+						return;
+					}
+					resolve(response.response);
+				},
+				onerror: () => {
+					cleanup();
+					reject(new Error("无法连接 NodeImage，请检查网络和脚本连接权限"));
+				},
+				ontimeout: () => {
+					cleanup();
+					reject(new Error("上传超时，请检查图床是否已收到图片后再重试"));
+				},
+				onabort: () => {
+					cleanup();
+					reject(new Error("上传已取消"));
+				}
+			});
+			function cancel() {
+				request.abort();
+			}
+			signal.addEventListener("abort", cancel, { once: true });
+		});
+	}
+	function getNodeImageKey(signal) {
+		return new Promise((resolve, reject) => {
+			if (signal.aborted) {
+				reject(new Error("已取消"));
+				return;
+			}
+			if (typeof _GM_xmlhttpRequest !== "function") {
+				reject(new Error("请更新脚本并允许连接 NodeImage"));
+				return;
+			}
+			const cleanup = () => signal.removeEventListener("abort", cancel);
+			const request = _GM_xmlhttpRequest({
+				method: "GET",
+				url: "https://api.nodeimage.com/api/user/api-key",
+				anonymous: false,
+				headers: { Accept: "application/json" },
+				responseType: "json",
+				timeout: 2e4,
+				onload: (response) => {
+					cleanup();
+					const key = response.response?.api_key;
+					if (response.status === 200 && typeof key === "string" && key.trim()) resolve(key.trim());
+					else reject(new Error("请先登录 NodeImage，返回论坛后重试"));
+				},
+				onerror: () => {
+					cleanup();
+					reject(new Error("无法读取 NodeImage 登录状态，可手动填写 API Key"));
+				},
+				ontimeout: () => {
+					cleanup();
+					reject(new Error("获取 NodeImage 登录状态超时"));
+				},
+				onabort: () => {
+					cleanup();
+					reject(new Error("已取消"));
+				}
+			});
+			function cancel() {
+				request.abort();
+			}
+			signal.addEventListener("abort", cancel, { once: true });
+		});
+	}
 	function uploadRequest(provider, configuredBase, key, file) {
-		const base = new URL(configuredBase || (provider === "NodeImage" ? "https://api.nodeimage.com" : ""));
+		const base = new URL(provider === "NodeImage" ? "https://api.nodeimage.com" : configuredBase);
 		if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash) throw new Error("Invalid service URL");
 		const root = base.href.replace(/\/$/, "");
 		const body = new FormData();
@@ -7555,7 +7651,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		id: "image-upload",
 		title: "图片上传",
 		group: "操作辅助",
-		description: "选择图片上传并插入链接，支持六类图床协议。服务必须允许 CORS；密钥仅存当前页面内存。",
+		description: "选择图片上传并插入链接，支持六类图床协议。默认使用 NodeImage 官方图床；其他服务须允许 CORS；密钥仅存当前页面内存。",
 		defaults: {
 			enabled: true,
 			provider: "NodeImage",
@@ -7573,12 +7669,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					"Chevereto",
 					"EasyImages"
 				].map((value) => ({
-					label: value,
+					label: value === "NodeImage" ? "NodeImage（论坛官方，默认）" : value,
 					value
 				}))
 			},
 			base: {
-				label: "图床地址（NodeImage 留空使用官方地址）",
+				label: "其他图床地址（NodeImage 固定使用官方地址）",
 				type: "text"
 			}
 		},
@@ -7586,6 +7682,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const bound = new WeakSet();
 			const bars = [];
 			let apiKey = "";
+			let auth;
+			let lastCheck = 0;
+			const ensureKey = () => {
+				if (apiKey) return Promise.resolve(apiKey);
+				return auth ||= getNodeImageKey(ctx.signal).then((value) => {
+					if (!ctx.signal.aborted) apiKey = value;
+					return value;
+				}).finally(() => {
+					auth = void 0;
+				});
+			};
+			const checkLogin = () => {
+				if (ctx.get("provider") !== "NodeImage" || apiKey || !bars.length || Date.now() - lastCheck < 3e3) return;
+				lastCheck = Date.now();
+				ensureKey().then(() => {
+					if (!ctx.signal.aborted) bars.forEach((bar) => {
+						bar.querySelector("[role=\"status\"]").textContent = "NodeImage 已连接，可选择、粘贴或拖拽图片";
+					});
+				}).catch(() => {});
+			};
+			window.addEventListener("focus", checkLogin, { signal: ctx.signal });
 			function scan() {
 				ctx.root.querySelectorAll(".md-editor").forEach((host) => {
 					if (bound.has(host)) return;
@@ -7595,6 +7712,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					bound.add(host);
 					const bar = document.createElement("div");
 					bar.className = "nspp-compose";
+					const official = document.createElement("a");
+					official.href = "https://www.nodeimage.com/";
+					official.target = "_blank";
+					official.rel = "noopener noreferrer";
+					official.textContent = "登录 NodeImage（官方图床）";
+					official.hidden = ctx.get("provider") !== "NodeImage";
 					const key = document.createElement("input");
 					key.type = "password";
 					key.placeholder = "图床 API Key / Token（不保存）";
@@ -7605,34 +7728,75 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					}, { signal: ctx.signal });
 					const input = document.createElement("input");
 					input.type = "file";
+					input.multiple = true;
 					input.accept = "image/*";
 					input.setAttribute("aria-label", "选择要上传至所选图床的图片");
 					const status = document.createElement("span");
 					status.setAttribute("role", "status");
+					let uploading = false;
+					async function uploadFiles(files) {
+						if (uploading) return;
+						uploading = true;
+						try {
+							for (const file of files) if (ctx.signal.aborted || !await upload(file)) break;
+						} finally {
+							uploading = false;
+						}
+					}
 					input.addEventListener("change", () => {
-						upload();
+						uploadFiles(Array.from(input.files || []));
 					}, { signal: ctx.signal });
-					async function upload() {
-						const file = input.files?.[0];
-						if (!file || input.disabled) return;
+					host.addEventListener("paste", (event) => {
+						if (!(event.target instanceof Element) || !event.target.closest(".CodeMirror, textarea") || event.target.closest(".nspp-compose")) return;
+						const files = Array.from(event.clipboardData?.items || []).filter((item) => item.kind === "file" && item.type.startsWith("image/")).map((item) => item.getAsFile()).filter((file) => !!file);
+						if (files.length) {
+							event.preventDefault();
+							event.stopPropagation();
+							uploadFiles(files);
+						}
+					}, {
+						signal: ctx.signal,
+						capture: true
+					});
+					host.addEventListener("dragover", (event) => {
+						if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
+					}, { signal: ctx.signal });
+					host.addEventListener("drop", (event) => {
+						const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith("image/"));
+						if (files.length) {
+							event.preventDefault();
+							event.stopPropagation();
+							uploadFiles(files);
+						}
+					}, {
+						signal: ctx.signal,
+						capture: true
+					});
+					async function upload(file) {
+						if (input.disabled) return false;
 						if (!file.type.startsWith("image/")) {
 							status.textContent = "请选择图片文件";
 							input.value = "";
-							return;
+							return false;
 						}
 						input.disabled = true;
 						key.disabled = true;
 						status.setAttribute("aria-busy", "true");
 						status.textContent = "上传中…";
 						try {
+							if (ctx.get("provider") === "NodeImage" && !apiKey) {
+								status.textContent = "正在获取 NodeImage 登录状态…";
+								await ensureKey();
+								status.textContent = "上传中…";
+							}
 							const request = uploadRequest(ctx.get("provider"), ctx.get("base"), apiKey, file);
-							const result = await ctx.request(request.url, {
+							const result = ctx.get("provider") === "NodeImage" ? await uploadNodeImage(request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
 								method: "POST",
 								headers: request.headers,
 								body: request.body
 							});
 							const url = uploadResult(ctx.get("provider"), request.base, result);
-							if (ctx.signal.aborted) return;
+							if (ctx.signal.aborted) return false;
 							const markdown = `![image](<${url.href.replace(/>/g, "%3E")}>)`;
 							if (cm) {
 								cm.replaceSelection(markdown);
@@ -7642,8 +7806,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								ta.dispatchEvent(new Event("input", { bubbles: true }));
 							}
 							status.textContent = "上传完成，图片链接已插入";
-						} catch {
-							if (!ctx.signal.aborted) status.textContent = "上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持";
+							return true;
+						} catch (error) {
+							if (error instanceof Error && /密钥无效|无权限/.test(error.message)) {
+								apiKey = "";
+								key.value = "";
+							}
+							if (!ctx.signal.aborted) status.textContent = ctx.get("provider") === "NodeImage" && error instanceof Error ? error.message : "上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持";
+							return false;
 						} finally {
 							input.disabled = false;
 							key.disabled = false;
@@ -7651,13 +7821,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 							status.removeAttribute("aria-busy");
 						}
 					}
-					bar.append(key, input, status);
+					bar.append(official, key, input, status);
 					host.prepend(bar);
 					bars.push(bar);
 				});
 			}
 			scan();
-			const unwatch = ctx.watch(scan);
+			checkLogin();
+			const unwatch = ctx.watch(() => {
+				const count = bars.length;
+				scan();
+				if (bars.length > count) checkLogin();
+			});
 			return () => {
 				unwatch();
 				apiKey = "";

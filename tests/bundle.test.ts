@@ -575,3 +575,26 @@ test('monitor matches main body and highlights dynamic list rows without matchin
     for (let i = 1; i < requestTimes.length; i++) assert.ok(requestTimes[i] - requestTimes[i - 1] >= 4900, 'monitor requests must be spaced at least five seconds apart');
   } finally { await f.close(); }
 });
+
+test('NodeImage upload uses the official privileged endpoint and inserts the returned image', async () => {
+  let uploadUrl = '';
+  const f = await fixture({}, '<div class="md-editor"><textarea></textarea></div>', '/', undefined, window => {
+    Object.assign(window, { GM_xmlhttpRequest: (options: { url: string; onload: (response: unknown) => void }) => {
+      if (options.url.endsWith('/api/user/api-key')) { queueMicrotask(() => options.onload({ status: 200, response: { api_key: 'fixture-key' } })); return { abort() {} }; }
+      uploadUrl = options.url;
+      queueMicrotask(() => options.onload({ status: 200, response: { links: { direct: 'https://example.com/test.png' } } }));
+      return { abort() {} };
+    } });
+  });
+  try {
+    const doc = f.window.document;
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.match(doc.querySelector('.nspp-compose [role="status"]')!.textContent!, /已连接/);
+    const input = doc.querySelector<HTMLInputElement>('.nspp-compose input[type="file"]')!;
+    Object.defineProperty(input, 'files', { value: [new f.window.File(['image'], 'test.png', { type: 'image/png' })] });
+    input.dispatchEvent(new f.window.Event('change'));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.equal(uploadUrl, 'https://api.nodeimage.com/api/upload');
+    assert.match(doc.querySelector<HTMLTextAreaElement>('.md-editor textarea')!.value, /https:\/\/example.com\/test.png/);
+  } finally { await f.close(); }
+});

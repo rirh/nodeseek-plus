@@ -1,352 +1,142 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { Window } from 'happy-dom';
+# NodeSeek++
 
-const bundle = readFileSync(new URL('../dist/nodeseek-plus-plus.user.js', import.meta.url), 'utf8');
-const key = 'nspp:settings:www.nodeseek.com';
-async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void) {
-  // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
-  const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: { enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true } });
-  const storage = shared || new Map<string, unknown>([[key, settings]]);
-  const requests: string[] = [];
-  const menus: (() => void)[] = [];
-  Object.assign(window, {
-    GM_getValue: (key: string, fallback: unknown) => storage.has(key) ? structuredClone(storage.get(key)) : fallback,
-    GM_setValue: (key: string, value: unknown) => storage.set(key, structuredClone(value)),
-    GM_registerMenuCommand: (_: string, fn: () => void) => menus.push(fn),
-    GM_addStyle: (css: string) => { const el = window.document.createElement('style'); el.textContent = css; window.document.head.append(el); },
-    unsafeWindow: window,
-    __config__: { user: { member_id: 7, member_name: 'tester', rank: 3 } },
-    fetch: async (url: unknown) => { requests.push(String(url)); throw new Error('No fixture response'); },
-  });
-  setup?.(window);
-  window.document.body.innerHTML = html;
-  window.eval(bundle);
-  await new Promise(resolve => setTimeout(resolve, 5));
-  window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
-  return { window, storage, requests, menus, close: () => window.happyDOM.abort() };
-}
+面向 **NodeSeek / DeepFlood** 的模块化用户脚本，提供阅读增强、帖子互动、正则监控、图片上传和用户资料展示。功能可独立开关，桌面与移动端使用响应式面板。
 
-test('bundle is self-contained, scoped to forum hosts and has no remote require', () => {
-  assert.match(bundle, /@match\s+https:\/\/www\.nodeseek\.com\/\*/);
-  assert.doesNotMatch(bundle, /@match\s+\*:\/\/\*\/\*/);
-  assert.doesNotMatch(bundle, /@require/);
-  assert.match(bundle, /@noframes/);
-});
+## 安装与开始使用
 
-test('default boot makes no API calls; repeated boot does not duplicate the UI', async () => {
-  const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Test post</a></div></li></ul>');
-  try {
-    assert.equal(f.window.document.querySelectorAll('#nspp-settings').length, 1);
-    assert.equal(f.menus.length, 1);
-    assert.equal(f.requests.length, 0);
-    f.window.eval(bundle);
-    assert.equal(f.window.document.querySelectorAll('#nspp-settings').length, 1);
-    assert.equal(f.window.document.querySelectorAll('#nspp-tools').length, 1);
-    f.menus[0]();
-    const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
-    assert.equal(root.querySelector('dialog')!.open, true);
-    assert.ok(root.querySelectorAll('article').length >= 20);
-  } finally { await f.close(); }
-});
+1. 在浏览器中安装 Tampermonkey 等用户脚本管理器。
+2. 获取 [完整安装脚本](dist/nodeseek-plus-plus.user.js)，在脚本管理器中安装；不要使用仅包含元信息的 `.meta.js`。
+3. 打开 `https://www.nodeseek.com/` 或 `https://www.deepflood.com/`。
+4. 点击右下角设置图标，或通过脚本管理器菜单打开 **NodeSeek++ 设置**。
 
-test('dynamic posts are filtered once and collapsing retains an expand control', async () => {
-  const f = await fixture({ 'content-filter': { enabled: true, keywords: 'promo', mode: 'collapse' } }, '<ul class="post-list"></ul>');
-  try {
-    const item = f.window.document.createElement('li'); item.className = 'post-list-item';
-    item.innerHTML = '<div class="post-title"><a href="/post-43-1">promo deal</a></div>';
-    f.window.document.querySelector('ul')!.append(item);
-    await new Promise(resolve => setTimeout(resolve, 240));
-    assert.equal(item.hidden, true);
-    const button = item.previousElementSibling!.querySelector('button')!;
-    button.click(); assert.equal(item.hidden, false);
-    await new Promise(resolve => setTimeout(resolve, 150));
-    assert.equal(f.window.document.querySelectorAll('.post-list > li').length, 2);
-  } finally { await f.close(); }
-});
+设置按「浏览、界面、用户、工具」分类，支持搜索、导入、导出和恢复默认。常规设置点击「保存并刷新」生效；监控正则在监控面板的「配置」中单独更新。
 
-test('pagination deduplicates concurrent loads and strips active fetched content', async () => {
-  const f = await fixture({}, '<ul class="post-list"><li id="p1"><div class="post-title"><a href="/post-1-1">First</a></div></li></ul><div class="nsk-pager"><a class="pager-next" href="/page-2">Next</a></div>');
-  try {
-    let calls = 0;
-    f.window.fetch = (async () => {
-      calls++;
-      await new Promise(resolve => setTimeout(resolve, 10));
-      return new f.window.Response('<ul class="post-list"><li id="p1">duplicate</li><li id="p2"><div class="post-title"><a href="/post-2-1">Second</a></div><script>window.injected=true</script><img src="x" onerror="window.injected=true"><a href="java&#10;script:alert(1)">unsafe</a></li></ul>');
-    }) as typeof f.window.fetch;
-    const button = [...f.window.document.querySelectorAll('button')].find(el => el.textContent === '加载下一页')!;
-    button.click(); button.click();
-    await new Promise(resolve => setTimeout(resolve, 60));
-    assert.equal(calls, 1);
-    assert.equal(f.window.document.querySelectorAll('#p1').length, 1);
-    assert.ok(f.window.document.querySelector('#p2'));
-    assert.equal(f.window.document.querySelector('#p2 script'), null);
-    assert.equal(f.window.document.querySelector('#p2 img')?.hasAttribute('onerror'), false);
-    assert.equal(f.window.document.querySelector('#p2 a[href^="javascript:"]'), null);
-  } finally { await f.close(); }
-});
+> 仓库文件预览页不一定会触发安装。可打开文件的原始内容，或把完整代码粘贴到脚本管理器的新脚本中。
 
-test('attendance failure does not cache success; retry succeeds once per account per day', async () => {
-  const f = await fixture({ attendance: { enabled: true, automatic: false, mode: 'fixed' } });
-  try {
-    let calls = 0;
-    f.window.fetch = (async () => {
-      calls++;
-      return new f.window.Response(JSON.stringify(calls === 1 ? { success: false, message: 'retry' } : { success: true, message: 'ok' }), { headers: { 'Content-Type': 'application/json' } });
-    }) as typeof f.window.fetch;
-    const button = [...f.window.document.querySelectorAll('button')].find(el => el.textContent === '签到')!;
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(f.storage.get('nspp:state:www.nodeseek.com:attendance'), undefined);
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(calls, 1, 'failed attempts are briefly throttled across tabs');
-    f.storage.delete('nspp:lock:www.nodeseek.com:attendance:7');
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.ok(f.storage.get('nspp:state:www.nodeseek.com:attendance'));
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(calls, 2);
-  } finally { await f.close(); }
-});
+## 主要功能
 
-test('two tabs share attendance state and do not issue concurrent sign-ins', async () => {
-  const first = await fixture({ attendance: { enabled: true } });
-  const second = await fixture({}, '', '/', first.storage);
-  try {
-    let calls = 0;
-    const fetch = async () => {
-      calls++;
-      await new Promise(resolve => setTimeout(resolve, 40));
-      return new first.window.Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
-    };
-    first.window.fetch = fetch as typeof first.window.fetch;
-    second.window.fetch = fetch as typeof second.window.fetch;
-    for (const tab of [first, second]) [...tab.window.document.querySelectorAll('button')].find(el => el.textContent === '签到')!.click();
-    await new Promise(resolve => setTimeout(resolve, 70));
-    assert.equal(calls, 1);
-    [...second.window.document.querySelectorAll('button')].find(el => el.textContent === '签到')!.click();
-    await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(calls, 1, 'second tab reads newly saved account/day state');
-  } finally { await first.close(); await second.close(); }
-});
+| 功能 | 说明 |
+| --- | --- |
+| 阅读增强 | 自动翻页、阅读历史、已读标记、代码高亮、帖子预览、长文折叠 |
+| 帖子互动 | 三行列表、互动计数、快捷回复模板、回帖足迹 |
+| 用户资料 | 等级、加入天数、本地参与参考分及明细，突出管理身份 |
+| 内容过滤 | 标题关键词、用户名和权限帖过滤，支持隐藏、折叠或高亮 |
+| 帖子监控 | 标题与正文正则匹配、未读结果、后台轮询、页面提示及可选系统通知 |
+| 抽奖追踪 | 手动追踪帖子，检测标题中的开奖线索 |
+| 图片上传 | 支持 NodeImage、Telegraph、Telegraph2、LskyPro、Chevereto、EasyImages |
+| 界面整理 | 隐藏侧栏广告、紧凑只读与置顶标记、图标工具栏 |
+| 操作辅助 | 手动签到、可选自动签到、回复快捷键及 AI 文本美化 |
 
+图片上传、帖子监控与抽奖选项默认开启；已有配置中明确关闭的选项会保留。自动签到需另行开启。
 
-test('missing GM APIs do not abort startup or pretend settings were saved', async () => {
-  const f = await fixture({}, '', '/', undefined, window => {
-    Object.assign(window, { GM_getValue: undefined, GM_setValue: undefined, GM_registerMenuCommand: undefined, unsafeWindow: undefined });
-  });
-  try {
-    const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
-    (root.querySelector('.launcher') as HTMLElement).click();
-    assert.equal(root.querySelector('dialog')!.open, true);
-    assert.equal((root.querySelector('.primary') as HTMLButtonElement).disabled, true);
-    assert.match(root.querySelector('.status')!.textContent!, /油猴存储未就绪/);
-    assert.ok(f.window.document.querySelector('#nspp-tools'));
-    assert.equal(f.window.localStorage.length, 0);
-  } finally { await f.close(); }
-});
+## 帖子监控
 
-test('user badges load visible names, share requests and can retry failed profiles', async () => {
-  let calls = 0;
-  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><span class="role-tag">管理员</span><span class="role-tag">站点创建者</span><span class="role-tag">拥有者</span></div><div class="author-info"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
-    window.fetch = (async () => {
-      calls++;
-      await new Promise(resolve => setTimeout(resolve, 10));
-      return new window.Response(JSON.stringify(calls === 1 ? { success: false } : { success: true, detail: { coin: 2500, created_at: new Date(Date.now() - 400 * 86400000).toISOString() } }), { headers: { 'Content-Type': 'application/json' } });
-    }) as typeof window.fetch;
-  });
-  try {
-    await new Promise(resolve => setTimeout(resolve, 50));
-    assert.equal(calls, 1);
-    assert.deepEqual(Array.from(f.window.document.querySelectorAll('[data-nspp-role]'), tag => tag.getAttribute('data-nspp-role')), ['admin', 'founder', 'owner']);
-    assert.equal(f.window.document.querySelectorAll('.nspp-user-badges button').length, 2);
-    for (const button of f.window.document.querySelectorAll('.nspp-user-badges button')) (button as HTMLElement).click();
-    await new Promise(resolve => setTimeout(resolve, 50));
-    assert.equal(calls, 2);
-    assert.equal(f.window.document.querySelectorAll('.nspp-level').length, 2);
-    assert.equal(f.window.document.querySelector('.nspp-level')!.textContent, 'Lv5');
-    assert.equal(f.window.document.querySelector('.nspp-age')!.getAttribute('data-tone'), null);
-    assert.equal(f.window.document.querySelector('.nspp-age')!.textContent, '加入 400天');
-    assert.match(f.window.document.querySelector<HTMLElement>('.nspp-age')!.title, /已加入 400 天\n加入于 .+\n发帖/);
-    assert.equal(f.window.document.querySelector('.nspp-trust')!.textContent, '信任 —');
-    assert.equal(f.window.document.querySelector('.nspp-user-badges')!.hasAttribute('aria-busy'), false);
-  } finally { await f.close(); }
-});
+### 配置一次，主要查看结果
 
+监控入口位于右侧工具栏第一位。主面板只展示正则匹配到的帖子和未读结果，点击「配置」打开独立弹窗：
 
-test('one block button per name reflects queried state and synchronizes after changes', async () => {
-  const calls: string[] = [];
-  let blocked = true;
-  const f = await fixture({ 'user-level': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div><div class="author-info"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
-    window.fetch = (async (url: unknown) => {
-      const path = new URL(String(url)).pathname; calls.push(path);
-      if (path.endsWith('/del')) blocked = false;
-      if (path.endsWith('/add')) blocked = true;
-      return new window.Response(JSON.stringify(path.endsWith('/list') ? { success: true, data: blocked ? [{ block_member_id: 123 }] : [] } : { success: true }));
-    }) as typeof window.fetch;
-  });
-  try {
-    await new Promise(resolve => setTimeout(resolve, 50));
-    const buttons = [...f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-block-toggle')];
-    assert.equal(buttons.length, 2);
-    assert.deepEqual(buttons.map(b => b.textContent), ['解除', '解除']);
-    assert.deepEqual(calls, ['/api/block-list/list']);
-    buttons[0].click(); buttons[1].click();
-    await new Promise(resolve => setTimeout(resolve, 50));
-    assert.deepEqual(calls, ['/api/block-list/list', '/api/block-list/del']);
-    assert.deepEqual(buttons.map(b => b.textContent), ['屏蔽', '屏蔽']);
-    await new Promise(resolve => setTimeout(resolve, 250));
-    assert.equal(calls.length, 2);
-  } finally { await f.close(); }
-});
+- **监控正则**：每行一个表达式，任意一条命中标题或主帖正文即可收录；评论不作为正文匹配来源。
+- **刷新间隔**：60–3600 秒，默认 300 秒。
+- **更新**：保存配置、清空旧结果与未读，立即发起一次检查，不等待下一轮自动刷新。
 
-test('failed blacklist lookup offers retry, never assumes an empty list', async () => {
-  const f = await fixture({ 'user-level': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div>');
-  try {
-    await new Promise(resolve => setTimeout(resolve, 30));
-    assert.equal(f.window.document.querySelector('.nspp-block-toggle')!.textContent, '重试');
-    assert.equal(f.requests.length, 1);
-  } finally { await f.close(); }
-});
+不带分隔符的表达式默认忽略大小写，也支持 `/表达式/标志` 格式。无效正则会提示错误，不会应用。
 
-test('settings categories are anchors, scroll updates selection and search filters both panes', async () => {
-  const f = await fixture();
-  try {
-    f.menus[0]();
-    const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
-    const nav = [...root.querySelectorAll<HTMLAnchorElement>('.categories a')];
-    assert.ok(nav.length > 4);
-    assert.equal(nav[0].getAttribute('aria-current'), 'location');
-    const content = root.querySelector('.content')!;
-    const sections = [...content.querySelectorAll('section')];
-    Object.defineProperty(content, 'getBoundingClientRect', { value: () => ({ top: 0 }) });
-    sections.forEach((section, i) => Object.defineProperty(section, 'getBoundingClientRect', { value: () => ({ top: (i - 2) * 100 }) }));
-    content.dispatchEvent(new f.window.Event('scroll'));
-    assert.equal(nav[2].getAttribute('aria-current'), 'location');
-    const search = root.querySelector<HTMLInputElement>('input[type="search"]')!;
-    search.value = '黑名单'; search.dispatchEvent(new f.window.Event('input'));
-    assert.equal(root.querySelectorAll('.categories a').length, 1);
-    assert.equal(root.querySelector('.categories a')!.textContent, '用户');
-  } finally { await f.close(); }
-});
+```text
+vmiss|搬瓦工
+/香港.*(年付|月付)/i
+```
 
-test('history dialog searches, deletes and restores entries', async () => {
-  const storage = new Map<string, unknown>([[key, {}], ['nspp:state:www.nodeseek.com:reading-history', { entries: [{ path: '/post-12-1', title: 'Alpha', time: Date.now() }, { path: '/post-13-1', title: 'Beta', time: Date.now() }] }]]);
-  const f = await fixture({}, '', '/', storage);
-  try {
-    [...f.window.document.querySelectorAll('button')].find(b => b.textContent === '阅读历史')!.click();
-    const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-history')!;
-    assert.ok(dialog.open); assert.equal(dialog.querySelectorAll('ol li').length, 2);
-    const search = dialog.querySelector('input')!; search.value = 'Alpha'; search.dispatchEvent(new f.window.Event('input'));
-    assert.equal(dialog.querySelectorAll('ol a').length, 1);
-    (dialog.querySelector('ol button') as HTMLButtonElement).click();
-    assert.equal(dialog.querySelectorAll('ol a').length, 0);
-    [...dialog.querySelectorAll('button')].find(b => b.textContent === '撤销删除')!.click();
-    assert.equal(dialog.querySelector('ol a')!.textContent, 'Alpha');
-    assert.ok(dialog.querySelector('time'));
-  } finally { await f.close(); }
-});
+两行分别匹配包含 `vmiss` 或「搬瓦工」的内容，以及「香港」后出现「年付」或「月付」的内容。不同规则按顺序分色。
 
-test('trust badges display scores and open an explanation without extra requests', async () => {
-  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
-    window.fetch = (async () => new window.Response(JSON.stringify({ success: true, detail: { created_at: new Date(Date.now() - 800 * 86400000).toISOString(), nPost: 100, nComment: 500 } }), { headers: { 'Content-Type': 'application/json' } })) as typeof window.fetch;
-  });
-  try {
-    await new Promise(resolve => setTimeout(resolve, 30));
-    const score = f.window.document.querySelector('.nspp-trust')!;
-    assert.equal(score.textContent, '信任 100');
-    (score as HTMLElement).click();
-    const dialog = f.window.document.querySelector('dialog.nspp-trust-dialog')!;
-    assert.equal(dialog.hasAttribute('open'), true);
-    assert.match(dialog.textContent!, /注册时长 60.0\/60/);
-    assert.match(dialog.textContent!, /不代表交易信用/);
-    (dialog.querySelector('button') as HTMLElement).click();
-    assert.equal(dialog.hasAttribute('open'), false);
-    assert.ok(Array.from(f.window.document.querySelectorAll('style')).some(style => style.textContent?.includes('nspp-sweep-shine')));
-    assert.match(f.window.document.querySelector('#nspp-settings')!.shadowRoot!.querySelector('style')!.textContent!, /nspp-sweep-shine/);
-  } finally { await f.close(); }
-});
+不会写正则时，可以把需求交给 AI，例如：
 
-test('hover preview preserves the native list and extracts safe reading content without an iframe', async () => {
-  const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Preview test</a></div></li></ul>', '/', undefined, window => {
-    window.matchMedia = (() => ({ matches: true })) as typeof window.matchMedia;
-    window.fetch = (async () => new window.Response('<nav>Site navigation</nav><div class="nsk-post"><div class="author-info">Alice</div><div class="post-content"><p onclick="alert(1)">Body text</p><iframe src="/bad"></iframe><script>alert(1)</script><a href="javascript:alert(1)">Bad link</a><img src="/photo.png" onerror="alert(1)"></div></div><div class="comment-content">A reply</div>')) as typeof window.fetch;
-  });
-  try {
-    const doc = f.window.document;
-    const view = doc.querySelector<HTMLElement>('.nspp-post-preview')!;
-    assert.equal(view.hidden, true);
-    assert.equal(doc.querySelector('.nspp-list-actions'), null);
-    doc.querySelector('.post-title a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 450));
-    assert.equal(view.hidden, false);
-    assert.match(view.textContent!, /Body text/);
-    assert.match(view.textContent!, /A reply/);
-    assert.doesNotMatch(view.textContent!, /Site navigation/);
-    assert.equal(view.querySelector('iframe, script, [onclick], [onerror], a[href^="javascript:"]'), null);
-    assert.equal(view.querySelector('img')!.src, 'https://www.nodeseek.com/photo.png');
-    view.querySelector('button')!.click();
-    assert.equal(view.hidden, true);
-  } finally { await f.close(); }
-});
+> 请生成 JavaScript 正则，匹配包含 vmiss 或搬瓦工、但不包含已出的帖子，忽略大小写。按 /表达式/i 格式输出，每行一个，不要代码块。
 
-test('three-line rows label metadata, read real counts on demand and open native actions', async () => {
-  const html = '<ul class="post-list"><li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">Post</a></div><div class="post-info"><span class="info-author"><a href="/space/8">Alice</a></span><span class="info-views">12</span><span class="info-comments-count">3</span><span class="info-last-commenter">Bob</span><a class="info-last-comment-time" href="/post-42-1#3">now</a></div></div></li></ul>';
-  const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html);
-  try {
-    let reads = 0;
-    f.window.fetch = (async () => { reads++; return new f.window.Response('<div class="nsk-post"><div class="comment-menu">' + ['点赞', '加鸡腿', '反对', '收藏'].map((title, i) => `<div class="menu-item" title="${title}"><span>${i + 1}</span></div>`).join('') + '</div></div>'); }) as typeof f.window.fetch;
-    const doc = f.window.document;
-    const row = doc.querySelector('.nspp-three-line')!;
-    assert.equal(doc.querySelectorAll('.nspp-list-actions button').length, 6);
-    assert.deepEqual(Array.from(doc.querySelectorAll('.nspp-meta-label'), el => el.textContent), ['作者', '浏览', '回复', '最后回复']);
-    assert.equal(reads, 0);
-    assert.match(doc.querySelector('.nspp-list-actions')!.textContent!, /点赞—/);
-    row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(reads, 1);
-    assert.match(doc.querySelector('.nspp-list-actions')!.textContent!, /点赞1加鸡腿2反对3收藏4引用回复/);
-    doc.querySelector<HTMLButtonElement>('.nspp-list-actions button[title="回复"]')!.click();
-    const dialog = doc.querySelector<HTMLElement>('.nspp-interaction')!;
-    assert.equal(dialog.hidden, false);
-    assert.equal(dialog.querySelector('iframe'), null);
-    assert.ok(dialog.querySelector('textarea'));
-    assert.equal(doc.querySelector('iframe[aria-hidden="true"]')!.getAttribute('src'), 'https://www.nodeseek.com/post-42-1');
-    dialog.querySelector('button')!.click();
-    assert.equal(dialog.hidden, true);
-    row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 120));
-    assert.equal(reads, 1);
-    assert.equal(doc.querySelectorAll('.nspp-list-actions').length, 1);
-  } finally { await f.close(); }
-});
+检查生成结果后再使用。输入框旁的帮助图标可打开 [MDN 正则表达式文档](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Regular_expressions)。
 
-test('cached attendance is hidden on boot and no automatic request is made', async () => {
-  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
-  const storage = new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: true } }], ['nspp:state:www.nodeseek.com:attendance', { 'day:7': day }]]);
-  const f = await fixture({}, '', '/', storage);
-  try {
-    const button = [...f.window.document.querySelectorAll('button')].find(el => el.textContent === '签到')!;
-    assert.equal(button.hidden, true);
-    assert.equal(f.requests.length, 0);
-  } finally { await f.close(); }
-});
+### 刷新与提醒
 
-test('already-signed server response hides attendance and reduced motion skips animation', async () => {
-  const f = await fixture({}, '', '/', undefined, window => {
-    window.matchMedia = (() => ({ matches: true })) as typeof window.matchMedia;
-    window.fetch = (async () => new window.Response(JSON.stringify({ success: false, message: '今天已签到' }), { headers: { 'Content-Type': 'application/json' } })) as typeof window.fetch;
-  });
-  try {
-    const button = [...f.window.document.querySelectorAll('button')].find(el => el.textContent === '签到')!;
-    button.click(); await new Promise(resolve => setTimeout(resolve, 30));
-    assert.equal(button.hidden, true);
-    assert.ok(f.storage.get('nspp:state:www.nodeseek.com:attendance'));
-  } finally { await f.close(); }
-});
+- **刷新**立即触发一次手动检查，跳过常规轮询等待；正在执行时不会重复并发。
+- **停止 / 启动**控制自动监控；停止后仍可手动刷新一次。
+- 更新、手动刷新、检查完成或失败均有 Toast 反馈，检查期间显示 GSAP 动画。
+- 首次检查建立基线，不把已有匹配帖子全部作为新帖提醒。
+- 后续发现的新匹配帖子去重提醒，最多保留 200 条未读。打开面板不会清空未读，可点击帖子或选择「全部已读」。
+- 系统通知需点击「开启系统通知」并获得浏览器授权；未授权时仍有页面提示。
 
-### 快速回复与文字加载提示
+后台标签页也会检查，但必须保持论坛页面打开。浏览器休眠、标签页冻结或系统休眠可能推迟轮询，脚本不提供独立于浏览器的后台服务。
 
-第三行闪电图标打开响应式快捷回复弹窗。默认内置 8 条常用回复，每页 6 条，支持查找、新增、修改、删除，模板保存在当前站点脚本设置中。点击模板内容即直接发送；发送期间禁用重复点击，完成后关闭弹窗并用 toast 显示结果。全程不跳转、不展示帖子详情。连接依然遵循站点登录与验证条件；结果未确认时不会自动重发。
+为控制请求量，监控请求至少间隔 5 秒，每 5 分钟最多 12 次，并在多个标签页之间协调。手动刷新与更新仍遵守请求限速、并发锁和冷却状态。设置 60 秒不代表每分钟都能完成全部正文扫描，也不保证捕获轮询间隙的所有帖子。
 
-计数使用 IntersectionObserver 在进入视口时排队加载，新插入的帖子也会被观察。加载时显示“加载中”，文字采用 One Node SweepShine 相同的 4 秒线性文字扫光；减少动态效果时保留静态文字。
+### 抽奖追踪
+
+登录后可在帖子页面的监控面板中选择「追踪当前抽奖帖」。检测到标题中的「已开奖」「开奖结果」等文字时给出提示，需要自行打开帖子核实；脚本不会据此判断是否中奖。
+
+## 图片上传与快捷回复
+
+在设置中选择图床协议及地址，然后在编辑器旁输入凭据并选择图片。选择文件后会上传到所选图床，并插入返回的链接。NodeImage 固定使用官方 API，并通过脚本管理器跨域上传；安装或更新时需允许连接 `api.nodeimage.com`。脚本会通过 NodeImage 登录会话自动获取密钥；未登录时打开上传栏的官网入口，完成 NodeSeek 授权后返回论坛即可重试。支持选择多张图片、在编辑器粘贴或拖拽图片；也可手动填写 API Key。其他图床须支持所需接口与 CORS；上传凭据仅保留在当前页面内存，刷新后需重新输入。
+
+列表中的闪电图标打开快捷回复面板，支持搜索、新增、修改和删除模板。**点击模板内容会直接发送回复**，需要站点登录和相关权限。
+
+## 数据与权限
+
+- 常规配置、监控结果、历史和回复模板保存在用户脚本管理器的本地存储中；部分数据按站点及账号隔离。
+- 设置导出不包含运行历史，并排除约定的密钥字段。监控正则独立保存，不随常规设置导出。
+- 用户资料参考分根据公开注册时间、发帖数和评论数在本地计算，非站点官方评分，不代表交易信用。
+- 图片上传会向所选图床发送图片；AI 美化会在手动操作时向所配置服务发送编辑器文本。
+- 网站接口、登录状态及站点验证仍会影响功能。脚本不会绕过这些限制。
+
+## 本地开发
+
+使用支持当前 Vite 与 TypeScript 工具链的 Node.js 环境，并安装 pnpm。
+
+```bash
+pnpm install
+pnpm dev
+```
+
+按照开发服务器输出的地址安装开发脚本，在目标论坛页面调试。
+
+```bash
+pnpm typecheck
+pnpm build
+pnpm test
+```
+
+测试会读取构建产物，因此应先执行 `pnpm build`。本地测试通过不等于浏览器权限、站点验证和第三方图床已通过实站验证。
+
+| 文件 / 目录 | 用途 |
+| --- | --- |
+| `src/features/` | 独立功能模块 |
+| `src/settings/` | 设置面板 |
+| `src/core/` | 配置、运行时与功能类型 |
+| `src/views/` | 预览、互动与快捷回复视图 |
+| `tests/` | 单元及构建产物测试 |
+| `dist/nodeseek-plus-plus.user.js` | 正式安装脚本 |
+| `dist/nodeseek-plus-plus.meta.js` | 更新检查用元信息 |
+| `references/` | 上游参考代码与许可材料 |
+
+隔离构建阶段版本：
+
+```bash
+pnpm build --mode stage
+```
+
+产物位于 `dist-stage/`，脚本名称为 `NodeSeek++ (Stage)`，不要作为正式版本上传。
+
+## 发布到 Greasy Fork
+
+1. 修改 `package.json` 的 `version`，保持脚本名称和 namespace 稳定。
+2. 执行 `pnpm typecheck`、`pnpm build` 和 `pnpm test`。
+3. 登录 [Greasy Fork](https://greasyfork.org/zh-CN)，首次发布创建脚本；后续更新在原脚本页面提交新版本。
+4. 上传或粘贴 `dist/nodeseek-plus-plus.user.js` 的完整内容，填写中文介绍及变更说明。
+5. 使用发布后的安装链接验证安装与升级。
+
+构建配置使用非压缩输出，并把第三方说明与 highlight.js 许可证写入脚本。请保留 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [references/highlight.js.LICENSE](references/highlight.js.LICENSE)，构建时会读取它们。
+
+发布前查看 [油叉代码规则](https://greasyfork.org/zh-CN/help/code-rules) 和 [元信息说明](https://greasyfork.org/zh-CN/help/meta-keys)。
+
+## 许可证与参考
+
+项目声明使用 [GPL-3.0-only](LICENSE)。第三方依赖适用各自许可证，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+
+上游功能对照和参考来源见 [功能矩阵](docs/feature-matrix.md)；`references/upstream/` 用于保留参考材料，不作为运行时入口。

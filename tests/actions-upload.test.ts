@@ -14,7 +14,7 @@ test('six image provider contracts build the documented body and parse their res
   ] as const;
   for (const [provider, path, field, response] of cases) {
     const request = uploadRequest(provider, base, 'test-key', file);
-    assert.equal(request.url, base + path);
+    assert.equal(request.url, (provider === 'NodeImage' ? 'https://api.nodeimage.com' : base) + path);
     assert.ok(request.body.get(field) instanceof Blob);
     assert.equal(uploadResult(provider, base, response).href, base + '/a.png');
   }
@@ -28,7 +28,8 @@ test('EasyImages without a token uses its anonymous contract', () => {
   assert.match(String(request.body.get('sign')), /^\d+$/);
 });
 test('reject insecure endpoint, missing key, failed response and executable result URL', () => {
-  assert.throws(() => uploadRequest('NodeImage', 'http://images.example', 'key', file));
+  assert.equal(uploadRequest('NodeImage', 'http://images.example', 'key', file).url, 'https://api.nodeimage.com/api/upload');
+  assert.throws(() => uploadRequest('LskyPro', 'http://images.example', 'key', file));
   assert.throws(() => uploadRequest('NodeImage', base, '', file));
   assert.throws(() => uploadResult('NodeImage', base, { success: false, links: { direct: base } }));
   assert.throws(() => uploadResult('Telegraph2', base, { data: 'javascript:alert(1)' }));
