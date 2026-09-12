@@ -172,24 +172,91 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			return false;
 		}
 	}
+	function retryDelay(value, now = Date.now()) {
+		if (!value) return 6e4;
+		const seconds = Number(value);
+		const delay = Number.isFinite(seconds) ? seconds * 1e3 : Date.parse(value) - now;
+		return Number.isFinite(delay) ? Math.max(6e4, delay) : 6e4;
+	}
+	function createRequestQueue() {
+		const pending = [];
+		let active = false;
+		const drain = async () => {
+			if (active) return;
+			active = true;
+			while (pending.length) {
+				pending.sort((a, b) => a.priority - b.priority);
+				await pending.shift().run();
+			}
+			active = false;
+		};
+		return (task, priority = 0) => new Promise((resolve, reject) => {
+			pending.push({
+				priority,
+				run: async () => {
+					try {
+						resolve(await task());
+					} catch (error) {
+						reject(error);
+					}
+				}
+			});
+			drain();
+		});
+	}
+	var enqueue = createRequestQueue();
 	async function request(url, options = {}) {
 		const target = new URL(url, location.origin);
 		if (!/^https?:$/.test(target.protocol)) throw new Error("不支持的请求地址");
 		const { responseType = "json", ...init } = options;
-		const timeout = AbortSignal.timeout(2e4);
-		const response = await fetch(target, {
-			...init,
-			credentials: target.origin === location.origin ? "same-origin" : "omit",
-			signal: init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
-		});
-		if (!response.ok) throw new Error(`请求失败（HTTP ${response.status}）`);
-		if (responseType === "text") return await response.text();
-		if (response.status === 204) return null;
-		try {
-			return await response.json();
-		} catch {
-			throw new Error("服务器未返回有效数据，请检查登录状态或站点验证页面");
-		}
+		const execute = async () => {
+			init.signal?.throwIfAborted();
+			const timeout = AbortSignal.timeout(2e4);
+			const response = await fetch(target, {
+				...init,
+				credentials: target.origin === location.origin ? "same-origin" : "omit",
+				signal: init.signal ? AbortSignal.any([init.signal, timeout]) : timeout
+			});
+			if (target.origin === location.origin && [
+				403,
+				429,
+				503
+			].includes(response.status)) GM_setValue$1(`nspp:request-cooldown:${location.host}`, Date.now() + retryDelay(response.headers.get("Retry-After")));
+			if (!response.ok) throw new Error(`请求失败（HTTP ${response.status}）`);
+			if (responseType === "text") return await response.text();
+			if (response.status === 204) return null;
+			try {
+				return await response.json();
+			} catch {
+				throw new Error("服务器未返回有效数据，请检查登录状态或站点验证页面");
+			}
+		};
+		if (target.origin !== location.origin) return execute();
+		return enqueue(async () => {
+			const scheduled = async () => {
+				const cooldownKey = `nspp:request-cooldown:${location.host}`;
+				const lastKey = `nspp:request-last:${location.host}`;
+				init.signal?.throwIfAborted();
+				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
+				const delay = GM_getValue$1(lastKey, 0) + 3e3 - Date.now();
+				if (delay > 0) await new Promise((resolve, reject) => {
+					const abort = () => {
+						clearTimeout(timer);
+						reject(init.signal?.reason);
+					};
+					const timer = setTimeout(() => {
+						init.signal?.removeEventListener("abort", abort);
+						resolve();
+					}, delay);
+					init.signal?.addEventListener("abort", abort, { once: true });
+				});
+				init.signal?.throwIfAborted();
+				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
+				GM_setValue$1(lastKey, Date.now());
+				return execute();
+			};
+			return navigator.locks?.request ? navigator.locks.request("nspp:forum-requests", { signal: init.signal ?? void 0 }, scheduled) : scheduled();
+		}, target.pathname.startsWith("/api/account/getInfo/") ? 1 : 0);
 	}
 	var validObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 	function normalizeSettings(features, value) {
@@ -564,7 +631,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 							control.rows = 4;
 						} else {
 							control = element("input");
-							control.type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
+							control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
 						}
 						if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
 						else control.value = String(value);
@@ -2758,27 +2825,48 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const list = document.querySelector(selector);
 		if (!list) return;
 		let next = document.querySelector(".nsk-pager a.pager-next")?.href;
-		let busy = false, failed = false;
+		let busy = false, failed = false, paused = false;
+		let loading;
 		const visited = new Set([location.href]);
 		const button = document.createElement("button");
 		button.type = "button";
 		button.className = "nspp-action";
 		button.textContent = "加载下一页";
 		list.after(button);
-		const load = async () => {
+		const pause = document.createElement("button");
+		pause.type = "button";
+		pause.className = "nspp-tool-icon";
+		const renderPause = () => {
+			pause.replaceChildren(toolIcon(paused ? "play" : "stop"));
+			pause.title = paused ? "继续自动翻页" : "暂停自动翻页";
+			pause.setAttribute("aria-label", pause.title);
+			pause.setAttribute("aria-pressed", String(paused));
+		};
+		renderPause();
+		if (next) (document.querySelector("#nspp-tools") || document.body).append(pause);
+		pause.addEventListener("click", () => {
+			paused = !paused;
+			renderPause();
+			if (paused) {
+				observer.disconnect();
+				loading?.abort();
+			} else if (next) observer.observe(button);
+		}, { signal: ctx.signal });
+		const load = async (manual = false) => {
 			if (busy || !next || visited.has(next) || ctx.signal.aborted) return;
 			const url = new URL(next, location.href);
 			if (url.origin !== location.origin) return;
 			busy = true;
+			loading = new AbortController();
 			button.disabled = true;
 			button.setAttribute("aria-busy", "true");
 			button.textContent = "正在加载…";
 			try {
 				const html = await ctx.request(url.href, {
 					responseType: "text",
-					signal: ctx.signal
+					signal: AbortSignal.any([ctx.signal, loading.signal])
 				});
-				if (ctx.signal.aborted) return;
+				if (ctx.signal.aborted || paused && !manual) return;
 				const page = new DOMParser().parseFromString(html, "text/html");
 				const source = page.querySelector(selector);
 				if (!source || !source.children.length) throw new Error("页面内容不可用");
@@ -2819,26 +2907,35 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				next = href ? new URL(href, url).href : void 0;
 				if (next && visited.has(next)) next = void 0;
 				button.textContent = next ? "加载下一页" : "已加载全部内容";
+				pause.hidden = !next;
 			} catch {
+				if (loading.signal.aborted) return;
 				failed = true;
 				button.textContent = "加载失败，点击重试";
 			} finally {
 				busy = false;
 				button.disabled = !next;
 				button.removeAttribute("aria-busy");
+				if (paused && next) button.textContent = "已暂停，点击加载下一页";
+				if (loading.signal.aborted && !ctx.signal.aborted && !paused && next) {
+					observer.unobserve(button);
+					observer.observe(button);
+				}
 			}
 		};
 		button.addEventListener("click", () => {
-			load();
+			load(true);
 		}, { signal: ctx.signal });
 		const observer = new IntersectionObserver((entries) => {
-			if (entries.some((e) => e.isIntersecting) && !failed) load();
-		}, { rootMargin: "600px" });
+			if (entries.some((e) => e.isIntersecting) && !failed && !paused && !document.hidden) load();
+		}, { rootMargin: "150px" });
 		if (next) observer.observe(button);
 		else button.hidden = true;
 		return () => {
 			observer.disconnect();
+			loading?.abort();
 			button.remove();
+			pause.remove();
 		};
 	}
 	var readingFeatures = [
@@ -3058,10 +3155,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				}
 			},
 			mount(ctx) {
+				if (ctx.get("cleanLinks") && location.pathname === "/jump") {
+					const target = directLink(location.href, location.href);
+					if (target && target !== location.href && new URL(target).pathname !== "/jump") location.replace(target);
+				}
 				const processed = new WeakSet();
 				const undo = [];
 				const stop = ctx.watch(() => {
-					document.querySelectorAll(`${contentSelector} a, .post-title a`).forEach((a) => {
+					document.querySelectorAll(`${contentSelector} a, .post-title a, a[href*="/jump?to="]`).forEach((a) => {
 						if (processed.has(a)) return;
 						processed.add(a);
 						const old = [
@@ -3415,11 +3516,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			comments
 		};
 	}
-	var userHoverSelector = "a[href*=\"/space/\"], a[href*=\"uid=\"], a[data-uid]";
+	var userHoverSelector = "a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*=\"/space/\"], a[href*=\"/space/\"]:has(img), a[data-uid]";
 	var cards = new WeakMap();
+	function isUserHoverAnchor(anchor) {
+		const url = new URL(anchor.href, location.href);
+		return url.origin === location.origin && /^\/space\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash;
+	}
 	function userHover(anchor, ctx) {
 		let entry = cards.get(anchor);
 		if (!entry) {
+			const title = anchor.getAttribute("title");
+			anchor.removeAttribute("title");
 			const element = document.createElement("section");
 			element.className = "nspp-user-hover";
 			element.hidden = true;
@@ -3526,6 +3633,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					close();
 					controller.abort();
 					element.remove();
+					if (title !== null) anchor.setAttribute("title", title);
 					cards.delete(anchor);
 				}
 			};
@@ -3594,41 +3702,77 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		title: "等级、信任分与身份徽章",
 		description: "显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。",
 		group: "用户",
-		defaults: { enabled: true },
+		defaults: {
+			enabled: true,
+			colors: "muted",
+			levelColor: "#9198a1",
+			trustColor: "#9198a1",
+			roleColor: "#9198a1"
+		},
+		fields: {
+			colors: {
+				label: "徽章配色",
+				type: "select",
+				options: [
+					{
+						label: "柔和单色",
+						value: "muted"
+					},
+					{
+						label: "自定义",
+						value: "custom"
+					},
+					{
+						label: "原有彩色",
+						value: "original"
+					}
+				]
+			},
+			levelColor: {
+				label: "等级与加入天数颜色",
+				type: "color"
+			},
+			trustColor: {
+				label: "信任分颜色",
+				type: "color"
+			},
+			roleColor: {
+				label: "身份徽章颜色",
+				type: "color"
+			}
+		},
 		mount(ctx) {
+			const colorStyle = document.createElement("style");
+			if (ctx.get("colors") !== "original") {
+				const color = (key) => ctx.get("colors") === "custom" && /^#[0-9a-f]{6}$/i.test(ctx.get(key)) ? ctx.get(key) : "var(--nspp-muted, #9198a1)";
+				colorStyle.textContent = `.nspp-user-badges .nspp-level,.nspp-user-badges .nspp-age{color:${color("levelColor")}!important;background:transparent!important;box-shadow:none!important}.nspp-user-badges .nspp-trust{color:${color("trustColor")}!important;background:transparent!important;box-shadow:none!important}.role-tag[data-nspp-role]{color:${color("roleColor")}!important;background:transparent!important;box-shadow:none!important}`;
+				document.head.append(colorStyle);
+			}
 			let scoreDialog;
 			const roles = new Map();
 			const cache = new Map();
 			const inflight = new Map();
 			const nodes = new Map();
-			const queue = [];
-			let active = 0;
-			const drain = () => {
-				while (active < 2 && queue.length && !ctx.signal.aborted) {
-					active++;
-					queue.shift()().finally(() => {
-						active--;
-						drain();
-					});
-				}
-			};
 			const getProfile = (id) => {
 				if (cache.has(id)) return Promise.resolve(cache.get(id));
 				if (inflight.has(id)) return inflight.get(id);
-				const request = new Promise((resolve, reject) => {
-					queue.push(async () => {
-						try {
-							const result = await ctx.request(`/api/account/getInfo/${id}`);
-							if (!result?.success || !result.detail || typeof result.detail !== "object") throw new Error("资料不可用");
-							cache.set(id, result.detail);
-							resolve(result.detail);
-						} catch (error) {
-							reject(error);
-						}
-					});
+				const stored = ctx.get("profiles") || {};
+				if (stored[id] && Date.now() - stored[id].time < 216e5) {
+					cache.set(id, stored[id].user);
+					return Promise.resolve(stored[id].user);
+				}
+				const request = ctx.request(`/api/account/getInfo/${id}`).then((result) => {
+					if (!result?.success || !result.detail || typeof result.detail !== "object") throw new Error("资料不可用");
+					cache.set(id, result.detail);
+					const latest = ctx.get("profiles") || {};
+					latest[id] = {
+						time: Date.now(),
+						user: result.detail
+					};
+					ctx.set("profiles", Object.fromEntries(Object.entries(latest).sort((a, b) => b[1].time - a[1].time).slice(0, 200)));
+					return result.detail;
 				});
 				inflight.set(id, request);
-				drain();
 				request.then(() => inflight.delete(id), () => inflight.delete(id));
 				return request;
 			};
@@ -3758,7 +3902,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const headline = document.createElement("button");
 					headline.type = "button";
 					headline.className = "nspp-user-hover-score";
-					headline.title = score.title;
 					headline.setAttribute("aria-label", `信任参考分 ${trust?.score ?? "未知"}，查看评分依据`);
 					const number = document.createElement("strong");
 					number.textContent = trust ? String(trust.score) : "—";
@@ -3783,6 +3926,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						const caption = document.createElement("small");
 						caption.textContent = label;
 						const value = source.cloneNode(true);
+						value.removeAttribute("title");
 						if (source instanceof HTMLButtonElement) value.addEventListener("click", () => {
 							source.click();
 						}, { signal: ctx.signal });
@@ -3795,7 +3939,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					note.className = "nspp-user-hover-note";
 					note.dataset.tone = info.level === 1 || trust && trust.score < 40 ? "danger" : info.tone;
 					note.textContent = risk || `${info.label} · 本地参与度参考分，非官方信用评分`;
-					note.title = details;
 					profileDetails.after(note);
 				} catch {
 					if (ctx.signal.aborted || !badge.isConnected) return;
@@ -3842,6 +3985,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					nodes.delete(author);
 				}
 				document.querySelectorAll(userHoverSelector).forEach((author) => {
+					if (!isUserHoverAnchor(author)) return;
 					if (author.closest(".nspp-user-hover, .nspp-profile-dialog")) return;
 					if (!author.textContent?.trim() && !author.querySelector("img")) return;
 					const id = authorId(author, location.origin);
@@ -3874,13 +4018,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const stop = ctx.watch(scan);
 			return () => {
 				stop();
+				colorStyle.remove();
 				scoreDialog?.remove();
 				roles.forEach((original, tag) => {
 					if (original === null) tag.removeAttribute("data-nspp-role");
 					else tag.setAttribute("data-nspp-role", original);
 				});
 				observer?.disconnect();
-				queue.length = 0;
 				nodes.forEach(({ badge, details, release }) => {
 					badge.remove();
 					details.remove();
@@ -8380,7 +8524,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			group: "操作辅助",
 			defaults: {
 				enabled: true,
-				automatic: false,
+				automatic: true,
 				mode: "fixed"
 			},
 			fields: {
@@ -8401,125 +8545,129 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				}
 			},
 			mount(ctx) {
-				const user = currentUser();
-				if (!user?.member_id) return;
-				const key = `day:${user.member_id}`;
-				const day = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
-				const control = button("签到", () => {
-					run();
-				}, ctx);
-				control.className = "nspp-action nspp-tool-icon";
-				const renderControl = (label = "签到") => {
-					control.replaceChildren(toolIcon("attendance"));
-					control.title = label;
-					control.setAttribute("aria-label", label);
-				};
-				renderControl();
-				(document.querySelector("#nspp-tools") || document.body).append(control);
-				const initialDay = day();
-				let animation;
-				const known = () => ctx.get(key) === day();
-				const signedText = (root) => Array.from(root.querySelectorAll(".user-card, .user-panel, #attendance, .attendance, a[href=\"/board\"], button, [role=\"status\"]")).some((el) => !el.closest("#nspp-tools, .post-content, .comment-content, .markdown-body") && /^(?:[✓✔]\s*)?(?:(?:今日|今天)已(?:完成)?签到|已签到|(?:今日|今天)?签到已完成)(?:[！!。]|\s|$)/.test(el.textContent?.trim() || ""));
-				const sync = () => {
-					if (day() === initialDay && !known() && signedText(document)) ctx.set(key, day());
-					const signed = known();
-					if (!animation?.isActive()) control.hidden = signed;
-				};
-				sync();
-				let checkedDay = "";
-				const checkPage = async () => {
+				const initialize = () => {
+					const user = currentUser();
+					if (!user?.member_id) return;
+					const key = `day:${user.member_id}`;
+					const day = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
+					const control = button("签到", () => {
+						run();
+					}, ctx);
+					control.className = "nspp-action nspp-tool-icon";
+					const renderControl = (label = "签到") => {
+						control.replaceChildren(toolIcon("attendance"));
+						control.title = label;
+						control.setAttribute("aria-label", label);
+					};
+					renderControl();
+					(document.querySelector("#nspp-tools") || document.body).append(control);
+					const initialDay = day();
+					let animation;
+					const known = () => ctx.get(key) === day();
+					const signedText = (root) => Array.from(root.querySelectorAll(".user-card, .user-panel, #attendance, .attendance, a[href=\"/board\"], button, [role=\"status\"]")).some((el) => !el.closest("#nspp-tools, .post-content, .comment-content, .markdown-body") && /^(?:[✓✔]\s*)?(?:(?:今日|今天)已(?:完成)?签到|已签到|(?:今日|今天)?签到已完成)(?:[！!。]|\s|$)/.test(el.textContent?.trim() || ""));
+					const sync = () => {
+						if (day() === initialDay && !known() && signedText(document)) ctx.set(key, day());
+						const signed = known();
+						if (!animation?.isActive()) control.hidden = signed;
+					};
 					sync();
-					if (known() || checkedDay === day() || !document.querySelector("a[href=\"/board\"]")) return;
-					checkedDay = day();
-					try {
-						const html = await ctx.request("/board", {
-							responseType: "text",
-							signal: ctx.signal
-						});
-						if (!ctx.signal.aborted && checkedDay === day() && signedText(new DOMParser().parseFromString(html, "text/html"))) {
-							ctx.set(key, day());
-							sync();
+					let attemptedDay = "", attemptedAt = 0;
+					const tick = () => {
+						sync();
+						if (ctx.get("automatic") && !known() && !document.hidden && (attemptedDay !== day() || Date.now() - attemptedAt >= 6e5)) {
+							attemptedDay = day();
+							attemptedAt = Date.now();
+							run();
 						}
-					} catch {}
-				};
-				const stop = ctx.watch(() => {
-					checkPage();
-				});
-				window.addEventListener("focus", sync, { signal: ctx.signal });
-				document.addEventListener("visibilitychange", sync, { signal: ctx.signal });
-				const rollover = setInterval(sync, 6e4);
-				const complete = (fresh) => {
-					animation?.kill();
-					gsapWithCSS.set(control, { clearProps: "transform,opacity,visibility" });
-					if (!fresh || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-						control.hidden = true;
-						return;
-					}
-					renderControl("已签到");
-					animation = gsapWithCSS.timeline({ onComplete: () => {
-						control.hidden = true;
+					};
+					window.addEventListener("focus", tick, { signal: ctx.signal });
+					document.addEventListener("visibilitychange", tick, { signal: ctx.signal });
+					const rollover = setInterval(tick, 6e4);
+					const complete = (fresh) => {
+						animation?.kill();
 						gsapWithCSS.set(control, { clearProps: "transform,opacity,visibility" });
-					} });
-					animation.fromTo(control, { scale: .9 }, {
-						scale: 1.06,
-						duration: .18,
-						ease: "back.out(2)"
-					}).to(control, {
-						scale: 1,
-						duration: .15
-					}).to(control, {
-						y: -8,
-						autoAlpha: 0,
-						duration: .25,
-						delay: .45,
-						ease: "power2.in"
-					});
+						if (!fresh || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+							control.hidden = true;
+							return;
+						}
+						renderControl("已签到");
+						animation = gsapWithCSS.timeline({ onComplete: () => {
+							control.hidden = true;
+							gsapWithCSS.set(control, { clearProps: "transform,opacity,visibility" });
+						} });
+						animation.fromTo(control, { scale: .9 }, {
+							scale: 1.06,
+							duration: .18,
+							ease: "back.out(2)"
+						}).to(control, {
+							scale: 1,
+							duration: .15
+						}).to(control, {
+							y: -8,
+							autoAlpha: 0,
+							duration: .25,
+							delay: .45,
+							ease: "power2.in"
+						});
+					};
+					async function run() {
+						if (control.disabled || ctx.signal.aborted) return;
+						if (known()) {
+							complete(false);
+							return;
+						}
+						animation?.kill();
+						if (!matchMedia("(prefers-reduced-motion: reduce)").matches) gsapWithCSS.fromTo(control, { scale: .94 }, {
+							scale: 1,
+							duration: .2,
+							ease: "power2.out"
+						});
+						control.disabled = true;
+						renderControl("签到中…");
+						control.setAttribute("aria-busy", "true");
+						try {
+							if (!await withTabLock(`attendance:${user.member_id}`, 1e4, async () => {
+								if (ctx.signal.aborted) return;
+								if (known()) {
+									complete(false);
+									return;
+								}
+								const result = await ctx.request(`/api/attendance?random=${ctx.get("mode") === "random"}`, { method: "POST" });
+								if (ctx.signal.aborted) return;
+								if (result.success || /已完成|已签到/.test(result.message || "")) {
+									ctx.set(key, day());
+									complete(!!result.success);
+								}
+								ctx.notify(result.message || (result.success ? `签到成功，获得 ${result.gain ?? ""} 鸡腿` : "签到失败"));
+							})) ctx.notify("其他标签页正在签到或刚刚尝试，请稍后查看");
+						} catch {
+							if (!ctx.signal.aborted) ctx.notify("签到失败，请稍后重试");
+						} finally {
+							control.disabled = false;
+							renderControl(known() ? "已签到" : "签到");
+							control.removeAttribute("aria-busy");
+						}
+					}
+					const stop = ctx.watch(sync);
+					tick();
+					return () => {
+						stop();
+						clearInterval(rollover);
+						animation?.kill();
+						gsapWithCSS.killTweensOf(control);
+						control.remove();
+					};
 				};
-				async function run() {
-					if (control.disabled || ctx.signal.aborted) return;
-					if (known()) {
-						complete(false);
-						return;
-					}
-					animation?.kill();
-					if (!matchMedia("(prefers-reduced-motion: reduce)").matches) gsapWithCSS.fromTo(control, { scale: .94 }, {
-						scale: 1,
-						duration: .2,
-						ease: "power2.out"
-					});
-					control.disabled = true;
-					renderControl("签到中…");
-					control.setAttribute("aria-busy", "true");
-					try {
-						if (!await withTabLock(`attendance:${user.member_id}`, 1e4, async () => {
-							if (ctx.signal.aborted) return;
-							if (known()) {
-								complete(false);
-								return;
-							}
-							const result = await ctx.request(`/api/attendance?random=${ctx.get("mode") === "random"}`, { method: "POST" });
-							if (ctx.signal.aborted) return;
-							if (result.success || /已完成|已签到/.test(result.message || "")) {
-								ctx.set(key, day());
-								complete(!!result.success);
-							}
-							ctx.notify(result.message || (result.success ? `签到成功，获得 ${result.gain ?? ""} 鸡腿` : "签到失败"));
-						})) ctx.notify("其他标签页正在签到或刚刚尝试，请稍后查看");
-					} catch {
-						if (!ctx.signal.aborted) ctx.notify("签到失败，请稍后重试");
-					} finally {
-						control.disabled = false;
-						renderControl(known() ? "已签到" : "签到");
-						control.removeAttribute("aria-busy");
-					}
-				}
-				if (ctx.get("automatic") && !known()) run();
+				let cleanup;
+				const start = () => {
+					if (!cleanup && !ctx.signal.aborted) cleanup = initialize();
+				};
+				const stopReady = ctx.watch(start);
+				const ready = setInterval(start, 1e3);
 				return () => {
-					stop();
-					clearInterval(rollover);
-					animation?.kill();
-					gsapWithCSS.killTweensOf(control);
-					control.remove();
+					stopReady();
+					clearInterval(ready);
+					cleanup?.();
 				};
 			}
 		},
@@ -10138,23 +10286,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			defaults: { enabled: false },
 			mount(ctx) {
 				const seen = new Set();
-				const links = [];
+				let timer;
 				if (navigator.connection?.saveData) return;
 				document.addEventListener("pointerover", (event) => {
+					clearTimeout(timer);
 					const anchor = event.target.closest("a[href]");
 					if (!anchor || seen.size >= 20) return;
 					const url = new URL(anchor.href);
 					if (url.origin !== location.origin || !/^\/post-\d+(?:-\d+)?(?:\.html)?$/.test(url.pathname) || url.search) return;
 					url.hash = "";
 					if (seen.has(url.href)) return;
-					seen.add(url.href);
-					const link = document.createElement("link");
-					link.rel = "prefetch";
-					link.href = url.href;
-					document.head.append(link);
-					links.push(link);
+					timer = setTimeout(() => {
+						seen.add(url.href);
+						ctx.request(url.href, { responseType: "text" }).catch(() => {});
+					}, 800);
 				}, { signal: ctx.signal });
-				return () => links.forEach((el) => el.remove());
+				document.addEventListener("pointerout", () => clearTimeout(timer), { signal: ctx.signal });
+				return () => clearTimeout(timer);
 			}
 		}
 	];
@@ -10218,9 +10366,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					buttons.delete(anchor);
 				}
 				document.querySelectorAll(userHoverSelector).forEach((anchor) => {
+					if (!isUserHoverAnchor(anchor)) return;
 					if (anchor.closest(".nspp-user-hover, .nspp-profile-dialog")) return;
 					const id = authorId(anchor, location.origin);
-					const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll("a[href*=\"/space/\"], a[href*=\"uid=\"], a[data-uid]")).find((candidate) => !candidate.closest(".nspp-user-hover, .nspp-profile-dialog") && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector("img")?.alt.trim();
+					const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll("a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*=\"/space/\"], a[href*=\"/space/\"]:has(img), a[data-uid]")).find((candidate) => !candidate.closest(".nspp-user-hover, .nspp-profile-dialog") && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector("img")?.alt.trim();
 					if (!id || id === String(ownId) || !name || buttons.has(anchor)) return;
 					const button = document.createElement("button");
 					button.type = "button";
@@ -15341,6 +15490,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		let closeTimer;
 		const keepOpen = () => clearTimeout(closeTimer);
 		const hide = () => {
+			request?.abort();
 			keepOpen();
 			view.close();
 			view.hidden = true;
@@ -15495,15 +15645,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		defaults: { enabled: true },
 		mount(ctx) {
 			const preview = createPostPreview(ctx);
-			const bound = new Set();
+			const bound = new Map();
 			let timer;
 			const stop = ctx.watch(() => {
-				for (const link of bound) if (!link.isConnected) bound.delete(link);
+				for (const link of bound.keys()) if (!link.isConnected) bound.delete(link);
 				document.querySelectorAll(".post-list-item .post-title a").forEach((link) => {
 					if (bound.has(link)) return;
 					const url = new URL(link.href, location.origin);
 					if (url.origin !== location.origin || !/^\/post-\d+(?:-\d+)?(?:\.html)?\/?$/.test(url.pathname)) return;
-					bound.add(link);
+					bound.set(link, link.getAttribute("title"));
+					link.removeAttribute("title");
 					link.addEventListener("mouseenter", () => {
 						if (!matchMedia("(hover: hover)").matches) return;
 						preview.keepOpen();
@@ -15525,6 +15676,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			return () => {
 				stop();
 				clearTimeout(timer);
+				bound.forEach((title, link) => {
+					if (title !== null) link.setAttribute("title", title);
+				});
 				bound.clear();
 				preview.destroy();
 			};
@@ -16050,69 +16204,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (!url || ctx.signal.aborted) throw new Error("计数读取已取消");
 		const html = await ctx.request(url.href, { responseType: "text" });
 		if (ctx.signal.aborted) throw new Error("计数读取已取消");
-		const counts = reactionCounts(new DOMParser().parseFromString(html, "text/html"));
-		if (counts.every((value) => value !== null)) return counts;
-		return new Promise((resolve, reject) => {
-			const frame = document.createElement("iframe");
-			frame.hidden = true;
-			frame.tabIndex = -1;
-			frame.title = "读取互动计数";
-			frame.setAttribute("aria-hidden", "true");
-			let observer;
-			let settled = false;
-			const finish = (value) => {
-				if (settled) return;
-				settled = true;
-				clearTimeout(timer);
-				observer?.disconnect();
-				ctx.signal.removeEventListener("abort", abort);
-				frame.remove();
-				if (value) resolve(value);
-				else reject(new Error("暂时无法读取计数"));
-			};
-			const abort = () => finish();
-			const timer = setTimeout(() => finish(), 15e3);
-			const inspect = () => {
-				try {
-					const doc = frame.contentDocument;
-					if (!doc || postURL(doc.location.href, location.origin)?.href !== url.href) return;
-					const values = reactionCounts(doc);
-					if (values.every((value) => value !== null)) finish(values);
-				} catch {
-					finish();
-				}
-			};
-			frame.addEventListener("load", () => {
-				if (settled) return;
-				try {
-					observer?.disconnect();
-					const doc = frame.contentDocument;
-					if (!doc?.body || postURL(doc.location.href, location.origin)?.href !== url.href) {
-						finish();
-						return;
-					}
-					observer = new MutationObserver(inspect);
-					observer.observe(doc.body, {
-						childList: true,
-						subtree: true,
-						characterData: true
-					});
-					inspect();
-				} catch {
-					finish();
-				}
-			});
-			ctx.signal.addEventListener("abort", abort, { once: true });
-			frame.src = url.href;
-			document.body.append(frame);
-		});
+		return reactionCounts(new DOMParser().parseFromString(html, "text/html"));
 	}
 	var listInteractions = {
 		id: "list-interactions",
 		title: "原生列表增强",
 		group: "阅读",
 		description: "保留官网列表布局与分类位置，增强相对时间和悬停预览中的互动操作。",
-		defaults: { enabled: true },
+		defaults: {
+			enabled: true,
+			automaticCounts: false
+		},
+		fields: { automaticCounts: {
+			label: "自动预读列表互动计数（增加请求）",
+			type: "text"
+		} },
 		mount(ctx) {
 			const rows = new Map();
 			const categoryGroups = [];
@@ -16185,7 +16291,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				markBusy(url, true);
 				drain();
 			};
-			const visible = typeof IntersectionObserver === "function" ? new IntersectionObserver((entries) => {
+			let hoverTimer;
+			const visible = ctx.get("automaticCounts") && typeof IntersectionObserver === "function" ? new IntersectionObserver((entries) => {
 				for (const entry of entries) if (entry.isIntersecting) {
 					visible?.unobserve(entry.target);
 					const state = rows.get(entry.target);
@@ -16299,10 +16406,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						counts
 					});
 					if (visible) visible.observe(row);
-					else load(url.href, bar);
 					row.addEventListener("mouseenter", () => {
-						load(url.href, bar);
+						clearTimeout(hoverTimer);
+						hoverTimer = setTimeout(() => load(url.href, bar), 500);
 					}, { signal: ctx.signal });
+					row.addEventListener("mouseleave", () => clearTimeout(hoverTimer), { signal: ctx.signal });
 					bar.addEventListener("focusin", () => {
 						load(url.href, bar);
 					}, { signal: ctx.signal });
@@ -16326,6 +16434,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				});
 			});
 			return () => {
+				clearTimeout(hoverTimer);
 				categoryGroups.forEach(({ group, category, style }) => {
 					group.before(category);
 					if (style === null) category.removeAttribute("style");

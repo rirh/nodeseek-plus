@@ -8,7 +8,8 @@ import { postURL, reactions, siteIcon } from './post-interaction-data';
 export const listInteractions: Feature = {
   id: 'list-interactions', title: '原生列表增强', group: '阅读',
   description: '保留官网列表布局与分类位置，增强相对时间和悬停预览中的互动操作。',
-  defaults: { enabled: true },
+  defaults: { enabled: true, automaticCounts: false },
+  fields: { automaticCounts: { label: '自动预读列表互动计数（增加请求）', type: 'text' } },
   mount(ctx) {
     const rows = new Map<Element, { url: string; bar: HTMLElement; counts: HTMLElement[] }>();
     const categoryGroups: { group: HTMLElement; category: HTMLElement; style: string | null }[] = [];
@@ -59,7 +60,8 @@ export const listInteractions: Feature = {
       if (disposed || cache.get(url)?.every(value => value !== null) || inflight.has(url) || queue.has(url)) return;
       queue.set(url, bar); markBusy(url, true); drain();
     };
-    const visible = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    const visible = ctx.get('automaticCounts') && typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
       for (const entry of entries) if (entry.isIntersecting) {
         visible?.unobserve(entry.target);
         const state = rows.get(entry.target); if (state) load(state.url, state.bar);
@@ -107,8 +109,9 @@ export const listInteractions: Feature = {
         }
         const loading = document.createElement('span'); loading.className = 'nspp-count-loading'; loading.textContent = '加载中'; loading.setAttribute('role', 'status'); loading.hidden = true; bar.append(loading);
         content.append(bar); rows.set(row, { url: url.href, bar, counts });
-        if (visible) visible.observe(row); else load(url.href, bar);
-        row.addEventListener('mouseenter', () => { void load(url.href, bar); }, { signal: ctx.signal });
+        if (visible) visible.observe(row);
+        row.addEventListener('mouseenter', () => { clearTimeout(hoverTimer); hoverTimer = setTimeout(() => load(url.href, bar), 500); }, { signal: ctx.signal });
+        row.addEventListener('mouseleave', () => clearTimeout(hoverTimer), { signal: ctx.signal });
         bar.addEventListener('focusin', () => { void load(url.href, bar); }, { signal: ctx.signal });
         const time = row.querySelector<HTMLElement>('.info-last-comment-time');
         if (time) {
@@ -118,6 +121,6 @@ export const listInteractions: Feature = {
         }
       });
     });
-    return () => { categoryGroups.forEach(({ group, category, style }) => { group.before(category); if (style === null) category.removeAttribute('style'); else category.setAttribute('style', style); group.remove(); }); clearInterval(timeTimer); times.forEach((original, el) => { el.textContent = original.text; if (original.title === null) el.removeAttribute('title'); else el.title = original.title; }); disposed = true; queue.clear(); visible?.disconnect(); stop(); quickReplies.destroy(); view.destroy(); rows.forEach(state => state.bar.remove()); };
+    return () => { clearTimeout(hoverTimer); categoryGroups.forEach(({ group, category, style }) => { group.before(category); if (style === null) category.removeAttribute('style'); else category.setAttribute('style', style); group.remove(); }); clearInterval(timeTimer); times.forEach((original, el) => { el.textContent = original.text; if (original.title === null) el.removeAttribute('title'); else el.title = original.title; }); disposed = true; queue.clear(); visible?.disconnect(); stop(); quickReplies.destroy(); view.destroy(); rows.forEach(state => state.bar.remove()); };
   },
 };

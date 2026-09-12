@@ -199,7 +199,7 @@ export function mountSettings(features: Feature[]) {
             control.rows = 4;
           } else {
             control = element("input");
-            control.type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
+            control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
           }
           if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
           else control.value = String(value);

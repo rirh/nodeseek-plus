@@ -8,7 +8,7 @@ const key = 'nspp:settings:www.nodeseek.com';
 async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void) {
   // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
   const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: { enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true } });
-  const storage = shared || new Map<string, unknown>([[key, { monitor: { enabled: false }, 'notification-categories': { enabled: false }, ...settings }]]);
+  const storage = shared || new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, ...settings }]]);
   const requests: string[] = [];
   const menus: (() => void)[] = [];
   Object.assign(window, {
@@ -101,6 +101,7 @@ test('attendance failure does not cache success; retry succeeds once per account
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
     assert.equal(calls, 1, 'failed attempts are briefly throttled across tabs');
     f.storage.delete('nspp:lock:www.nodeseek.com:attendance:7');
+    f.storage.delete('nspp:request-last:www.nodeseek.com');
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
     assert.ok(f.storage.get('nspp:state:www.nodeseek.com:attendance'));
     button.click(); await new Promise(resolve => setTimeout(resolve, 20));
@@ -109,7 +110,7 @@ test('attendance failure does not cache success; retry succeeds once per account
 });
 
 test('two tabs share attendance state and do not issue concurrent sign-ins', async () => {
-  const first = await fixture({ attendance: { enabled: true } });
+  const first = await fixture({ attendance: { enabled: true, automatic: false } });
   const second = await fixture({}, '', '/', first.storage);
   try {
     let calls = 0;
@@ -159,6 +160,7 @@ test('user badges load visible names, share requests and can retry failed profil
     assert.equal(calls, 1);
     assert.deepEqual(Array.from(f.window.document.querySelectorAll('.author-info [data-nspp-role]'), tag => tag.getAttribute('data-nspp-role')), ['admin', 'founder', 'owner', 'owner', 'admin']);
     assert.equal(f.window.document.querySelectorAll('.nspp-user-badges button').length, 2);
+    f.storage.delete('nspp:request-last:www.nodeseek.com');
     for (const button of f.window.document.querySelectorAll('.nspp-user-badges button')) (button as HTMLElement).click();
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.equal(calls, 2);
@@ -198,7 +200,7 @@ test('one block button per name reflects queried state and synchronizes after ch
     assert.deepEqual(buttons.map(b => b.textContent), ['取消屏蔽', '取消屏蔽']);
     assert.deepEqual(calls, ['/api/block-list/list']);
     buttons[0].click(); buttons[1].click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 3100));
     assert.deepEqual(calls, ['/api/block-list/list', '/api/block-list/del']);
     assert.deepEqual(buttons.map(b => b.textContent), ['屏蔽', '屏蔽']);
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -318,7 +320,7 @@ test('native rows retain layout and metadata while preview actions remain availa
     assert.match(doc.querySelector('.nspp-list-actions')!.textContent!, /点赞/);
     row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
     row.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise(resolve => setTimeout(resolve, 550));
     assert.equal(reads, 1);
     assert.match(doc.querySelector('.nspp-list-actions')!.textContent!, /点赞1加鸡腿2反对3收藏4/);
     assert.equal(doc.querySelector('.nspp-list-actions button[title="回复"], .nspp-list-actions button[title="引用"]'), null);
@@ -406,7 +408,7 @@ test('mobile title tap opens a dialog and retains the original post link', async
 test('visible rows load counts automatically and queue beyond the concurrency limit', async () => {
   const html = '<ul class="post-list">' + [42, 43, 44].map(id => `<li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-${id}-1">Post ${id}</a></div></div></li>`).join('') + '</ul>';
   let active = 0, peak = 0, reads = 0;
-  const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html, '/', undefined, window => {
+  const f = await fixture({ 'list-interactions': { enabled: true, automaticCounts: true }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html, '/', undefined, window => {
     window.IntersectionObserver = class {
       callback: (entries: unknown[]) => void;
       constructor(callback: (entries: unknown[]) => void) { this.callback = callback; }
@@ -420,9 +422,9 @@ test('visible rows load counts automatically and queue beyond the concurrency li
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 120));
+    await new Promise(resolve => setTimeout(resolve, 6300));
     assert.equal(reads, 3);
-    assert.equal(peak, 2);
+    assert.equal(peak, 1);
     for (const bar of f.window.document.querySelectorAll('.post-list-item .nspp-list-actions')) {
       assert.match(bar.textContent!, /点赞7加鸡腿7反对7收藏7/);
       assert.equal(bar.hasAttribute('aria-busy'), false);
@@ -460,8 +462,8 @@ test('quick reply dialog supports default pagination, search and persistent temp
   } finally { await f.close(); }
 });
 
-test('attendance reads native board status without submitting and uses icon controls', async () => {
-  const f = await fixture({}, '<a href="/board">签到</a>', '/', undefined, window => {
+test('attendance reads native page status without extra requests and uses icon controls', async () => {
+  const f = await fixture({}, '<button id="attendance">今天已完成签到！</button>', '/', undefined, window => {
     window.fetch = (async (_url, options) => {
       assert.notEqual(options?.method, 'POST');
       return new window.Response('<button disabled>今天已完成签到！</button>');
@@ -722,7 +724,7 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 6300));
     const doc = f.window.document;
     const card = doc.querySelector<HTMLElement>('.nspp-user-hover')!;
     assert.equal(card.hidden, true);
@@ -834,7 +836,7 @@ test('avatar cards receive synchronized block controls after delayed login initi
     f.window.document.querySelector<HTMLAnchorElement>('a')!.dispatchEvent(new f.window.Event('mouseenter'));
     assert.equal(buttons[0].parentElement!.hidden, false);
     buttons[0].click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 3100));
     assert.deepEqual(buttons.map(button => button.textContent), ['屏蔽', '屏蔽']);
   } finally { await f.close(); }
 });
@@ -874,4 +876,106 @@ test('first unread snapshot does not notify historical messages', async () => {
     });
   });
   try { assert.equal(notifications.length, 0); } finally { await f.close(); }
+});
+
+test('profile cards exclude activity links, remove titles and reuse persistent cache', async () => {
+  const html = '<div class="author-info"><a title="Alice details" href="/space/123">Alice</a><a href="/space/123/comments">评论</a><a href="/space/123#favorites">收藏</a></div>';
+  const settings = { 'official-blocklist': { enabled: false }, 'user-level': { enabled: true, colors: 'custom', levelColor: '#8899aa', trustColor: '#aabbcc', roleColor: '#667788' } };
+  let calls = 0;
+  const first = await fixture(settings, html, '/', undefined, window => {
+    window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: true, detail: { rank: 3, created_at: '2024-01-01', nPost: 10, nComment: 20 } })); }) as typeof window.fetch;
+  });
+  let second: Awaited<ReturnType<typeof fixture>> | undefined;
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    assert.equal(first.window.document.querySelectorAll('.nspp-user-hover').length, 1);
+    assert.equal(first.window.document.querySelector('.author-info a')!.hasAttribute('title'), false);
+    assert.equal(!!first.window.document.querySelector('.nspp-user-hover-score[title], .nspp-user-hover-rich [title], .nspp-user-hover-note[title]'), false);
+    const css = [...first.window.document.querySelectorAll('style')].map(el => el.textContent).join('');
+    assert.match(css, /color:#8899aa!important/);
+    second = await fixture(settings, html, '/page-2', first.storage);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(second.requests.length, 0);
+    assert.equal(second.window.document.querySelector('.nspp-level')!.textContent, 'Lv3');
+  } finally { await first.close(); await second?.close(); }
+});
+
+test('automatic attendance starts when delayed login config becomes available', async () => {
+  let calls = 0;
+  const f = await fixture({ attendance: { enabled: true, automatic: true }, 'official-blocklist': { enabled: false } }, '', '/', undefined, window => {
+    Object.assign(window, { __config__: {} });
+    window.fetch = (async (url, options) => {
+      assert.match(String(url), /\/api\/attendance\?random=false/);
+      assert.equal(options?.method, 'POST'); calls++;
+      return new window.Response(JSON.stringify({ success: true, gain: 5 }));
+    }) as typeof window.fetch;
+  });
+  try {
+    assert.equal(calls, 0);
+    Object.assign(f.window, { __config__: { user: { member_id: 7 } } });
+    f.window.document.body.append(f.window.document.createElement('div'));
+    await new Promise(resolve => setTimeout(resolve, 160));
+    assert.equal(calls, 1);
+    f.window.dispatchEvent(new f.window.Event('focus'));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.equal(calls, 1);
+  } finally { await f.close(); }
+});
+
+test('pause control blocks automatic comment loading and resume reconnects observer', async () => {
+  let intersect!: () => void;
+  let observing = false;
+  const f = await fixture({ 'infinite-scroll': { enabled: true, comments: true }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, '<ul class="comments"><li>first</li></ul><div class="nsk-pager"><a class="pager-next" href="/post-1-2">next</a></div>', '/post-1-1', undefined, window => {
+    window.IntersectionObserver = class { observe() { observing = true; } disconnect() { observing = false; } unobserve() {} constructor(callback: (entries: unknown[]) => void, options?: { rootMargin?: string }) { if (options?.rootMargin === '150px') intersect = () => callback([{ isIntersecting: true }]); } } as unknown as typeof window.IntersectionObserver;
+  });
+  try {
+    const pause = f.window.document.querySelector<HTMLButtonElement>('[aria-label="暂停自动翻页"]')!;
+    assert.ok(pause);
+    pause.click(); intersect();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.equal(observing, false);
+    assert.equal(f.requests.length, 0);
+    pause.click();
+    assert.equal(observing, true);
+  } finally { await f.close(); }
+});
+
+test('rate-limited profile requests stop queued traffic and retain Retry-After', async () => {
+  let calls = 0;
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
+    window.fetch = (async () => { calls++; return new window.Response('', { status: 429, headers: { 'Retry-After': '120' } }); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    assert.ok(Number(f.storage.get('nspp:request-cooldown:www.nodeseek.com')) > Date.now() + 110000);
+  } finally { await f.close(); }
+});
+
+test('forum profile requests have a minimum three second gap', async () => {
+  const times: number[] = [];
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
+    window.fetch = (async () => { times.push(Date.now()); return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } })); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 3200));
+    assert.equal(times.length, 2);
+    assert.ok(times[1]! - times[0]! >= 2990);
+  } finally { await f.close(); }
+});
+
+test('list counts are on demand and missing counts never create a hidden page', async () => {
+  let calls = 0;
+  const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, '<ul class="post-list"><li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">Post</a></div></div></li></ul>', '/', undefined, window => {
+    window.fetch = (async () => { calls++; return new window.Response('<div class="nsk-post">No hydrated counts</div>'); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(calls, 0);
+    f.window.document.querySelector('.post-list-item')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    await new Promise(resolve => setTimeout(resolve, 550));
+    assert.equal(calls, 1);
+    assert.equal(f.window.document.querySelectorAll('iframe[src]').length, 0);
+  } finally { await f.close(); }
 });

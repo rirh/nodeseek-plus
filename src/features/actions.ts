@@ -15,9 +15,10 @@ function button(label: string, fn: () => void, ctx: Context) {
 }
 const attendance: Feature = {
   id: 'attendance', title: '签到', description: '手动签到，可选每天自动签到；仅成功后缓存，按账户隔离。', group: '操作辅助',
-  defaults: { enabled: true, automatic: false, mode: 'fixed' },
+  defaults: { enabled: true, automatic: true, mode: 'fixed' },
   fields: { automatic: { label: '每天自动签到', type: 'text' }, mode: { label: '奖励方式', type: 'select', options: [{ label: '固定', value: 'fixed' }, { label: '随机', value: 'random' }] } },
   mount(ctx) {
+    const initialize = () => {
     const user = currentUser(); if (!user?.member_id) return;
     const key = `day:${user.member_id}`;
     const day = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
@@ -35,20 +36,16 @@ const attendance: Feature = {
       if (!animation?.isActive()) control.hidden = signed;
     };
     sync();
-    let checkedDay = '';
-    const checkPage = async () => {
+    let attemptedDay = '', attemptedAt = 0;
+    const tick = () => {
       sync();
-      if (known() || checkedDay === day() || !document.querySelector('a[href="/board"]')) return;
-      checkedDay = day();
-      try {
-        const html = await ctx.request<string>('/board', { responseType: 'text', signal: ctx.signal });
-        if (!ctx.signal.aborted && checkedDay === day() && signedText(new DOMParser().parseFromString(html, 'text/html'))) { ctx.set(key, day()); sync(); }
-      } catch { /* Unknown status remains available for manual attendance. */ }
+      if (ctx.get<boolean>('automatic') && !known() && !document.hidden && (attemptedDay !== day() || Date.now() - attemptedAt >= 600_000)) {
+        attemptedDay = day(); attemptedAt = Date.now(); void run();
+      }
     };
-    const stop = ctx.watch(() => { void checkPage(); });
-    window.addEventListener('focus', sync, { signal: ctx.signal });
-    document.addEventListener('visibilitychange', sync, { signal: ctx.signal });
-    const rollover = setInterval(sync, 60000);
+    window.addEventListener('focus', tick, { signal: ctx.signal });
+    document.addEventListener('visibilitychange', tick, { signal: ctx.signal });
+    const rollover = setInterval(tick, 60000);
     const complete = (fresh: boolean) => {
       animation?.kill(); gsap.set(control, { clearProps: 'transform,opacity,visibility' });
       if (!fresh || matchMedia('(prefers-reduced-motion: reduce)').matches) { control.hidden = true; return; }
@@ -77,8 +74,15 @@ const attendance: Feature = {
       } catch { if (!ctx.signal.aborted) ctx.notify('签到失败，请稍后重试'); }
       finally { control.disabled = false; renderControl(known() ? '已签到' : '签到'); control.removeAttribute('aria-busy'); }
     }
-    if (ctx.get<boolean>('automatic') && !known()) void run();
+    const stop = ctx.watch(sync);
+    tick();
     return () => { stop(); clearInterval(rollover); animation?.kill(); gsap.killTweensOf(control); control.remove(); };
+    };
+    let cleanup: (() => void) | undefined;
+    const start = () => { if (!cleanup && !ctx.signal.aborted) cleanup = initialize(); };
+    const stopReady = ctx.watch(start);
+    const ready = setInterval(start, 1000);
+    return () => { stopReady(); clearInterval(ready); cleanup?.(); };
   },
 };
 const compose: Feature = {

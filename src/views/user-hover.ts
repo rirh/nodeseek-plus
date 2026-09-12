@@ -2,13 +2,19 @@ import { copyButton } from './copy-button';
 import { authorId } from '../features/user-profile';
 import type { Context } from '../core/types';
 
-export const userHoverSelector = 'a[href*="/space/"], a[href*="uid="], a[data-uid]';
+export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
 const cards = new WeakMap<HTMLAnchorElement, { element: HTMLElement; users: number; dispose(): void }>();
+
+export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
+  const url = new URL(anchor.href, location.href);
+  return url.origin === location.origin && /^\/space\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash;
+}
 
 export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
   let entry = cards.get(anchor);
   if (!entry) {
+    const title = anchor.getAttribute('title'); anchor.removeAttribute('title');
     const element = document.createElement('section'); element.className = 'nspp-user-hover'; element.hidden = true;
     element.setAttribute('aria-label', `${anchor.textContent?.trim()} 的用户详情`);
     const heading = document.createElement('a'); heading.href = anchor.href; heading.textContent = anchor.textContent?.trim() || anchor.querySelector('img')?.alt || '用户资料'; heading.className = 'nspp-user-hover-name';
@@ -58,7 +64,7 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     document.addEventListener('pointerdown', event => { if (!element.contains(event.target as Node) && !anchor.contains(event.target as Node)) close(); }, options);
     window.addEventListener('resize', close, options);
     window.addEventListener('scroll', close, { ...options, capture: true });
-    entry = { element, users: 0, dispose: () => { close(); controller.abort(); element.remove(); cards.delete(anchor); } };
+    entry = { element, users: 0, dispose: () => { close(); controller.abort(); element.remove(); if (title !== null) anchor.setAttribute('title', title); cards.delete(anchor); } };
     cards.set(anchor, entry);
   }
   entry.users++;

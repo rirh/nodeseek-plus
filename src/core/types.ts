@@ -19,7 +19,7 @@ export interface Feature {
   defaults: Record<string, Value>;
   fields?: Record<string, {
     label: string;
-    type: "text" | "textarea" | "number" | "select";
+    type: "text" | "textarea" | "number" | "select" | "color";
     options?: { label: string; value: string }[];
   }>;
   mount(ctx: Context): void | (() => void);

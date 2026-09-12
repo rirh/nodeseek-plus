@@ -208,14 +208,21 @@ export const serviceFeatures: Feature[] = [
   {
     id: 'prefetch', title: '帖子悬停预加载', description: '仅预取同站帖子，最多20条，节省流量模式下不运行。', group: '导航', defaults: { enabled: false },
     mount(ctx) {
-      const seen = new Set<string>(); const links: HTMLLinkElement[] = [];
+      const seen = new Set<string>();
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection; if (connection?.saveData) return;
       document.addEventListener('pointerover', event => {
+        clearTimeout(timer);
         const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[href]'); if (!anchor || seen.size >= 20) return;
         const url = new URL(anchor.href); if (url.origin !== location.origin || !/^\/post-\d+(?:-\d+)?(?:\.html)?$/.test(url.pathname) || url.search) return;
-        url.hash = ''; if (seen.has(url.href)) return; seen.add(url.href);
-        const link = document.createElement('link'); link.rel = 'prefetch'; link.href = url.href; document.head.append(link); links.push(link);
-      }, { signal: ctx.signal }); return () => links.forEach(el => el.remove());
+        url.hash = ''; if (seen.has(url.href)) return;
+        timer = setTimeout(() => {
+          seen.add(url.href);
+          void ctx.request(url.href, { responseType: 'text' }).catch(() => {});
+        }, 800);
+      }, { signal: ctx.signal });
+      document.addEventListener('pointerout', () => clearTimeout(timer), { signal: ctx.signal });
+      return () => clearTimeout(timer);
     },
   },
 ];

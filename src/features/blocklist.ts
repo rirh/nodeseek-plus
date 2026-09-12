@@ -1,4 +1,4 @@
-import { userHover, userHoverSelector } from '../views/user-hover';
+import { userHover, userHoverSelector, isUserHoverAnchor } from '../views/user-hover';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
 import { unsafeWindow } from '../lib/userscript';
@@ -47,6 +47,7 @@ export const officialBlocklist: Feature = {
       if (!ownId) return;
       for (const [anchor, item] of buttons) if (!anchor.isConnected) { item.button.remove(); item.release(); buttons.delete(anchor); }
       document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(anchor => {
+        if (!isUserHoverAnchor(anchor)) return;
         if (anchor.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
         const id = authorId(anchor, location.origin);
         const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).find(candidate => !candidate.closest('.nspp-user-hover, .nspp-profile-dialog') && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector('img')?.alt.trim();

@@ -16,26 +16,41 @@ function infinite(ctx: Context) {
     if (!list)
         return;
     let next = document.querySelector<HTMLAnchorElement>('.nsk-pager a.pager-next')?.href;
-    let busy = false, failed = false;
+    let busy = false, failed = false, paused = false;
+    let loading: AbortController | undefined;
     const visited = new Set([location.href]);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'nspp-action';
     button.textContent = '加载下一页';
     list.after(button);
-    const load = async () => {
+    const pause = document.createElement('button'); pause.type = 'button'; pause.className = 'nspp-tool-icon';
+    const renderPause = () => {
+        pause.replaceChildren(toolIcon(paused ? 'play' : 'stop'));
+        pause.title = paused ? '继续自动翻页' : '暂停自动翻页';
+        pause.setAttribute('aria-label', pause.title); pause.setAttribute('aria-pressed', String(paused));
+    };
+    renderPause();
+    if (next) (document.querySelector('#nspp-tools') || document.body).append(pause);
+    pause.addEventListener('click', () => {
+        paused = !paused; renderPause();
+        if (paused) { observer.disconnect(); loading?.abort(); }
+        else if (next) observer.observe(button);
+    }, { signal: ctx.signal });
+    const load = async (manual = false) => {
         if (busy || !next || visited.has(next) || ctx.signal.aborted)
             return;
         const url = new URL(next, location.href);
         if (url.origin !== location.origin)
             return;
         busy = true;
+        loading = new AbortController();
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
         button.textContent = '正在加载…';
         try {
-            const html = await ctx.request<string>(url.href, { responseType: 'text', signal: ctx.signal });
-            if (ctx.signal.aborted)
+            const html = await ctx.request<string>(url.href, { responseType: 'text', signal: AbortSignal.any([ctx.signal, loading.signal]) });
+            if (ctx.signal.aborted || (paused && !manual))
                 return;
             const page = new DOMParser().parseFromString(html, 'text/html');
             const source = page.querySelector(selector);
@@ -80,8 +95,10 @@ function infinite(ctx: Context) {
             if (next && visited.has(next))
                 next = undefined;
             button.textContent = next ? '加载下一页' : '已加载全部内容';
+            pause.hidden = !next;
         }
         catch {
+            if (loading.signal.aborted) return;
             failed = true;
             button.textContent = '加载失败，点击重试';
         }
@@ -89,16 +106,18 @@ function infinite(ctx: Context) {
             busy = false;
             button.disabled = !next;
             button.removeAttribute('aria-busy');
+            if (paused && next) button.textContent = '已暂停，点击加载下一页';
+            if (loading.signal.aborted && !ctx.signal.aborted && !paused && next) { observer.unobserve(button); observer.observe(button); }
         }
     };
-    button.addEventListener('click', () => { void load(); }, { signal: ctx.signal });
-    const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting) && !failed)
-        void load(); }, { rootMargin: '600px' });
+    button.addEventListener('click', () => { void load(true); }, { signal: ctx.signal });
+    const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting) && !failed && !paused && !document.hidden)
+        void load(); }, { rootMargin: '150px' });
     if (next)
         observer.observe(button);
     else
         button.hidden = true;
-    return () => { observer.disconnect(); button.remove(); };
+    return () => { observer.disconnect(); loading?.abort(); button.remove(); pause.remove(); };
 }
 const historyFeature: Feature = {
     id: 'reading-history', title: '阅读历史与已读标记', description: '本地记录最近 500 个帖子，标题显示已读颜色；不上传记录。', group: '阅读', defaults: { enabled: true },
@@ -230,10 +249,14 @@ const content: Feature = {
     defaults: { enabled: true, cleanLinks: true, newTab: true, images: true, copyCode: true, callouts: true, chineseTime: true },
     fields: { cleanLinks: { label: '外链直达', type: 'text' }, newTab: { label: '链接在新标签页打开', type: 'text' }, images: { label: '图片预览', type: 'text' }, copyCode: { label: '代码复制', type: 'text' }, callouts: { label: 'Callout 渲染', type: 'text' }, chineseTime: { label: '中文时间', type: 'text' } },
     mount(ctx) {
+        if (ctx.get('cleanLinks') && location.pathname === '/jump') {
+            const target = directLink(location.href, location.href);
+            if (target && target !== location.href && new URL(target).pathname !== '/jump') location.replace(target);
+        }
         const processed = new WeakSet<Element>();
         const undo: (() => void)[] = [];
         const stop = ctx.watch(() => {
-            document.querySelectorAll<HTMLAnchorElement>(`${contentSelector} a, .post-title a`).forEach(a => {
+            document.querySelectorAll<HTMLAnchorElement>(`${contentSelector} a, .post-title a, a[href*="/jump?to="]`).forEach(a => {
                 if (processed.has(a))
                     return;
                 processed.add(a);

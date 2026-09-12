@@ -61,7 +61,7 @@ export function createPostPreview(ctx: Context) {
   const mobile = () => matchMedia('(max-width: 600px), (hover: none)').matches;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
   const keepOpen = () => clearTimeout(closeTimer);
-  const hide = () => { keepOpen(); view.close(); view.hidden = true; };
+  const hide = () => { request?.abort(); keepOpen(); view.close(); view.hidden = true; };
   const scheduleClose = () => {
     if (mobile()) return;
     keepOpen(); closeTimer = setTimeout(hide, 220);

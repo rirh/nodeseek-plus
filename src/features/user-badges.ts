@@ -1,4 +1,4 @@
-import { userHover, userHoverSelector } from '../views/user-hover';
+import { userHover, userHoverSelector, isUserHoverAnchor } from '../views/user-hover';
 import { format } from 'date-fns';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
@@ -6,36 +6,40 @@ import { authorId, forumAge, registration, trustScore, type UserProfile } from '
 
 
 export const userBadges: Feature = {
-  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true },
+  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, colors: 'muted', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
+  fields: {
+    colors: { label: '徽章配色', type: 'select', options: [{ label: '柔和单色', value: 'muted' }, { label: '自定义', value: 'custom' }, { label: '原有彩色', value: 'original' }] },
+    levelColor: { label: '等级与加入天数颜色', type: 'color' }, trustColor: { label: '信任分颜色', type: 'color' }, roleColor: { label: '身份徽章颜色', type: 'color' },
+  },
   mount(ctx) {
+    const colorStyle = document.createElement('style');
+    if (ctx.get('colors') !== 'original') {
+      const color = (key: string) => ctx.get('colors') === 'custom' && /^#[0-9a-f]{6}$/i.test(ctx.get<string>(key)) ? ctx.get<string>(key) : 'var(--nspp-muted, #9198a1)';
+      colorStyle.textContent = `.nspp-user-badges .nspp-level,.nspp-user-badges .nspp-age{color:${color('levelColor')}!important;background:transparent!important;box-shadow:none!important}.nspp-user-badges .nspp-trust{color:${color('trustColor')}!important;background:transparent!important;box-shadow:none!important}.role-tag[data-nspp-role]{color:${color('roleColor')}!important;background:transparent!important;box-shadow:none!important}`;
+      document.head.append(colorStyle);
+    }
     let scoreDialog: HTMLDialogElement | undefined;
     const roles = new Map<Element, string | null>();
     const cache = new Map<string, UserProfile>();
     const inflight = new Map<string, Promise<UserProfile>>();
     const nodes = new Map<Element, { id: string; badge: HTMLElement; details: HTMLElement; release(): void }>();
-    const queue: (() => Promise<void>)[] = [];
-    let active = 0;
-    const drain = () => {
-      while (active < 2 && queue.length && !ctx.signal.aborted) {
-        active++;
-        void queue.shift()!().finally(() => { active--; drain(); });
-      }
-    };
     const getProfile = (id: string): Promise<UserProfile> => {
       if (cache.has(id)) return Promise.resolve(cache.get(id)!);
       if (inflight.has(id)) return inflight.get(id)!;
-      const request = new Promise<UserProfile>((resolve, reject) => {
-        queue.push(async () => {
-          try {
-            const result = await ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}`);
-            if (!result?.success || !result.detail || typeof result.detail !== 'object') throw new Error('资料不可用');
-            cache.set(id, result.detail);
-            resolve(result.detail);
-          } catch (error) { reject(error); }
-        });
+      const stored = ctx.get<Record<string, { time: number; user: UserProfile }>>('profiles') || {};
+      if (stored[id] && Date.now() - stored[id].time < 6 * 60 * 60 * 1000) {
+        cache.set(id, stored[id].user);
+        return Promise.resolve(stored[id].user);
+      }
+      const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}`).then(result => {
+        if (!result?.success || !result.detail || typeof result.detail !== 'object') throw new Error('资料不可用');
+        cache.set(id, result.detail);
+        const latest = ctx.get<typeof stored>('profiles') || {};
+        latest[id] = { time: Date.now(), user: result.detail };
+        ctx.set('profiles', Object.fromEntries(Object.entries(latest).sort((a, b) => b[1].time - a[1].time).slice(0, 200)));
+        return result.detail;
       });
       inflight.set(id, request);
-      drain();
       void request.then(() => inflight.delete(id), () => inflight.delete(id));
       return request;
     };
@@ -131,7 +135,7 @@ export const userBadges: Feature = {
           card.querySelector('.nspp-user-hover-header')!.after(signature);
         }
         card.querySelector('.nspp-user-hover-score')?.remove();
-        const headline = document.createElement('button'); headline.type = 'button'; headline.className = 'nspp-user-hover-score'; headline.title = score.title;
+        const headline = document.createElement('button'); headline.type = 'button'; headline.className = 'nspp-user-hover-score';
         headline.setAttribute('aria-label', `信任参考分 ${trust?.score ?? '未知'}，查看评分依据`);
         const number = document.createElement('strong'); number.textContent = trust ? String(trust.score) : '—';
         const scoreLabel = document.createElement('small'); scoreLabel.textContent = '信任参考分'; headline.append(number, scoreLabel);
@@ -144,7 +148,7 @@ export const userBadges: Feature = {
         for (const [label, source] of [['加入天数', age], ['参与次数', participation], ['用户等级', level]] as const) {
           const cell = document.createElement('div');
           const caption = document.createElement('small'); caption.textContent = label;
-          const value = source.cloneNode(true) as HTMLElement;
+          const value = source.cloneNode(true) as HTMLElement; value.removeAttribute('title');
           if (source instanceof HTMLButtonElement) value.addEventListener('click', () => { source.click(); }, { signal: ctx.signal });
           cell.append(caption, value); rich.append(cell);
         }
@@ -152,7 +156,7 @@ export const userBadges: Feature = {
         card.querySelector('.nspp-user-hover-note')?.remove();
         const note = document.createElement('p'); note.className = 'nspp-user-hover-note'; note.dataset.tone = info.level === 1 || (trust && trust.score < 40) ? 'danger' : info.tone;
         note.textContent = risk || `${info.label} · 本地参与度参考分，非官方信用评分`;
-        note.title = details; profileDetails.after(note);
+        profileDetails.after(note);
       } catch {
         if (ctx.signal.aborted || !badge.isConnected) return;
         const details = nodes.get(author)?.details; if (details) details.textContent = '资料读取失败，可点击用户名旁的重试。';
@@ -185,6 +189,7 @@ export const userBadges: Feature = {
       for (const tag of roles.keys()) if (!tag.isConnected) roles.delete(tag);
       for (const [author, state] of nodes) if (!author.isConnected) { observer?.unobserve(author); state.badge.remove(); state.details.remove(); state.release(); nodes.delete(author); }
       document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(author => {
+        if (!isUserHoverAnchor(author)) return;
         if (author.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
         if (!author.textContent?.trim() && !author.querySelector('img')) return;
         const id = authorId(author, location.origin); if (!id) return;
@@ -204,6 +209,6 @@ export const userBadges: Feature = {
       });
     };
     const stop = ctx.watch(scan);
-    return () => { stop(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); queue.length = 0; nodes.forEach(({ badge, details, release }) => { badge.remove(); details.remove(); release(); }); };
+    return () => { stop(); colorStyle.remove(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); nodes.forEach(({ badge, details, release }) => { badge.remove(); details.remove(); release(); }); };
   },
 };
