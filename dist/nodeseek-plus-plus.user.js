@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.913.0926
+// @version      26.913.0930
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @match        https://www.nodeseek.com/*
@@ -436,7 +436,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element("small", `v26.913.0926`));
+		heading.append(title, element("small", `v26.913.0930`));
 		const close = element("button", "关闭");
 		close.type = "button";
 		header.append(heading);
