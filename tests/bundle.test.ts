@@ -182,6 +182,31 @@ test('user badges load visible names, share requests and can retry failed profil
 });
 
 
+test('user profiles persist across pages for one day and refresh after expiry', async () => {
+  const stateKey = 'nspp:state:www.nodeseek.com:user-level';
+  const user = { coin: 2500, created_at: new Date(Date.now() - 400 * 86400000).toISOString() };
+  const storage = new Map<string, unknown>([[key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'official-blocklist': { enabled: false } }]]);
+  let calls = 0;
+  for (const age of [null, 12, 25]) {
+    storage.delete('nspp:profile-completed:www.nodeseek.com');
+    if (age !== null) storage.set(stateKey, { profiles: { '123': { time: Date.now() - age * 3600000, user } } });
+    const f = await fixture({}, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', storage, window => {
+      window.fetch = (async () => {
+        calls++;
+        return new window.Response(JSON.stringify({ success: true, detail: user }), { headers: { 'Content-Type': 'application/json' } });
+      }) as typeof window.fetch;
+    });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      assert.equal(calls, age === 25 ? 2 : 1);
+      assert.equal(f.window.document.querySelector('.nspp-level')?.textContent, 'Lv5');
+      const state = storage.get(stateKey) as { profiles: Record<string, { time: number; user: unknown }> };
+      assert.deepEqual(state.profiles['123'].user, user);
+      if (age !== 12) assert.ok(Date.now() - state.profiles['123'].time < 5000);
+    } finally { await f.close(); }
+  }
+});
+
 test('one block button per name reflects queried state and synchronizes after changes', async () => {
   const calls: string[] = [];
   let blocked = true;
@@ -513,6 +538,8 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     const launch = f.window.document.querySelector<HTMLButtonElement>('[data-monitor-state]')!;
     assert.equal(launch.dataset.unread, undefined);
     assert.equal(launch.dataset.monitorState, 'running');
+    assert.equal(launch.querySelector('.nspp-monitor-badge')?.textContent, '1');
+    assert.match(launch.title, /红色徽章表示.*累计匹配/);
     const countdown = f.window.document.querySelector('.nspp-monitor footer > span')!;
     assert.match(countdown.textContent!, /下次检查 60 秒/);
     clock += 1000; poll!();
@@ -532,7 +559,10 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(launch.dataset.unread, 'true');
     assert.match(launch.title, /1 条未读/);
+    assert.equal(launch.querySelector('.nspp-monitor-badge')?.textContent, '2');
     launch.click();
+    assert.equal(launch.querySelector('.nspp-monitor-badge')?.textContent, '2');
+    assert.match(launch.title, /0 条未读/);
     assert.equal(f.window.document.querySelector('.nspp-monitor-unread'), null);
     assert.equal(f.window.document.querySelectorAll('.nspp-monitor-results li').length, 2);
     assert.match(f.window.document.querySelector('.nspp-monitor')!.textContent!, /3 轮 · 累计 3 帖 · 符合 2 · 不符合 1/);

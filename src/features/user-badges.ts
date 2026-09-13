@@ -27,7 +27,7 @@ export const userBadges: Feature = {
       if (cache.has(id)) return Promise.resolve(cache.get(id)!);
       if (inflight.has(id)) return inflight.get(id)!;
       const stored = ctx.get<Record<string, { time: number; user: UserProfile }>>('profiles') || {};
-      if (stored[id] && Date.now() - stored[id].time < 6 * 60 * 60 * 1000) {
+      if (stored[id] && Date.now() - stored[id].time < 24 * 60 * 60 * 1000) {
         cache.set(id, stored[id].user);
         return Promise.resolve(stored[id].user);
       }
@@ -45,7 +45,7 @@ export const userBadges: Feature = {
     };
     const load = async (author: Element, id: string, badge: HTMLElement) => {
       badge.setAttribute('aria-busy', 'true');
-      badge.textContent = '读取资料';
+      badge.textContent = '加载中';
       try {
         const user = await getProfile(id);
         if (ctx.signal.aborted || !author.isConnected || nodes.get(author)?.badge !== badge) return;

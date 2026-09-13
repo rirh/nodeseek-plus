@@ -41,6 +41,7 @@ const monitor: Feature = {
     const title = document.createElement('h3'); title.textContent = '帖子监控'; header.append(title, control('关闭', () => panel.close(), ctx)); panel.append(header);
     const launch = control('帖子监控', () => { ctx.set(unreadKey, []); renderUnread(); panel.showModal(); }, ctx);
     launch.className = 'nspp-tool-icon'; launch.title = '帖子监控'; launch.setAttribute('aria-label', launch.title); launch.replaceChildren(toolIcon('monitor'));
+    const badge = document.createElement('span'); badge.className = 'nspp-monitor-badge'; badge.setAttribute('aria-hidden', 'true'); launch.append(badge);
     const status = document.createElement('p'); status.className = 'nspp-monitor-summary'; status.setAttribute('role', 'status');
     const spinner = document.createElement('span'); spinner.className = 'nspp-monitor-spinner'; spinner.hidden = true; spinner.setAttribute('aria-hidden', 'true');
     const statusText = document.createElement('span'); status.append(spinner, statusText); panel.append(status);
@@ -95,7 +96,11 @@ const monitor: Feature = {
       if (launch.dataset.monitorState !== state) launch.dataset.monitorState = state;
       const label = { idle: '未配置监控', paused: '监控已暂停', cooldown: '监控冷却中', running: '监控中' }[state];
       const count = readUnread().length;
-      launch.title = `帖子监控 · ${label}${count ? ` · ${count} 条未读` : ''}`;
+      const snapshot = ctx.get<Snapshot>(snapshotKey);
+      const matched = snapshot?.matched ?? (snapshot ? [...new Map([...snapshot.home, ...snapshot.trades].map(post => [post.id, post])).values()].filter(post => match(post)).length : 0);
+      badge.textContent = String(matched);
+      badge.hidden = matched === 0;
+      launch.title = `帖子监控 · ${label}\n累计匹配 ${matched} 条 · ${count} 条未读\n红色徽章表示本轮监控规则下累计匹配的帖子数，打开面板不会清零；修改规则后重新统计。\n每 ${interval / 1000} 秒检查 NodeSeek RSS，结果列表保留最近 200 条。\n点击查看匹配帖子并清除未读标记。`;
       launch.setAttribute('aria-label', launch.title);
     }
     const wait = () => new Promise<void>(resolve => {

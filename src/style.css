@@ -1,4 +1,4 @@
-#nspp-tools { position: fixed; right: 1rem; bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
+#nspp-tools { position: fixed; right: calc(1rem - 8px); bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; padding: 8px 8px 0 0; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
 #nspp-tools button, [data-nspp-resolve], .nspp-action { font: inherit; font-size: .8rem; padding: .35rem .6rem; border: 1px solid var(--border-color, #929a9380); border-radius: .4rem; color: var(--text-color, inherit); background: var(--bg-color, Canvas); cursor: pointer; }
 #nspp-tools a, [data-nspp-footprints] a { text-underline-offset: .2em; }
 #nspp-tools a:hover, [data-nspp-footprints] a:hover { text-decoration: underline; }
@@ -269,6 +269,8 @@
 .nspp-monitor footer { background: #818b980a; }
 
 #nspp-tools button[data-monitor-state] { position: relative; }
+.nspp-monitor-badge { position: absolute; top: -6px; right: -6px; min-width: 16px; padding: 0 3px; box-sizing: border-box; border: 1px solid var(--bg-color, Canvas); border-radius: 999px; background: #cf3434; color: #fff; text-align: center; font: 600 9px/14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; pointer-events: none; }
+.nspp-monitor-badge[hidden] { display: none; }
 #nspp-tools button[data-monitor-state="running"] { color: #218044; border-color: #218044; background: var(--bg-color, Canvas); }
 .dark-layout #nspp-tools button[data-monitor-state="running"] { color: #70cf91; }
 .nspp-monitor-editor { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 4px 12px 8px; flex: none; }
