@@ -139,7 +139,7 @@ export function mountSettings(features: Feature[]) {
     const categories: Record<string, string> = { 阅读: "浏览", 外观: "界面", 导航: "界面", 过滤: "用户", 用户: "用户", 操作辅助: "工具", 监控: "工具", 编辑: "工具" };
     for (const feature of features) {
       const category = categories[feature.group] || feature.group;
-      if (query && !`${feature.title} ${feature.description} ${feature.group} ${category}`.toLocaleLowerCase().includes(query)) continue;
+      if (query && !`${feature.title} ${feature.description} ${feature.group} ${category} ${Object.values(feature.fields || {}).map(field => field.label).join(' ')}`.toLocaleLowerCase().includes(query)) continue;
       let group = groups.get(category);
       if (!group) {
         group = element("section");
@@ -167,6 +167,7 @@ export function mountSettings(features: Feature[]) {
       toggle.addEventListener("change", () => { draft[feature.id].enabled = toggle.checked; });
       label.append(element("strong", feature.title), toggle);
       row.append(label);
+      if (feature.id === 'request-settings') row.append(element("p", feature.description));
       if (["ai-polish", "official-blocklist", "infinite-scroll"].includes(feature.id)) {
         const hints: Record<string, string> = { "ai-polish": "手动发送编辑器文本，预览后采用。", "official-blocklist": "添加或解除会修改站点黑名单。", "infinite-scroll": "新增评论的回复、评分需打开原页。" };
         row.append(element("p", hints[feature.id]));
@@ -175,7 +176,7 @@ export function mountSettings(features: Feature[]) {
       if (options.length) {
         const details = element("details");
         details.className = "feature-options";
-        details.open = !!query;
+        details.open = !!query || feature.id === 'request-settings';
         row.classList.add("has-options");
         const summary = element("summary", "设置");
         summary.setAttribute("aria-label", `${feature.title}的详细设置`);
@@ -202,6 +203,7 @@ export function mountSettings(features: Feature[]) {
             control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
           }
           if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
+          else if (feature.id === 'request-settings' && control instanceof HTMLInputElement) { control.min = '0'; control.max = '5000'; control.step = '1'; control.value = String(value); }
           else control.value = String(value);
           control.addEventListener("input", () => {
             draft[feature.id][key] = typeof value === "boolean" ? (control as HTMLInputElement).checked

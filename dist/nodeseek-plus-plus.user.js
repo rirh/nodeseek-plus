@@ -172,6 +172,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			return false;
 		}
 	}
+	var requestSettings = {
+		id: "request-settings",
+		title: "接口请求频率",
+		group: "网络",
+		description: "请求完成后的等待时间，越小加载越快。用户资料默认 100 毫秒，其他站内接口默认不额外等待；0 表示不额外等待，范围 0–5000 毫秒。仍按顺序请求，并遵守站点限流冷却。用户资料缓存一天，缓存命中不请求；RSS 频率在监控设置中调整。关闭后使用默认间隔。",
+		defaults: {
+			enabled: true,
+			profileInterval: 100,
+			requestInterval: 0
+		},
+		fields: {
+			profileInterval: {
+				label: "用户资料请求间隔（毫秒，0–5000）",
+				type: "number"
+			},
+			requestInterval: {
+				label: "其他站内接口间隔（毫秒，0–5000）",
+				type: "number"
+			}
+		},
+		mount() {}
+	};
+	function requestInterval(value, fallback) {
+		return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(5e3, Math.round(value))) : fallback;
+	}
 	function retryDelay(value, now = Date.now()) {
 		if (!value) return 6e4;
 		const seconds = Number(value);
@@ -236,10 +261,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		return enqueue(async () => {
 			const scheduled = async () => {
 				const cooldownKey = `nspp:request-cooldown:${location.host}`;
-				const lastKey = `nspp:profile-completed:${location.host}`;
+				const lastKey = `nspp:${profile ? "profile" : "request"}-completed:${location.host}`;
 				init.signal?.throwIfAborted();
 				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
-				const delay = profile ? GM_getValue$1(lastKey, 0) + 300 - Date.now() : 0;
+				const settings = GM_getValue$1(`nspp:settings:${location.hostname}`, {})?.["request-settings"];
+				const fallback = profile ? 100 : 0;
+				const interval = settings?.enabled === false ? fallback : requestInterval(settings?.[profile ? "profileInterval" : "requestInterval"], fallback);
+				const delay = GM_getValue$1(lastKey, 0) + interval - Date.now();
 				if (delay > 0) await new Promise((resolve, reject) => {
 					const abort = () => {
 						clearTimeout(timer);
@@ -256,7 +284,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				try {
 					return await execute();
 				} finally {
-					if (profile) GM_setValue$1(lastKey, Date.now());
+					GM_setValue$1(lastKey, Date.now());
 				}
 			};
 			return navigator.locks?.request ? navigator.locks.request("nspp:forum-requests", { signal: init.signal ?? void 0 }, scheduled) : scheduled();
@@ -563,7 +591,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			};
 			for (const feature of features) {
 				const category = categories[feature.group] || feature.group;
-				if (query && !`${feature.title} ${feature.description} ${feature.group} ${category}`.toLocaleLowerCase().includes(query)) continue;
+				if (query && !`${feature.title} ${feature.description} ${feature.group} ${category} ${Object.values(feature.fields || {}).map((field) => field.label).join(" ")}`.toLocaleLowerCase().includes(query)) continue;
 				let group = groups.get(category);
 				if (!group) {
 					group = element("section");
@@ -598,6 +626,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				});
 				label.append(element("strong", feature.title), toggle);
 				row.append(label);
+				if (feature.id === "request-settings") row.append(element("p", feature.description));
 				if ([
 					"ai-polish",
 					"official-blocklist",
@@ -611,7 +640,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				if (options.length) {
 					const details = element("details");
 					details.className = "feature-options";
-					details.open = !!query;
+					details.open = !!query || feature.id === "request-settings";
 					row.classList.add("has-options");
 					const summary = element("summary", "设置");
 					summary.setAttribute("aria-label", `${feature.title}的详细设置`);
@@ -638,7 +667,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 							control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
 						}
 						if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
-						else control.value = String(value);
+						else if (feature.id === "request-settings" && control instanceof HTMLInputElement) {
+							control.min = "0";
+							control.max = "5000";
+							control.step = "1";
+							control.value = String(value);
+						} else control.value = String(value);
 						control.addEventListener("input", () => {
 							draft[feature.id][key] = typeof value === "boolean" ? control.checked : typeof value === "number" ? Number(control.value) : control.value;
 						});
@@ -16480,6 +16514,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		tools.setAttribute("aria-label", "NodeSeek++");
 		document.body.append(tools);
 		const features = [
+			requestSettings,
 			...readingFeatures,
 			...filteringFeatures,
 			...actionFeatures,

@@ -207,6 +207,28 @@ test('user profiles persist across pages for one day and refresh after expiry', 
   }
 });
 
+test('request frequency settings are searchable and zero removes the profile wait', async () => {
+  let calls = 0;
+  const f = await fixture({ 'request-settings': { enabled: true, profileInterval: 0, requestInterval: 0 }, 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/124">Bob</a></div>', '/', undefined, window => {
+    window.fetch = (async () => {
+      calls++;
+      return new window.Response(JSON.stringify({ success: true, detail: { created_at: '2020-01-01' } }), { headers: { 'Content-Type': 'application/json' } });
+    }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(calls, 2);
+    f.menus[0]();
+    const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
+    const search = root.querySelector<HTMLInputElement>('input[type="search"]')!;
+    search.value = '其他站内接口间隔'; search.dispatchEvent(new f.window.Event('input'));
+    assert.equal(root.querySelectorAll('article').length, 1);
+    assert.match(root.querySelector('article')!.textContent!, /接口请求频率/);
+    assert.equal(root.querySelector('details')!.open, true);
+    assert.equal(root.querySelector<HTMLInputElement>('input[type="number"]')!.value, '0');
+  } finally { await f.close(); }
+});
+
 test('one block button per name reflects queried state and synchronizes after changes', async () => {
   const calls: string[] = [];
   let blocked = true;
@@ -248,7 +270,7 @@ test('settings categories are anchors, scroll updates selection and search filte
     f.menus[0]();
     const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
     const nav = [...root.querySelectorAll<HTMLAnchorElement>('.categories a')];
-    assert.deepEqual(nav.map(link => link.textContent), ['浏览', '界面', '用户', '工具']);
+    assert.deepEqual(nav.map(link => link.textContent), ['网络', '浏览', '界面', '用户', '工具']);
     assert.equal(nav[0].getAttribute('aria-current'), 'location');
     const content = root.querySelector('.content')!;
     const sections = [...content.querySelectorAll('section')];
@@ -994,7 +1016,7 @@ test('rate-limited profile requests stop queued traffic and retain Retry-After',
   } finally { await f.close(); }
 });
 
-test('forum profile requests use a 300ms gap instead of a three second delay', async () => {
+test('forum profile requests default to a 100ms gap', async () => {
   const times: number[] = [];
   const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
     window.fetch = (async () => { times.push(Date.now()); return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } })); }) as typeof window.fetch;
@@ -1002,7 +1024,7 @@ test('forum profile requests use a 300ms gap instead of a three second delay', a
   try {
     await new Promise(resolve => setTimeout(resolve, 800));
     assert.equal(times.length, 2);
-    assert.ok(times[1]! - times[0]! >= 290);
+    assert.ok(times[1]! - times[0]! >= 90);
     assert.ok(times[1]! - times[0]! < 750);
   } finally { await f.close(); }
 });

@@ -1,5 +1,5 @@
 import { GM_getValue, GM_setValue } from './userscript';
-import { createRequestQueue, retryDelay } from './request-scheduler';
+import { createRequestQueue, retryDelay, requestInterval } from './request-scheduler';
 
 const enqueue = createRequestQueue();
 
@@ -29,10 +29,13 @@ export async function request<T>(url: string, options: RequestInit & { responseT
   return enqueue(async () => {
     const scheduled = async () => {
       const cooldownKey = `nspp:request-cooldown:${location.host}`;
-      const lastKey = `nspp:profile-completed:${location.host}`;
+      const lastKey = `nspp:${profile ? 'profile' : 'request'}-completed:${location.host}`;
       init.signal?.throwIfAborted();
       if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
-      const delay = profile ? GM_getValue(lastKey, 0) + 300 - Date.now() : 0;
+      const settings = GM_getValue<Record<string, Record<string, unknown>>>(`nspp:settings:${location.hostname}`, {})?.['request-settings'];
+      const fallback = profile ? 100 : 0;
+      const interval = settings?.enabled === false ? fallback : requestInterval(settings?.[profile ? 'profileInterval' : 'requestInterval'], fallback);
+      const delay = GM_getValue(lastKey, 0) + interval - Date.now();
       if (delay > 0) await new Promise<void>((resolve, reject) => {
         const abort = () => { clearTimeout(timer); reject(init.signal?.reason); };
         const timer = setTimeout(() => { init.signal?.removeEventListener('abort', abort); resolve(); }, delay);
@@ -41,7 +44,7 @@ export async function request<T>(url: string, options: RequestInit & { responseT
       init.signal?.throwIfAborted();
       if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
       try { return await execute(); }
-      finally { if (profile) GM_setValue(lastKey, Date.now()); }
+      finally { GM_setValue(lastKey, Date.now()); }
     };
     return navigator.locks?.request
       ? navigator.locks.request('nspp:forum-requests', { signal: init.signal ?? undefined }, scheduled)

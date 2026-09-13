@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequestQueue, retryDelay } from '../src/lib/request-scheduler.ts';
+import { createRequestQueue, retryDelay, requestInterval } from '../src/lib/request-scheduler.ts';
+
+test('request intervals accept zero, clamp bounds and reject invalid settings', () => {
+  assert.equal(requestInterval(0, 100), 0);
+  assert.equal(requestInterval(250, 100), 250);
+  assert.equal(requestInterval(-1, 100), 0);
+  assert.equal(requestInterval(6000, 100), 5000);
+  for (const value of [undefined, NaN, Infinity, '200']) assert.equal(requestInterval(value, 100), 100);
+});
 
 test('requests run serially and a failure does not stall subsequent requests', async () => {
   const enqueue = createRequestQueue();

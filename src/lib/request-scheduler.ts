@@ -1,3 +1,7 @@
+export function requestInterval(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(5000, Math.round(value))) : fallback;
+}
+
 export function retryDelay(value: string | null, now = Date.now()): number {
   if (!value) return 60_000;
   const seconds = Number(value);

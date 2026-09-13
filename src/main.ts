@@ -1,4 +1,5 @@
 import { GM_registerMenuCommand } from "./lib/userscript";
+import { requestSettings } from "./features/request-settings";
 import { startFeatures, loadSettings } from "./core/runtime";
 import { mountSettings } from "./settings";
 import { readingFeatures } from "./features/reading";
@@ -27,6 +28,7 @@ function main() {
   tools.setAttribute("aria-label", "NodeSeek++");
   document.body.append(tools);
   const features = [
+    requestSettings,
     ...readingFeatures,
     ...filteringFeatures,
     ...actionFeatures,
