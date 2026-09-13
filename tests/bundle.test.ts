@@ -723,7 +723,18 @@ test('notification categories start by default after delayed login and sidebar i
 
 test('busy controls use opaque motion feedback, including the attendance icon', () => {
   const css = readFileSync(new URL('../src/loading.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /text-fill-color:\s*transparent|background-clip:\s*text/);
+  const badgeSelector = '.nspp-user-badges[aria-busy="true"]';
+  // Inspect declaration blocks, including blocks nested in reduced-motion media rules.
+  const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  for (const [, selector, declarations] of blocks) {
+    if (/text-fill-color:\s*transparent|background-clip:\s*text/.test(declarations)) {
+      assert.equal(selector.trim(), badgeSelector, 'text clipping is restricted to the loading badge');
+    }
+  }
+  const base = blocks.find(([, selector]) => selector.trim() === '[aria-busy="true"], .nspp-sweep-shine');
+  assert.ok(base);
+  assert.match(base[2], /-webkit-text-fill-color:\s*currentColor/);
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.nspp-user-badges\[aria-busy="true"\]\s*\{[^}]*background-image:\s*none;[^}]*-webkit-text-fill-color:\s*currentColor/);
   assert.match(css, /opacity: 1 !important/);
   assert.match(css, /\.nspp-action\[aria-busy="true"\] > svg[^}]+animation: nspp-attendance-working/);
   assert.match(css, /prefers-reduced-motion: reduce/);
