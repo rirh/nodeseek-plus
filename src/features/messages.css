@@ -1,0 +1,138 @@
+.nspp-messages-container[data-nspp-message-view='new'] > :not(.nspp-messages) { display: none !important; }
+.nspp-messages-container[data-nspp-message-view='native'] > .nspp-messages { display: none !important; }
+.nspp-messages { --chat-bg: #f5f5f5; --chat-sidebar: #ededed; --chat-surface: #fff; --chat-text: #252525; --chat-muted: #858585; --chat-border: #dedede; position: relative; display: flex; flex-direction: column; width: 100%; height: min(80dvh, 880px); min-height: 420px; box-sizing: border-box; color: var(--chat-text); background: var(--chat-bg); border: 1px solid var(--chat-border); border-radius: 8px; overflow: hidden; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; }
+.nspp-messages *, .nspp-messages *::before, .nspp-messages *::after { box-sizing: border-box; }
+.nspp-messages [hidden], .nspp-messages[hidden] { display: none !important; }
+.nspp-messages button, .nspp-messages input, .nspp-messages textarea { font: inherit; color: inherit; }
+.nspp-messages button { appearance: none; border: 0; background: transparent; cursor: pointer; border-radius: 5px; }
+.nspp-messages button:disabled { cursor: default; opacity: .5; }
+.nspp-messages :focus-visible { outline: 2px solid #07a65a; outline-offset: -2px; }
+.nspp-messages a { color: inherit; text-decoration: none; }
+.nspp-messages-top { display: flex; align-items: center; justify-content: space-between; flex: none; min-height: 38px; padding: 0 12px; background: var(--chat-surface); border-bottom: 1px solid var(--chat-border); }
+.nspp-messages-fixed-contacts a[aria-current] { background: #818b9830; }
+.nspp-messages-fixed-contacts strong { font-size: 13px; font-weight: 600; }
+.nspp-messages-fixed-contacts .nspp-messages-count { flex: none; }
+.nspp-messages-top-actions { display: flex; flex: none; gap: 4px; margin-left: 10px; }
+.nspp-messages-top-actions button { color: var(--chat-muted); padding: 4px 6px; font-size: 11px; white-space: nowrap; }
+.nspp-messages-count { min-width: 16px; padding: 0 4px; border-radius: 8px; background: #fa5151; color: #fff; font-size: 10px; line-height: 16px; text-align: center; }
+.nspp-messages-workspace { display: grid; grid-template-columns: 248px minmax(0, 1fr); flex: 1; min-height: 0; }
+.nspp-messages-sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--chat-sidebar); border-right: 1px solid var(--chat-border); }
+.nspp-messages-search { display: flex; gap: 6px; padding: 8px; flex: none; }
+.nspp-messages-search input { width: 100%; min-width: 0; border: 0; border-radius: 5px; background: #818b981a; padding: 7px 10px; font-size: 12px; }
+.nspp-messages-refresh { display: grid; place-items: center; width: 30px; flex: none; }
+.nspp-messages-contact-list { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.nspp-messages-conversations { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.nspp-messages-contact-list > .nspp-messages-conversations { overflow: visible; }
+.nspp-messages .nspp-messages-peer { display: flex; position: relative; align-items: center; gap: 8px; width: 100%; min-height: 58px; margin: 0; padding: 9px 10px; border-radius: 0; text-align: left; }
+.nspp-messages-peer:hover { background: #818b981a; }
+.nspp-messages-peer[aria-pressed='true'] { background: #818b9830; }
+.nspp-messages-avatar { width: 32px; height: 32px; flex: none; border-radius: 5px; object-fit: cover; background: #818b9826; }
+.nspp-messages-peer-details { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.nspp-messages-peer-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nspp-messages-peer-title strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nspp-messages-peer-title time { flex: none; color: var(--chat-muted); font-size: 10px; }
+.nspp-messages-snippet { color: var(--chat-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nspp-messages-unread { position: absolute; left: 36px; top: 6px; width: 8px; height: 8px; border: 1px solid var(--chat-sidebar); border-radius: 50%; background: #fa5151; }
+.nspp-messages-list-status { color: var(--chat-muted); font-size: 12px; padding: 6px 14px; margin: 0; overflow-wrap: anywhere; }
+.nspp-messages-list-status:empty, .nspp-messages-status:empty { display: none; }
+.nspp-messages-more { padding: 10px; font-size: 12px !important; color: var(--chat-muted) !important; }
+.nspp-messages-chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.nspp-messages-heading { display: flex; flex: 1; min-width: 0; align-items: center; gap: 8px; padding: 6px 0; }
+.nspp-messages-heading strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.nspp-messages-heading .nspp-messages-avatar { width: 24px; height: 24px; }
+.nspp-messages-heading .nspp-messages-profile { flex: none; white-space: nowrap; font-size: 11px; }
+.nspp-messages-profile { margin-left: auto; color: var(--chat-muted) !important; font-size: 12px; }
+.nspp-messages-back { display: none; }
+.nspp-messages-thread { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 16px; }
+.nspp-messages-empty { display: flex; align-items: center; justify-content: center; min-height: 100%; color: var(--chat-muted); font-size: 13px; }
+.nspp-messages-stamp { display: block; margin: 2px 0 12px; text-align: center; color: var(--chat-muted); font-size: 10px; }
+.nspp-messages-message { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; }
+.nspp-messages-message.is-mine { flex-direction: row-reverse; }
+.nspp-messages-bubble { position: relative; min-height: 32px; max-width: min(76%, 640px); padding: 7px 10px; border-radius: 6px; background: var(--chat-surface); box-shadow: 0 1px 2px #00000008; overflow-wrap: anywhere; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+.nspp-messages-bubble::before { content: ''; position: absolute; left: -5px; top: 11px; width: 6px; height: 10px; background: inherit; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
+.nspp-messages-message.is-mine .nspp-messages-bubble { background: #95ec69; color: #183015; }
+.nspp-messages-message.is-mine .nspp-messages-bubble::before { left: auto; right: -5px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.nspp-messages-bubble a { color: #0969da; text-decoration: underline; }
+.nspp-messages-bubble img { display: block; max-width: min(100%, 340px); max-height: 300px; height: auto; border-radius: 5px; }
+.nspp-messages-status { margin: 0; padding: 8px 20px; font-size: 12px; color: var(--chat-muted); }
+.nspp-messages-sync-status { display: flex; flex: none; align-items: center; gap: 8px; }
+.nspp-messages-sync-status .nspp-messages-status { padding-right: 0; }
+.nspp-messages .nspp-messages-sync-retry { flex: none; margin: 4px 12px 4px 0; padding: 3px 9px; color: #07994e; background: #07994e12; font-size: 12px; }
+.nspp-messages-composer { flex: none; margin: 0; padding: 0; background: var(--chat-surface); border-top: 1px solid var(--chat-border); }
+.nspp-messages-composer textarea { display: block; width: 100%; min-height: 52px; max-height: 25dvh; resize: vertical; border: 0; padding: 0; background: transparent; outline: none; line-height: 1.6; }
+.nspp-messages-compose-actions { display: flex; align-items: center; gap: 10px; padding: 6px 10px 8px; background: var(--chat-surface); }
+.nspp-messages-compose-actions > label, .nspp-messages-compose-actions > .nspp-messages-send { flex: none; white-space: nowrap; }
+.nspp-messages-compose-actions > small { display: none; }
+.nspp-messages-compose-actions label { color: var(--chat-muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.nspp-messages-compose-actions small { color: var(--chat-muted); font-size: 11px; }
+.nspp-messages .nspp-messages-send { min-width: 78px; margin-left: auto; padding: 6px 20px; background: #07a65a; color: #fff; }
+.nspp-messages-retry { display: block; margin: 32px auto; padding: 8px 16px; }
+.nspp-notice-summary { padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--chat-border); }
+.nspp-notice-summary h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.nspp-notice-summary p, .nspp-notice-hint { margin: 0; color: var(--chat-muted); font-size: 12px; }
+.nspp-notice-body { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.nspp-notice-body p { margin: 6px 0; }
+.nspp-notice-body img { max-width: 100%; height: auto; }
+.nspp-notice-body a { color: #0969da; text-decoration: underline; }
+.nspp-notice-body pre { overflow: auto; padding: 10px; background: var(--chat-surface); border-radius: 5px; }
+.nspp-notice-body table { display: block; overflow-x: auto; max-width: 100%; }
+.nspp-notice-body blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--chat-border); }
+.nspp-messages .nspp-notice-workspace { display: flex; flex-direction: column; min-width: 0; }
+.nspp-notice-workspace > .nspp-messages-sidebar { flex: 1; border: 0; background: var(--chat-bg); }
+.nspp-notice-workspace > .nspp-messages-chat { flex: 1; }
+.nspp-notice-workspace:not(.has-detail) > .nspp-messages-chat, .nspp-notice-workspace.has-detail > .nspp-messages-sidebar { display: none; }
+.nspp-notice-back { flex: none; color: #07994e !important; padding: 4px; font-size: 12px !important; }
+.nspp-message-editor { margin: 0; padding: 0; border: 0; border-radius: 0; background: var(--chat-surface); }
+.nspp-message-editor-toolbar { display: flex; flex: 1; min-width: 0; flex-wrap: nowrap; overflow-x: auto; align-items: center; gap: 2px; padding: 0; background: transparent; border: 0; scrollbar-width: thin; }
+.nspp-message-editor-toolbar button { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 27px; height: 27px; padding: 5px; color: var(--chat-muted); }
+.nspp-message-editor-toolbar button:hover:not(:disabled), .nspp-message-editor-toolbar button[aria-pressed='true'] { color: var(--chat-text); background: #818b9824; }
+.nspp-message-editor-toolbar svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nspp-message-editor-toolbar .nspp-message-editor-tab { width: auto; padding: 4px 7px; font-size: 11px; white-space: nowrap; }
+.nspp-message-editor-body { min-height: 90px; }
+.nspp-message-editor-body textarea { min-height: 90px; padding: 12px 13px; font-size: 13px; line-height: 1.65; caret-color: #07a65a; }
+.nspp-messages .nspp-message-editor-body textarea:is(:focus, :focus-visible) { outline: none !important; box-shadow: none !important; border: 0; }
+.nspp-message-editor-body textarea::placeholder { color: var(--chat-muted); opacity: .7; }
+.nspp-message-editor-preview { min-height: 90px; max-height: 25dvh; padding: 10px 13px; overflow: auto; font-size: 13px; overflow-wrap: anywhere; }
+.nspp-message-editor-status { padding: 2px 12px; font-size: 11px; color: var(--chat-muted); border: 0; }
+.nspp-message-editor-status:empty { display: none; }
+.nspp-message-upload-help { padding: 0 10px; font-size: 11px; }
+.nspp-message-upload-help:has(input:not([hidden]), a:not([hidden])) { padding: 6px 10px; }
+.nspp-message-upload-help input { max-width: 100%; padding: 5px 8px; border: 1px solid var(--chat-border); border-radius: 4px; background: transparent; font-size: 12px; }
+.nspp-message-upload-help a { color: #0969da; }
+.nspp-messages-bubble.is-markdown { white-space: normal; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) > :first-child { margin-top: 0; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) > :last-child { margin-bottom: 0; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) p { margin: 5px 0; }
+.nspp-messages .nspp-messages-bubble.is-markdown > p { display: block; color: inherit; font: inherit; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) :is(ul, ol) { margin: 6px 0; padding-left: 22px; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) blockquote { margin: 6px 0; padding: 3px 10px; border-left: 3px solid #818b9860; color: inherit; opacity: .85; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) pre { max-width: 100%; overflow: auto; margin: 8px 0; padding: 9px; border-radius: 5px; background: #0000000d; white-space: pre; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) code { font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) table { display: block; max-width: 100%; overflow: auto; border-collapse: collapse; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) :is(th, td) { padding: 5px 8px; border: 1px solid #818b9850; }
+:is(.nspp-messages-bubble.is-markdown, .nspp-message-editor-preview) :is(h1, h2, h3, h4) { margin: 8px 0; line-height: 1.5; font-size: 15px; }
+.nspp-message-editor-preview img { max-width: 100%; max-height: 200px; object-fit: contain; }
+.nspp-messages-earlier { display: block; margin: 0 auto 14px; padding: 5px 10px; color: var(--chat-muted) !important; font-size: 12px !important; }
+.nspp-message-native-toolbar { display: flex; justify-content: flex-end; padding: 6px 8px; }
+.nspp-message-native-toolbar[hidden] { display: none !important; }
+.nspp-message-return { padding: 5px 10px; border: 1px solid #07a65a; border-radius: 5px; background: #07a65a; color: #fff; font: 12px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
+.nspp-message-return[hidden] { display: none !important; }
+.dark-layout .nspp-messages { --chat-bg: #151718; --chat-sidebar: #202324; --chat-surface: #26292b; --chat-text: #e4e6e7; --chat-muted: #91999d; --chat-border: #34383a; }
+@media (max-width: 700px) {
+  .nspp-messages { height: calc(100dvh - 96px); min-height: 360px; border-radius: 6px; }
+  .nspp-messages-workspace { grid-template-columns: minmax(0, 1fr); }
+  .nspp-messages:not(.has-conversation) > .nspp-messages-workspace > .nspp-messages-chat, .nspp-messages.has-conversation > .nspp-messages-workspace > .nspp-messages-sidebar { display: none; }
+  .nspp-messages-top { padding: 0 8px; gap: 6px; flex-wrap: nowrap; }
+  .nspp-messages-sidebar { border: 0; padding-bottom: env(safe-area-inset-bottom); }
+  .nspp-messages-back { display: block; padding: 4px 0; color: #07994e !important; }
+  .nspp-messages-thread { padding: 14px; }
+  .nspp-messages-bubble { max-width: calc(100% - 70px); }
+  .nspp-messages-compose-actions small { display: none; }
+  .nspp-messages-composer { padding: 0 0 env(safe-area-inset-bottom); }
+  .nspp-messages-compose-actions { flex-wrap: wrap; gap: 6px; padding: 4px 8px 8px; }
+  .nspp-messages-compose-actions .nspp-message-editor-toolbar { flex-basis: 100%; }
+  .nspp-messages-composer textarea { min-height: 60px; font-size: 16px; }
+  .nspp-message-editor-toolbar { flex-wrap: nowrap; overflow-x: auto; }
+  .nspp-message-editor-toolbar button { flex: none; min-width: 30px; height: 30px; }
+  .nspp-message-editor-body textarea { min-height: 82px; }
+}

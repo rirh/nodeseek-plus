@@ -3,24 +3,26 @@ import { openImagePreview } from './image-preview';
 
 export type PreviewAction = 'preview' | 'interact' | 'quote' | 'reply';
 // Copy only reading content; remote markup never supplies executable attributes or UI.
-function readingContent(source: Element, base: string): DocumentFragment {
+export function readingContent(source: Element, base: string): DocumentFragment {
   const fragment = document.createDocumentFragment();
   const allowed = new Set(['P', 'BR', 'STRONG', 'B', 'EM', 'I', 'S', 'DEL', 'BLOCKQUOTE', 'PRE', 'CODE', 'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'HR', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'A', 'IMG']);
   const copy = (node: Node, parent: Node) => {
     if (node.nodeType === Node.TEXT_NODE) { parent.appendChild(document.createTextNode(node.textContent || '')); return; }
-    if (!(node instanceof Element) || node.matches('script, style, iframe, object, embed, form, input, button, textarea, select, svg, math, link, meta, base')) return;
-    if (!allowed.has(node.tagName)) { node.childNodes.forEach(child => copy(child, parent)); return; }
-    const el = document.createElement(node.tagName.toLowerCase());
-    if (node.tagName === 'A' || node.tagName === 'IMG') {
-      const attribute = node.tagName === 'A' ? 'href' : 'src';
-      const raw = node.getAttribute(attribute);
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const sourceElement = node as Element;
+    if (sourceElement.matches('script, style, iframe, object, embed, form, input, button, textarea, select, svg, math, link, meta, base')) return;
+    if (!allowed.has(sourceElement.tagName)) { node.childNodes.forEach(child => copy(child, parent)); return; }
+    const el = document.createElement(sourceElement.tagName.toLowerCase());
+    if (sourceElement.tagName === 'A' || sourceElement.tagName === 'IMG') {
+      const attribute = sourceElement.tagName === 'A' ? 'href' : 'src';
+      const raw = sourceElement.getAttribute(attribute);
       if (!raw) return;
       let url: URL;
       try { url = new URL(raw, base); } catch { return; }
       if (!['http:', 'https:'].includes(url.protocol)) return;
       el.setAttribute(attribute, url.href);
       if (el instanceof HTMLAnchorElement) { el.target = '_blank'; el.rel = 'noopener noreferrer'; }
-      if (el instanceof HTMLImageElement) { el.alt = node.getAttribute('alt') || ''; el.loading = 'lazy'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', el.alt ? `查看大图：${el.alt}` : '查看大图'); }
+      if (el instanceof HTMLImageElement) { el.alt = sourceElement.getAttribute('alt') || ''; el.loading = 'lazy'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', el.alt ? `查看大图：${el.alt}` : '查看大图'); }
     }
     node.childNodes.forEach(child => copy(child, el));
     parent.appendChild(el);
