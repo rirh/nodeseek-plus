@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.914.1338
+// @version      26.914.1344
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @downloadURL  https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js
@@ -523,7 +523,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		return svg;
 	}
-	var style_default$1 = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px;box-shadow:0 1px #1f23280a}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}.launcher{z-index:2147483645;background:var(--surface);min-height:32px;font-weight:600;position:fixed;bottom:16px;right:16px;box-shadow:0 2px 6px #1f232826}dialog{width:min(760px,100vw - 32px);max-width:none;max-height:min(82dvh,760px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;overflow:hidden;box-shadow:0 8px 28px #1f232833}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}header{border-bottom:1px solid var(--line);background:var(--soft);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}.heading .check-update{min-height:24px;color:var(--link);box-shadow:none;background:0 0;border:0;padding:2px 5px;font-size:11px}h2{margin:0;font-size:14px;font-weight:600;line-height:22px}header p{font-size:12px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}.search-bar{border-bottom:1px solid var(--line);flex:none;padding:6px 12px}form{flex-direction:column;min-height:0;margin:0;display:flex}.content{overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 16px 8px;overflow-y:auto}section{margin:0}h3{z-index:1;background:var(--surface);border-bottom:1px solid var(--line);color:var(--muted);margin:0;padding:8px 0;font-size:12px;font-weight:600;line-height:18px;position:sticky;top:0}section+section{margin-top:6px}article{border-bottom:1px solid var(--line);padding:9px 0;position:relative}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}article>p{padding-right:28px;font-size:12px;line-height:18px}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:15px;height:15px;margin:0}.feature-options{border-left:2px solid var(--line);margin-top:6px;padding:0 8px}.field{grid-template-columns:minmax(120px,1fr) minmax(0,2fr);align-items:start;gap:4px 10px;margin-top:5px;font-size:12px;display:grid}.field>span{overflow-wrap:anywhere;padding-top:5px}.field input[type=checkbox]{margin-top:7px}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px;box-shadow:inset 0 1px #1f23280a}textarea{resize:vertical;min-height:80px}.status{border-bottom:1px solid var(--line);flex:none;margin:0;padding:4px 12px;font-size:11px;line-height:18px}.actions{align-items:center;gap:4px;margin-left:auto;display:flex}.actions button{min-height:26px;padding:2px 8px;font-size:11px}.primary{background:var(--accent);color:#fff;border-color:#1f232826;min-width:92px}.primary:hover{background:var(--accent);filter:brightness(.94)}small{opacity:.6;color:var(--text);font-size:10px;line-height:16px}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;box-shadow:none;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}@media (width<=600px){dialog{width:100%;max-height:92dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:8px 8px 0 0;margin:auto 0 0}header{flex-wrap:wrap;padding:8px}.search-bar{padding:8px 12px}.content{padding:0 12px 6px}.field{grid-template-columns:1fr;gap:4px}.actions{flex-wrap:wrap}.primary{margin:0}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}.settings-workspace{grid-template-columns:104px minmax(0,1fr);height:min(65dvh,560px);min-height:0;display:grid}.categories{border-right:1px solid var(--line);background:var(--soft);padding:8px;overflow:auto}.categories a{color:var(--text);border-radius:5px;margin-bottom:2px;padding:4px 8px;font-size:12px;text-decoration:none;display:block;position:relative}.categories a:hover{background:var(--line)}.categories a[aria-current]{color:var(--text);background:#818b981f;font-weight:600}.categories a[aria-current]:before{content:\"\";background:var(--link);border-radius:2px;width:3px;position:absolute;top:5px;bottom:5px;left:-5px}.settings-workspace .content{min-width:0;padding:0 12px 8px}.settings-workspace article{padding:7px 0}.status:empty{display:none}@media (width<=600px){.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:58dvh}.categories{padding:6px 4px}.categories a{padding:7px 6px}}dialog{border-radius:6px;width:min(640px,100vw - 24px);box-shadow:0 12px 40px #0003}header{background:var(--surface);flex-wrap:nowrap;padding:8px 12px}.heading h2{font-size:15px}.search-bar{background:var(--surface);flex:0 220px;min-width:0;margin-left:auto;padding:0}.search-bar input{background:var(--soft);box-shadow:none;border-color:#0000;padding:5px 10px}.settings-workspace{grid-template-columns:76px minmax(0,1fr);height:min(56dvh,420px)}.categories{background:var(--soft);padding:8px 6px}.categories a{color:var(--muted);margin-bottom:3px;padding:6px 8px}.categories a[aria-current]{background:var(--surface);color:var(--link);box-shadow:0 1px 3px #0000000a}.categories a[aria-current]:before{display:none}.settings-workspace .content{padding:0 12px 8px}h3{border-bottom:0;padding:8px 0 3px;font-size:11px;font-weight:600}.settings-workspace article{border-bottom-color:color-mix(in srgb, var(--line) 55%, transparent);padding:7px 0}.feature-heading strong{font-size:12px;font-weight:500}.feature-heading input{width:14px;height:14px}.feature-options{background:var(--soft);border:0;border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;margin-top:8px}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field>span{color:var(--muted);padding-top:0}.field input[type=checkbox]{margin:0}.settings-footer{border-top:1px solid var(--line);background:var(--surface);flex:none;padding:7px 12px}.settings-footer .actions{gap:6px;width:100%}.settings-footer button{box-shadow:none;border-radius:4px;padding:4px 9px}.settings-footer button:not(.primary){color:var(--muted);background:0 0;border-color:#0000}.settings-footer .settings-close{margin-left:auto}.settings-footer .primary{background:var(--text);color:var(--surface)}@media (width<=600px){dialog{border-radius:12px 12px 0 0;width:100%;max-height:92dvh}header{flex-wrap:wrap}.search-bar{flex:160px}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:60dvh}.categories{border-right:0;border-bottom:1px solid var(--line);gap:4px;padding:6px 12px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.settings-footer{padding:8px 12px}.settings-footer .actions{flex-wrap:wrap;gap:2px}.settings-footer button{padding:5px 6px}}.launcher{justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}header,.search-bar,.categories,.settings-footer,.settings-workspace article{border:0}.settings-workspace article{border-radius:5px}.settings-workspace article+article{margin-top:3px}.settings-workspace article:hover{background:color-mix(in srgb, var(--soft) 45%, transparent)}.settings-footer{background:var(--soft)}";
+	var style_default$1 = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px;box-shadow:0 1px #1f23280a}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}.launcher{z-index:2147483645;background:var(--surface);min-height:32px;font-weight:600;position:fixed;bottom:16px;right:16px;box-shadow:0 2px 6px #1f232826}dialog{width:min(760px,100vw - 32px);max-width:none;max-height:min(82dvh,760px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;overflow:hidden;box-shadow:0 8px 28px #1f232833}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}header{border-bottom:1px solid var(--line);background:var(--soft);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}.heading .check-update{min-height:24px;color:var(--link);box-shadow:none;background:0 0;border:0;padding:2px 5px;font-size:11px}.about-content{padding:8px 0 12px;font-size:12px}.about-heading{align-items:baseline;gap:8px;display:flex}.about-heading>strong{font-size:15px}.about-version{color:var(--muted);font-size:11px}.about-links{flex-wrap:wrap;gap:6px 14px;margin:12px 0;display:flex}.about-links a{color:var(--link);overflow-wrap:anywhere;text-decoration:none}.about-links a:hover{text-decoration:underline}.about-content ol{color:var(--muted);margin:10px 0 12px;padding-left:18px;line-height:1.7}.about-content li+li{margin-top:6px}h2{margin:0;font-size:14px;font-weight:600;line-height:22px}header p{font-size:12px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}.search-bar{border-bottom:1px solid var(--line);flex:none;padding:6px 12px}form{flex-direction:column;min-height:0;margin:0;display:flex}.content{overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 16px 8px;overflow-y:auto}section{margin:0}h3{z-index:1;background:var(--surface);border-bottom:1px solid var(--line);color:var(--muted);margin:0;padding:8px 0;font-size:12px;font-weight:600;line-height:18px;position:sticky;top:0}section+section{margin-top:6px}article{border-bottom:1px solid var(--line);padding:9px 0;position:relative}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}article>p{padding-right:28px;font-size:12px;line-height:18px}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:15px;height:15px;margin:0}.feature-options{border-left:2px solid var(--line);margin-top:6px;padding:0 8px}.field{grid-template-columns:minmax(120px,1fr) minmax(0,2fr);align-items:start;gap:4px 10px;margin-top:5px;font-size:12px;display:grid}.field>span{overflow-wrap:anywhere;padding-top:5px}.field input[type=checkbox]{margin-top:7px}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px;box-shadow:inset 0 1px #1f23280a}textarea{resize:vertical;min-height:80px}.status{border-bottom:1px solid var(--line);flex:none;margin:0;padding:4px 12px;font-size:11px;line-height:18px}.actions{align-items:center;gap:4px;margin-left:auto;display:flex}.actions button{min-height:26px;padding:2px 8px;font-size:11px}.primary{background:var(--accent);color:#fff;border-color:#1f232826;min-width:92px}.primary:hover{background:var(--accent);filter:brightness(.94)}small{opacity:.6;color:var(--text);font-size:10px;line-height:16px}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;box-shadow:none;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}@media (width<=600px){dialog{width:100%;max-height:92dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:8px 8px 0 0;margin:auto 0 0}header{flex-wrap:wrap;padding:8px}.search-bar{padding:8px 12px}.content{padding:0 12px 6px}.field{grid-template-columns:1fr;gap:4px}.actions{flex-wrap:wrap}.primary{margin:0}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}.settings-workspace{grid-template-columns:104px minmax(0,1fr);height:min(65dvh,560px);min-height:0;display:grid}.categories{border-right:1px solid var(--line);background:var(--soft);padding:8px;overflow:auto}.categories a{color:var(--text);border-radius:5px;margin-bottom:2px;padding:4px 8px;font-size:12px;text-decoration:none;display:block;position:relative}.categories a:hover{background:var(--line)}.categories a[aria-current]{color:var(--text);background:#818b981f;font-weight:600}.categories a[aria-current]:before{content:\"\";background:var(--link);border-radius:2px;width:3px;position:absolute;top:5px;bottom:5px;left:-5px}.settings-workspace .content{min-width:0;padding:0 12px 8px}.settings-workspace article{padding:7px 0}.status:empty{display:none}@media (width<=600px){.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:58dvh}.categories{padding:6px 4px}.categories a{padding:7px 6px}}dialog{border-radius:6px;width:min(640px,100vw - 24px);box-shadow:0 12px 40px #0003}header{background:var(--surface);flex-wrap:nowrap;padding:8px 12px}.heading h2{font-size:15px}.search-bar{background:var(--surface);flex:0 220px;min-width:0;margin-left:auto;padding:0}.search-bar input{background:var(--soft);box-shadow:none;border-color:#0000;padding:5px 10px}.settings-workspace{grid-template-columns:76px minmax(0,1fr);height:min(56dvh,420px)}.categories{background:var(--soft);padding:8px 6px}.categories a{color:var(--muted);margin-bottom:3px;padding:6px 8px}.categories a[aria-current]{background:var(--surface);color:var(--link);box-shadow:0 1px 3px #0000000a}.categories a[aria-current]:before{display:none}.settings-workspace .content{padding:0 12px 8px}h3{border-bottom:0;padding:8px 0 3px;font-size:11px;font-weight:600}.settings-workspace article{border-bottom-color:color-mix(in srgb, var(--line) 55%, transparent);padding:7px 0}.feature-heading strong{font-size:12px;font-weight:500}.feature-heading input{width:14px;height:14px}.feature-options{background:var(--soft);border:0;border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;margin-top:8px}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field>span{color:var(--muted);padding-top:0}.field input[type=checkbox]{margin:0}.settings-footer{border-top:1px solid var(--line);background:var(--surface);flex:none;padding:7px 12px}.settings-footer .actions{gap:6px;width:100%}.settings-footer button{box-shadow:none;border-radius:4px;padding:4px 9px}.settings-footer button:not(.primary){color:var(--muted);background:0 0;border-color:#0000}.settings-footer .settings-close{margin-left:auto}.settings-footer .primary{background:var(--text);color:var(--surface)}@media (width<=600px){dialog{border-radius:12px 12px 0 0;width:100%;max-height:92dvh}header{flex-wrap:wrap}.search-bar{flex:160px}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:60dvh}.categories{border-right:0;border-bottom:1px solid var(--line);gap:4px;padding:6px 12px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.settings-footer{padding:8px 12px}.settings-footer .actions{flex-wrap:wrap;gap:2px}.settings-footer button{padding:5px 6px}}.launcher{justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}header,.search-bar,.categories,.settings-footer,.settings-workspace article{border:0}.settings-workspace article{border-radius:5px}.settings-workspace article+article{margin-top:3px}.settings-workspace article:hover{background:color-mix(in srgb, var(--soft) 45%, transparent)}.settings-footer{background:var(--soft)}";
 	var loading_default = "[aria-busy=true],.nspp-sweep-shine{-webkit-text-fill-color:currentColor;cursor:progress;background-image:linear-gradient(110deg,#0000 35%,#ffffff80 50%,#0000 65%);background-repeat:no-repeat;background-size:250% 100%;animation:1.8s linear infinite nspp-busy-feedback;opacity:1!important}@keyframes nspp-busy-feedback{0%{background-position:150% 0}to{background-position:-150% 0}}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:transparent;background-image:linear-gradient(110deg,currentColor 35%,#ffffff80 50%,currentColor 65%);-webkit-background-clip:text;background-clip:text}.nspp-action[aria-busy=true]>svg{transform-origin:50%;animation:.7s ease-in-out infinite nspp-attendance-working}@keyframes nspp-attendance-working{0%,to{transform:translateY(0)rotate(-8deg)}50%{transform:translateY(-3px)rotate(8deg)}}@media (prefers-reduced-motion:reduce){[aria-busy=true],.nspp-sweep-shine,.nspp-action[aria-busy=true]>svg{background-image:none;animation:none}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:currentColor;background-image:none}}";
 	async function withTabLock(name, intervalMs, task) {
 		const key = `nspp:lock:${location.hostname}:${name}`;
@@ -676,7 +676,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		let prompting = false;
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1338")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1344")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -685,7 +685,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				promptedAt: Date.now()
 			});
 			try {
-				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1338，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
+				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1344，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
 					href: UPDATE_URL,
 					cancelLabel: "稍后提醒"
 				});
@@ -719,8 +719,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					return;
 				}
 				const version = state().version;
-				if (version && isNewerVersion(version, "26.914.1338")) await prompt(manual);
-				else if (manual) notify(`当前已是最新版本（v26.914.1338）`);
+				if (version && isNewerVersion(version, "26.914.1344")) await prompt(manual);
+				else if (manual) notify(`当前已是最新版本（v26.914.1344）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -748,6 +748,59 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}
 		};
 	}
+	function aboutContent(check) {
+		const content = document.createElement("div");
+		content.className = "about-content";
+		const title = document.createElement("strong");
+		title.textContent = "NodeSeek++";
+		const version = document.createElement("span");
+		version.className = "about-version";
+		version.textContent = `v26.914.1344`;
+		const heading = document.createElement("div");
+		heading.className = "about-heading";
+		heading.append(title, version);
+		const summary = document.createElement("p");
+		summary.textContent = "NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only";
+		const links = document.createElement("div");
+		links.className = "about-links";
+		for (const [label, href] of [
+			["GitHub · rirh/nodeseek-plus", "https://github.com/rirh/nodeseek-plus"],
+			["下载安装 / 手动更新", UPDATE_URL],
+			["Greasy Fork 脚本页", "https://greasyfork.org/zh-CN/scripts/595488"],
+			["使用说明", "https://github.com/rirh/nodeseek-plus#readme"],
+			["反馈问题", "https://github.com/rirh/nodeseek-plus/issues"]
+		]) {
+			const link = document.createElement("a");
+			link.href = href;
+			link.textContent = label;
+			link.target = "_blank";
+			link.rel = "noopener noreferrer";
+			links.append(link);
+		}
+		const steps = document.createElement("ol");
+		for (const text of ["首次安装：安装 Tampermonkey，打开上方下载链接，在脚本管理器中确认安装，再刷新论坛。", "更新脚本：点击检查更新，或重新打开下载链接确认更新，再刷新论坛；无需卸载旧版。"]) {
+			const step = document.createElement("li");
+			step.textContent = text;
+			steps.append(step);
+		}
+		const button = document.createElement("button");
+		button.type = "button";
+		button.textContent = "检查更新";
+		button.addEventListener("click", async () => {
+			button.disabled = true;
+			button.setAttribute("aria-busy", "true");
+			button.textContent = "检查中…";
+			try {
+				await check();
+			} finally {
+				button.disabled = false;
+				button.removeAttribute("aria-busy");
+				button.textContent = "检查更新";
+			}
+		});
+		content.append(heading, summary, links, steps, button);
+		return content;
+	}
 	var element$1 = (tag, text) => {
 		const node = document.createElement(tag);
 		if (text) node.textContent = text;
@@ -772,7 +825,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.914.1338`));
+		heading.append(title, element$1("small", `v26.914.1344`));
 		const checkUpdate = element$1("button", "检查更新");
 		checkUpdate.type = "button";
 		checkUpdate.className = "check-update";
@@ -1006,6 +1059,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					row.append(details);
 				}
 				group.append(row);
+			}
+			if (!query || "关于 nodeseek++ github 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证".includes(query)) {
+				const group = element$1("section");
+				const index = sections.length;
+				group.id = `nspp-category-${index}`;
+				const link = element$1("a", "关于");
+				link.href = `#${group.id}`;
+				link.addEventListener("click", (event) => {
+					event.preventDefault();
+					content.scrollTo({
+						top: content.scrollTop + group.getBoundingClientRect().top - content.getBoundingClientRect().top,
+						behavior: "instant"
+					});
+					activate(index);
+				});
+				group.append(element$1("h3", "关于"), aboutContent(() => updates.check()));
+				sections.push(group);
+				links.push(link);
+				navigation.append(link);
+				groups.set("关于", group);
+				content.append(group);
 			}
 			if (!groups.size) content.append(element$1("p", "没有匹配的功能"));
 			content.scrollTop = 0;

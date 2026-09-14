@@ -530,7 +530,7 @@ test('settings categories are anchors, scroll updates selection and search filte
     f.menus[0]();
     const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
     const nav = [...root.querySelectorAll<HTMLAnchorElement>('.categories a')];
-    assert.deepEqual(nav.map(link => link.textContent), ['网络', '浏览', '界面', '用户', '工具']);
+    assert.deepEqual(nav.map(link => link.textContent), ['网络', '浏览', '界面', '用户', '工具', '关于']);
     assert.equal(nav[0].getAttribute('aria-current'), 'location');
     const content = root.querySelector('.content')!;
     const sections = [...content.querySelectorAll('section')];
@@ -542,6 +542,9 @@ test('settings categories are anchors, scroll updates selection and search filte
     search.value = '黑名单'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(root.querySelectorAll('.categories a').length, 1);
     assert.equal(root.querySelector('.categories a')!.textContent, '用户');
+    search.value = 'github'; search.dispatchEvent(new f.window.Event('input'));
+    assert.deepEqual([...root.querySelectorAll('.categories a')].map(link => link.textContent), ['关于']);
+    assert.ok(root.querySelector('.about-links a[href="https://github.com/rirh/nodeseek-plus"]'));
   } finally { await f.close(); }
 });
 
