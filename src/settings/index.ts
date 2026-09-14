@@ -6,6 +6,7 @@ import { parseSettings, normalizeSettings, exportSettings } from "../core/config
 import { clearCaches, loadSettings, saveSettings } from "../core/runtime";
 import type { Feature, Settings } from "../core/types";
 import { createUpdateChecker } from "../lib/script-update";
+import { aboutContent } from "./about";
 
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const node = document.createElement(tag);
@@ -226,6 +227,15 @@ export function mountSettings(features: Feature[]) {
         row.append(details);
       }
       group.append(row);
+    }
+    if (!query || '关于 nodeseek++ github 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证'.includes(query)) {
+      const group = element('section'); const index = sections.length; group.id = `nspp-category-${index}`;
+      const link = element('a', '关于'); link.href = `#${group.id}`;
+      link.addEventListener('click', event => {
+        event.preventDefault(); content.scrollTo({ top: content.scrollTop + group.getBoundingClientRect().top - content.getBoundingClientRect().top, behavior: 'instant' }); activate(index);
+      });
+      group.append(element('h3', '关于'), aboutContent(() => updates.check()));
+      sections.push(group); links.push(link); navigation.append(link); groups.set('关于', group); content.append(group);
     }
     if (!groups.size) content.append(element("p", "没有匹配的功能"));
     content.scrollTop = 0;

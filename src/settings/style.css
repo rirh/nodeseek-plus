@@ -51,6 +51,15 @@ dialog::backdrop { background: #1f232866; }
 header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--soft); }
 .heading { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .heading .check-update { min-height: 24px; padding: 2px 5px; border: 0; background: transparent; color: var(--link); font-size: 11px; box-shadow: none; }
+.about-content { padding: 8px 0 12px; font-size: 12px; }
+.about-heading { display: flex; align-items: baseline; gap: 8px; }
+.about-heading > strong { font-size: 15px; }
+.about-version { color: var(--muted); font-size: 11px; }
+.about-links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; }
+.about-links a { color: var(--link); text-decoration: none; overflow-wrap: anywhere; }
+.about-links a:hover { text-decoration: underline; }
+.about-content ol { margin: 10px 0 12px; padding-left: 18px; color: var(--muted); line-height: 1.7; }
+.about-content li + li { margin-top: 6px; }
 h2 { margin: 0; font-size: 14px; line-height: 22px; font-weight: 600; }
 header p { font-size: 12px; }
 p { margin: 3px 0 0; color: var(--muted); overflow-wrap: anywhere; }

@@ -2,16 +2,34 @@
 
 面向 **NodeSeek / DeepFlood** 的模块化用户脚本，提供阅读增强、帖子互动、正则监控、图片上传和用户资料展示。功能可独立开关，桌面与移动端使用响应式面板。
 
-## 安装与开始使用
+## 下载与安装
 
-1. 在浏览器中安装 Tampermonkey 等用户脚本管理器。
-2. 获取 [完整安装脚本](dist/nodeseek-plus-plus.user.js)，在脚本管理器中安装；不要使用仅包含元信息的 `.meta.js`。
-3. 打开 `https://www.nodeseek.com/` 或 `https://www.deepflood.com/`。
-4. 点击右下角设置图标，或通过脚本管理器菜单打开 **NodeSeek++ 设置**。
+| 入口 | 地址 |
+| --- | --- |
+| 安装 / 更新（推荐） | [点击安装 NodeSeek++](https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js) |
+| Greasy Fork | [脚本介绍与版本记录](https://greasyfork.org/zh-CN/scripts/595488) |
+| GitHub | [rirh/nodeseek-plus](https://github.com/rirh/nodeseek-plus) |
+| GitHub 分发文件 | [完整 userscript](https://github.com/rirh/nodeseek-plus/blob/main/dist/nodeseek-plus-plus.user.js) |
+| 问题反馈 | [GitHub Issues](https://github.com/rirh/nodeseek-plus/issues) |
 
-设置按「浏览、界面、用户、工具」分类，支持搜索、导入、导出和恢复默认。常规设置点击「保存并刷新」生效；监控正则在监控面板的「配置」中单独更新。
+1. 在浏览器中安装 [Tampermonkey](https://www.tampermonkey.net/) 等用户脚本管理器。
+2. 打开上方“安装 / 更新”链接，在脚本管理器页面点击“安装”。
+3. 打开或刷新 [NodeSeek](https://www.nodeseek.com/) / [DeepFlood](https://www.deepflood.com/)。
+4. 点击右下角设置图标，或从脚本管理器菜单打开 **NodeSeek++ 设置**。
 
-> 仓库文件预览页不一定会触发安装。可打开文件的原始内容，或把完整代码粘贴到脚本管理器的新脚本中。
+设置按「浏览、界面、用户、工具」分类，支持搜索、导入、导出和恢复默认。「关于」提供当前版本、GitHub、下载安装及问题反馈入口。常规配置点击「保存并刷新」生效。
+
+如果链接显示源码而没有弹出安装页，可复制完整 `.user.js` 内容，在脚本管理器中新建脚本、粘贴并保存。`.meta.js` 只有版本信息，不能用于安装。
+
+## 如何更新
+
+**设置内更新：** 打开设置，点击顶部或「关于」中的“检查更新” → 发现新版后点击“前往更新” → 在脚本管理器中确认更新 → 刷新论坛页面。
+
+**手动更新：** 重新打开 [安装 / 更新链接](https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js)，在脚本管理器中确认覆盖更新，再刷新论坛。无需卸载旧版，以免丢失脚本管理器中的配置。
+
+正式版也会自动检查更新：页面打开约 30 秒后检查，之后每 6 小时检查一次；发现新版本通过弹窗提醒，同一版本 24 小时内不重复提醒。只有论坛页面保持打开时，脚本的后台检查才会运行。
+
+GitHub 分发文件可能比油叉同步更早；普通用户建议使用上方油叉安装链接。维护者的 `make deploy` 发布流程见本文末尾。
 
 ## 主要功能
 
