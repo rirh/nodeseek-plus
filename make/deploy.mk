@@ -1,7 +1,8 @@
 .PHONY: deploy deploy-local deploy-stage
-# Source changes must be committed before publishing.
+# Build and commit source changes together with the release artifacts.
+SKIP_CHECKS ?= 0
 deploy:
-	@node scripts/deploy.mjs
+	@SKIP_CHECKS="$(SKIP_CHECKS)" node scripts/deploy.mjs
 
 deploy-local: update-version
 	@$(PKG_BIN) run typecheck

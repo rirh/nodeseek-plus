@@ -26,31 +26,34 @@ test('user IDs support the upstream path and query formats and reject foreign ho
 });
 
 test('trust score requires complete valid evidence, without penalizing missing fields', () => {
-  const profile = { created_at: now, nPost: 0, nComment: 0 };
+  const profile = { created_at: now, nPost: 0, nComment: 0, coin: 0, stardust: 0, fans: 0 };
   assert.equal(trustScore(profile, now)?.score, 0);
-  for (const patch of [{ created_at: 'invalid' }, { created_at: now + 1 }, { nPost: undefined }, { nComment: -1 }, { nPost: NaN }, { nPost: Infinity }, { nComment: 1.5 }]) {
+  for (const patch of [{ created_at: 'invalid' }, { created_at: now + 1 }, { nPost: undefined }, { nComment: -1 }, { nPost: NaN }, { nPost: Infinity }, { nComment: 1.5 }, { coin: undefined }, { stardust: undefined }, { fans: undefined }, { coin: Infinity }, { stardust: NaN }, { fans: -1 }]) {
     assert.equal(trustScore({ ...profile, ...patch }, now), null);
   }
 });
-test('trust score is bounded, monotonic, diminishing and independent of rank and coins', () => {
-  const profile = { created_at: now - 1388 * 86400000, nPost: 100, nComment: 500 };
+test('trust score is bounded, monotonic, diminishing and independent of rank', () => {
+  const profile = { created_at: now - 1388 * 86400000, nPost: 300, nComment: 2000, coin: 6000, stardust: 500, fans: 50 };
   assert.equal(trustScore(profile, now)?.score, 100);
   assert.equal(trustScore({ ...profile, nPost: 10000, nComment: 10000 }, now)?.score, 100);
-  assert.deepEqual(trustScore({ ...profile, rank: 6, coin: 999999 }, now), trustScore(profile, now));
+  assert.deepEqual(trustScore({ ...profile, rank: 6 }, now), trustScore(profile, now));
+  assert.equal(trustScore({ ...profile, coin: 0, stardust: 0 }, now)?.score, 80);
+  assert.deepEqual(trustScore({ ...profile, coin: -1, stardust: -1 }, now), trustScore({ ...profile, coin: 0, stardust: 0 }, now));
   const points = (nPost: number) => trustScore({ ...profile, nPost }, now)!.posts;
   assert.ok(points(1) - points(0) > points(100) - points(99));
   for (let n = 1; n <= 100; n++) assert.ok(points(n) >= points(n - 1));
-  assert.equal(trustScore({ ...profile, created_at: now, nPost: 100000, nComment: 100000 }, now)?.score, 40);
+  assert.equal(trustScore({ ...profile, created_at: now, nPost: 100000, nComment: 100000 }, now)?.score, 65);
 });
 
-test('forum age and registration score cap advance by calendar day in UTC+8', () => {
+test('forum age advances by calendar day in UTC+8 while age points cap at 730 days', () => {
   const baseline = Date.parse('2026-09-12T00:00:00+08:00');
   assert.equal(forumAge(baseline), 1388);
   assert.equal(forumAge(baseline + 86400000 - 1), 1388);
   assert.equal(forumAge(baseline + 86400000), 1389);
-  const founder = { created_at: baseline - 1388 * 86400000, nPost: 100, nComment: 500 };
+  const founder = { created_at: baseline - 1388 * 86400000, nPost: 300, nComment: 2000, coin: 6000, stardust: 500, fans: 50 };
   assert.equal(trustScore(founder, baseline)?.score, 100);
   assert.equal(trustScore(founder, baseline + 30 * 86400000)?.score, 100);
   assert.equal(registration(founder, baseline + 86400000).days, 1389);
-  assert.ok(trustScore({ ...founder, created_at: baseline - 730 * 86400000 }, baseline)!.age < 60);
+  assert.equal(trustScore({ ...founder, created_at: baseline - 730 * 86400000 }, baseline)!.age, 35);
+  assert.ok(trustScore({ ...founder, created_at: baseline - 729 * 86400000 }, baseline)!.age < 35);
 });

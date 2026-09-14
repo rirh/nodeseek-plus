@@ -303,7 +303,7 @@ test('user profiles persist across pages for one day and refresh after expiry', 
   let calls = 0;
   for (const age of [null, 12, 25]) {
     storage.delete('nspp:profile-completed:www.nodeseek.com');
-    if (age !== null) storage.set(stateKey, { profiles: { '123': { time: Date.now() - age * 3600000, user } } });
+    if (age !== null) storage.set(stateKey, { profiles: { '123': { time: Date.now() - age * 3600000, user, withSignature: true } } });
     const f = await fixture({}, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', storage, window => {
       window.fetch = (async () => {
         calls++;
@@ -324,8 +324,8 @@ test('user profiles persist across pages for one day and refresh after expiry', 
 test('profile cache keeps more than 200 fresh users across pages and removes expired entries', async () => {
   const stateKey = 'nspp:state:www.nodeseek.com:user-level';
   const user = { rank: 3 };
-  const profiles = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i + 1), { time: Date.now() - 3600000, user }]));
-  profiles['999'] = { time: Date.now() - 86400000, user };
+  const profiles = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i + 1), { time: Date.now() - 3600000, user, withSignature: true }]));
+  profiles['999'] = { time: Date.now() - 86400000, user, withSignature: true };
   const storage = new Map<string, unknown>([
     [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'official-blocklist': { enabled: false } }],
     [stateKey, { profiles }],
@@ -370,7 +370,14 @@ test('in-memory profiles expire at 24 hours on a page that stays open', async ()
 test('avatar and last-commenter profiles load only on interaction and share cached data', async () => {
   let calls = 0;
   const f = await fixture({ 'official-blocklist': { enabled: false } }, '<a href="/space/123"><img alt="Alice"></a><span class="info-last-commenter"><a href="/space/123">Alice</a></span>', '/', undefined, window => {
-    window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: true, detail: { rank: 3 } })); }) as typeof window.fetch;
+    window.fetch = (async (url: unknown) => {
+      const target = new URL(String(url));
+      if (target.pathname === '/api/fans/follow') return new window.Response(JSON.stringify({ success: true, memberList: [] }));
+      assert.equal(target.pathname, '/api/account/getInfo/123');
+      assert.equal(target.searchParams.get('signature'), '1');
+      calls++;
+      return new window.Response(JSON.stringify({ success: true, detail: { rank: 3 } }));
+    }) as typeof window.fetch;
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
@@ -404,7 +411,8 @@ test('request concurrency and default interval settings are searchable and saved
     search.value = '最大并发请求数'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(root.querySelectorAll('article').length, 1);
     assert.match(root.querySelector('article')!.textContent!, /接口请求并发/);
-    assert.equal(root.querySelector('details')!.open, true);
+    assert.ok(root.querySelector('article > .feature-options'));
+    assert.equal(root.querySelector('details'), null);
     assert.equal(root.querySelector<HTMLInputElement>('input[type="number"]')!.value, '2');
     const inputs = root.querySelectorAll<HTMLInputElement>('input[type="number"]');
     assert.equal(inputs[0].min, '1'); assert.equal(inputs[0].max, '10');
@@ -433,6 +441,11 @@ test('one block button per name reflects queried state and synchronizes after ch
     assert.deepEqual(buttons.map(b => b.textContent), ['取消屏蔽', '取消屏蔽']);
     assert.deepEqual(calls, ['/api/block-list/list']);
     buttons[0].click(); buttons[1].click();
+    const confirmation = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
+    assert.equal(confirmation.open, true);
+    assert.equal(f.window.document.querySelectorAll('.nspp-confirm-dialog').length, 1);
+    assert.deepEqual(calls, ['/api/block-list/list'], 'no mutation before confirmation');
+    confirmation.close('confirm');
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.deepEqual(calls, ['/api/block-list/list', '/api/block-list/del']);
     assert.deepEqual(buttons.map(b => b.textContent), ['屏蔽', '屏蔽']);
@@ -519,7 +532,7 @@ test('history records actual visits, prunes old entries and tracks recently clos
 
 test('trust badges display scores and open an explanation without extra requests', async () => {
   const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
-    window.fetch = (async () => new window.Response(JSON.stringify({ success: true, detail: { created_at: new Date(Date.parse('2026-09-12T00:00:00+08:00') - 1388 * 86400000).toISOString(), nPost: 100, nComment: 500 } }), { headers: { 'Content-Type': 'application/json' } })) as typeof window.fetch;
+    window.fetch = (async () => new window.Response(JSON.stringify({ success: true, detail: { created_at: new Date(Date.parse('2026-09-12T00:00:00+08:00') - 1388 * 86400000).toISOString(), nPost: 300, nComment: 2000, coin: 6000, stardust: 500, fans: 50 } }), { headers: { 'Content-Type': 'application/json' } })) as typeof window.fetch;
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
@@ -528,8 +541,8 @@ test('trust badges display scores and open an explanation without extra requests
     (score as HTMLElement).click();
     const dialog = f.window.document.querySelector('dialog.nspp-trust-dialog')!;
     assert.equal(dialog.hasAttribute('open'), true);
-    assert.match(dialog.textContent!, /注册时长 60.0\/60/);
-    assert.match(dialog.textContent!, /不代表交易信用/);
+    assert.match(dialog.textContent!, /注册时长 35.0\/35/);
+    assert.match(dialog.textContent!, /不等于交易信用/);
     (dialog.querySelector('button') as HTMLElement).click();
     assert.equal(dialog.hasAttribute('open'), false);
     assert.ok(Array.from(f.window.document.querySelectorAll('style')).some(style => style.textContent?.includes('nspp-sweep-shine')));
@@ -1015,7 +1028,7 @@ test('all usernames show rich hover cards while latest replier has no visible ba
   const f = await fixture({}, '<div class="post-info"><span class="info-author"><a href="/space/123">Alice</a><span class="role-tag">管理员</span></span><span class="info-last-commenter"><a href="/space/456">Bob</a></span></div>', '/', undefined, window => {
     window.fetch = (async (url: unknown) => {
       const path = new URL(String(url)).pathname; calls.push(path);
-      return new window.Response(JSON.stringify(path.endsWith('/list') ? { success: true, data: [] } : { success: true, detail: { rank: 4, created_at: '2024-01-01', nPost: 10, nComment: 20, signature: '测试签名 <b>保持纯文本</b>' } }));
+      return new window.Response(JSON.stringify(path === '/api/fans/follow' ? { success: true, memberList: [] } : path.endsWith('/list') ? { success: true, data: [] } : { success: true, detail: { rank: 4, created_at: '2024-01-01', nPost: 10, nComment: 20, coin: 2500, stardust: 10, fans: 5, signature: '测试签名 <b>保持纯文本</b>' } }));
     }) as typeof window.fetch;
   });
   try {
@@ -1025,17 +1038,17 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     assert.equal(card.hidden, true);
     assert.equal(doc.querySelector('.info-author .nspp-block-toggle'), null);
     assert.equal(doc.querySelector<HTMLElement>('.info-last-commenter .nspp-user-badges')!.hidden, true);
-    assert.ok(calls.some(path => path.endsWith('/456')));
+    assert.equal(calls.includes('/api/account/getInfo/456'), false);
     doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
     assert.equal(card.hidden, false);
-    assert.match(card.textContent!, /注册日期/);
-    assert.match(card.textContent!, /信任参考分/);
+    assert.match(card.textContent!, /注册 2024-01-01/);
+    assert.match(card.textContent!, /信任分/);
     assert.equal(card.querySelector('.nspp-user-hover-signature')?.textContent, '测试签名 <b>保持纯文本</b>');
     assert.equal(card.querySelector('.nspp-user-hover-signature b'), null);
     assert.equal(card.querySelector('img')?.getAttribute('src'), '/avatar/123.png');
     assert.ok(card.dataset.trust);
-    assert.equal(card.querySelectorAll('.nspp-user-hover-rich > div').length, 3);
-    assert.equal(card.querySelector('.nspp-participation')?.textContent, '30');
+    assert.equal(card.querySelectorAll('dl > div').length, 6);
+    assert.match(card.querySelector('.nspp-user-hover-rich')!.textContent!, /加入 \d+ 天/);
     assert.ok(card.querySelector('.nspp-user-hover-header .nspp-user-hover-score strong'));
     assert.equal(card.querySelector('.nspp-user-hover-tags [data-nspp-role]')?.textContent, '管理员');
     assert.ok(card.querySelector('.nspp-block-toggle'));
@@ -1050,6 +1063,8 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     assert.equal(visibleCards.length, 1);
     assert.equal(visibleCards[0]!.querySelector('.nspp-user-hover-name')?.textContent, 'Bob');
     assert.ok(visibleCards[0]!.querySelector('.nspp-block-toggle'));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls.filter(path => path === '/api/account/getInfo/456').length, 1);
   } finally { await f.close(); }
 });
 
@@ -1131,6 +1146,9 @@ test('avatar cards receive synchronized block controls after delayed login initi
     f.window.document.querySelector<HTMLAnchorElement>('a')!.dispatchEvent(new f.window.Event('mouseenter'));
     assert.equal(buttons[0].parentElement!.hidden, false);
     buttons[0].click();
+    const confirmation = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
+    assert.equal(confirmation.open, true);
+    confirmation.close('confirm');
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.deepEqual(buttons.map(button => button.textContent), ['屏蔽', '屏蔽']);
   } finally { await f.close(); }
@@ -1153,7 +1171,7 @@ test('system notifications detect category increases in background and do not re
   const second = await fixture({}, '', '/', shared, setup);
   try {
     assert.equal(notifications.length, 2);
-    assert.match(notifications[0]!.text, /新的 @我 1 条/);
+    assert.equal(notifications[0]!.text, '收到 1 条新@提醒，当前有 1 条@提醒未读');
     assert.equal(notifications[1]!.url, 'https://www.nodeseek.com/notification#/message?mode=list');
     assert.notEqual(notifications[0]!.tag, notifications[1]!.tag);
     shared.delete('nspp:lock:www.nodeseek.com:unread:7');
