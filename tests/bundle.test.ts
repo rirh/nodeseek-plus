@@ -828,11 +828,12 @@ test('native unsigned attendance label does not cache completion', async () => {
 
 test('monitor establishes a baseline and notifies once for a new matching post', async () => {
   let clock = Date.now();
+  let hidden = true;
   let poll: (() => void) | undefined;
   let fresh = false;
   let invalid = false;
   const f = await fixture({ monitor: { enabled: true, interval: 60, trades: false, keywords: '抽奖' } }, '', '/', undefined, window => {
-    Object.defineProperty(window.document, 'hidden', { get: () => true });
+    Object.defineProperty(window.document, 'hidden', { get: () => hidden });
     const NativeDate = window.Date;
     window.Date = class extends NativeDate { static now() { return clock; } } as typeof window.Date;
     const originalInterval = window.setInterval.bind(window);
@@ -857,7 +858,10 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     const countdown = f.window.document.querySelector('.nspp-monitor footer > span')!;
     assert.match(countdown.textContent!, /下次检查 60 秒/);
     clock += 1000; poll!();
+    assert.match(countdown.textContent!, /下次检查 60 秒/, 'background polling leaves the visual countdown unchanged');
+    hidden = false; poll!();
     assert.match(countdown.textContent!, /下次检查 59 秒/);
+    hidden = true;
     const pause = Array.from(f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-monitor footer button')).find(button => button.textContent?.includes('停止'))!;
     pause.click();
     assert.match(countdown.textContent!, /已暂停/);
@@ -1090,6 +1094,14 @@ test('notification categories reuse native typography, badge and bell markup', a
 test('all usernames show rich hover cards while latest replier has no visible badges', async () => {
   const calls: string[] = [];
   const f = await fixture({}, '<div class="post-info"><span class="info-author"><a href="/space/123">Alice</a><span class="role-tag">管理员</span></span><span class="info-last-commenter"><a href="/space/456">Bob</a></span></div>', '/', undefined, window => {
+    Object.defineProperty(window.document, 'hidden', { value: false });
+    Object.defineProperty(window, 'innerWidth', { value: 1280 });
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = ((query: string) => {
+      const media = matchMedia(query);
+      if (query === '(hover: hover) and (pointer: fine)') Object.defineProperty(media, 'matches', { value: true });
+      return media;
+    }) as typeof window.matchMedia;
     window.fetch = (async (url: unknown) => {
       const path = new URL(String(url)).pathname; calls.push(path);
       return new window.Response(JSON.stringify(path === '/api/fans/follow' ? { success: true, memberList: [] } : path.endsWith('/list') ? { success: true, data: [] } : { success: true, detail: { rank: 4, created_at: '2024-01-01', nPost: 10, nComment: 20, coin: 2500, stardust: 10, fans: 5, signature: '测试签名 <b>保持纯文本</b>' } }));
@@ -1104,6 +1116,8 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     assert.equal(doc.querySelector<HTMLElement>('.info-last-commenter .nspp-user-badges')!.hidden, true);
     assert.equal(calls.includes('/api/account/getInfo/456'), false);
     doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    assert.equal(card.hidden, true, 'brief hover does not immediately open a card');
+    await new Promise(resolve => setTimeout(resolve, 350));
     assert.equal(card.hidden, false);
     assert.match(card.textContent!, /注册 2024-01-01/);
     assert.match(card.textContent!, /信任分/);
@@ -1123,6 +1137,7 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     doc.dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Escape' }));
     assert.equal(card.hidden, true);
     doc.querySelector('.info-last-commenter a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    await new Promise(resolve => setTimeout(resolve, 350));
     const visibleCards = Array.from(doc.querySelectorAll<HTMLElement>('.nspp-user-hover')).filter(el => !el.hidden);
     assert.equal(visibleCards.length, 1);
     assert.equal(visibleCards[0]!.querySelector('.nspp-user-hover-name')?.textContent, 'Bob');
