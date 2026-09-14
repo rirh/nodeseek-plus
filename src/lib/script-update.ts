@@ -1,5 +1,5 @@
 import { GM_xmlhttpRequest } from '$';
-import { GM_getValue, GM_setValue, hasStorage } from './userscript';
+import { GM_getValue, GM_setValue, hasStorage, systemNotify } from './userscript';
 import { withTabLock } from './tab-lock';
 import { isNewerVersion, readUpdateVersion, UPDATE_META_URL, UPDATE_URL } from './update-version';
 import { confirmDialog } from '../views/confirm-dialog';
@@ -7,7 +7,7 @@ import { confirmDialog } from '../views/confirm-dialog';
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const REMINDER_INTERVAL = 24 * 60 * 60 * 1000;
 const STATE_KEY = 'nspp:script-update';
-type UpdateState = { checkedAt?: number; version?: string; promptedVersion?: string; promptedAt?: number };
+type UpdateState = { checkedAt?: number; version?: string; promptedVersion?: string; promptedAt?: number; notifiedVersion?: string; notifiedAt?: number };
 
 function requestVersion(signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -38,6 +38,17 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
   let pending: Promise<void> | undefined;
   let prompting = false;
 
+  async function notifyUpdate() {
+    await withTabLock('script-update-notification', 0, async () => {
+      const latest = state();
+      if (signal.aborted || !latest.version || !isNewerVersion(latest.version, __APP_VERSION__)) return;
+      if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
+      if (systemNotify(`发现新版本 v${latest.version}，当前 v${__APP_VERSION__}。点击前往更新。`, UPDATE_URL, 'nspp:script-update', '发现新版本')) {
+        GM_setValue(STATE_KEY, { ...state(), notifiedVersion: latest.version, notifiedAt: Date.now() });
+      }
+    });
+  }
+
   async function prompt(manual: boolean) {
     const latest = state();
     if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, __APP_VERSION__)) return;
@@ -49,14 +60,14 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
     } finally { prompting = false; }
   }
 
-  async function run(manual: boolean) {
+  async function run(manual: boolean, enteredPage: boolean) {
     try {
       let fetched = false;
       const ran = await withTabLock('script-update', 0, async () => {
         if (signal.aborted) return;
         const previous = state();
         const elapsed = Date.now() - (previous.checkedAt || 0);
-        if (!manual && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
+        if (!manual && !enteredPage && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
         GM_setValue(STATE_KEY, { ...previous, checkedAt: Date.now() });
         const version = await requestVersion(signal);
         if (signal.aborted) return;
@@ -65,24 +76,32 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
       if (signal.aborted) return;
       if (manual && (!ran || !fetched)) { notify('其他页面正在检查更新，请稍后重试'); return; }
       const version = state().version;
-      if (version && isNewerVersion(version, __APP_VERSION__)) await prompt(manual);
+      if (version && isNewerVersion(version, __APP_VERSION__)) {
+        await notifyUpdate();
+        if (manual) await prompt(true);
+        else void prompt(false).catch(() => {});
+      }
       else if (manual) notify(`当前已是最新版本（v${__APP_VERSION__}）`);
     } catch (error) {
       if (manual && !signal.aborted) notify(error instanceof Error ? error.message : '检查更新失败，请稍后重试');
     }
   }
 
-  const check = (manual = true): Promise<void> => {
+  const check = (manual = true, enteredPage = false): Promise<void> => {
     if (signal.aborted) return Promise.resolve();
     if (pending) return manual ? pending.then(() => check(true)) : pending;
-    pending = run(manual).finally(() => { pending = undefined; });
+    pending = run(manual, enteredPage).finally(() => { pending = undefined; });
     return pending;
   };
   const background = () => {
     if (__APP_ENV__ === 'prod' && hasStorage() && !document.hidden) void check(false);
   };
-  const startup = setTimeout(background, 30000);
+  const enterPage = () => {
+    if (__APP_ENV__ === 'prod' && hasStorage()) void check(false, true);
+  };
+  const startup = setTimeout(enterPage, 0);
   const timer = setInterval(background, 60000);
   document.addEventListener('visibilitychange', background, { signal });
+  window.addEventListener('pageshow', event => { if (event.persisted) enterPage(); }, { signal });
   return { check, stop: () => { clearTimeout(startup); clearInterval(timer); controller.abort(); } };
 }

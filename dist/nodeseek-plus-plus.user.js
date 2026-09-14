@@ -691,6 +691,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const state = () => GM_getValue$1(STATE_KEY, {});
 		let pending;
 		let prompting = false;
+		async function notifyUpdate() {
+			await withTabLock("script-update-notification", 0, async () => {
+				const latest = state();
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.914.1710")) return;
+				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.914.1710。点击前往更新。`, "https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+					...state(),
+					notifiedVersion: latest.version,
+					notifiedAt: Date.now()
+				});
+			});
+		}
 		async function prompt(manual) {
 			const latest = state();
 			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1710")) return;
@@ -710,14 +722,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				prompting = false;
 			}
 		}
-		async function run(manual) {
+		async function run(manual, enteredPage) {
 			try {
 				let fetched = false;
 				const ran = await withTabLock("script-update", 0, async () => {
 					if (signal.aborted) return;
 					const previous = state();
 					const elapsed = Date.now() - (previous.checkedAt || 0);
-					if (!manual && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
+					if (!manual && !enteredPage && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
 					GM_setValue$1(STATE_KEY, {
 						...previous,
 						checkedAt: Date.now()
@@ -736,16 +748,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					return;
 				}
 				const version = state().version;
-				if (version && isNewerVersion(version, "26.914.1710")) await prompt(manual);
-				else if (manual) notify(`当前已是最新版本（v26.914.1710）`);
+				if (version && isNewerVersion(version, "26.914.1710")) {
+					await notifyUpdate();
+					if (manual) await prompt(true);
+					else prompt(false).catch(() => {});
+				} else if (manual) notify(`当前已是最新版本（v26.914.1710）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
 		}
-		const check = (manual = true) => {
+		const check = (manual = true, enteredPage = false) => {
 			if (signal.aborted) return Promise.resolve();
 			if (pending) return manual ? pending.then(() => check(true)) : pending;
-			pending = run(manual).finally(() => {
+			pending = run(manual, enteredPage).finally(() => {
 				pending = void 0;
 			});
 			return pending;
@@ -753,9 +768,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const background = () => {
 			if (hasStorage() && !document.hidden) check(false);
 		};
-		const startup = setTimeout(background, 3e4);
+		const enterPage = () => {
+			if (hasStorage()) check(false, true);
+		};
+		const startup = setTimeout(enterPage, 0);
 		const timer = setInterval(background, 6e4);
 		document.addEventListener("visibilitychange", background, { signal });
+		window.addEventListener("pageshow", (event) => {
+			if (event.persisted) enterPage();
+		}, { signal });
 		return {
 			check,
 			stop: () => {
@@ -795,7 +816,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			links.append(link);
 		}
 		const steps = document.createElement("ol");
-		for (const text of ["首次安装：安装 Tampermonkey，打开上方下载链接，在脚本管理器中确认安装，再刷新论坛。", "更新脚本：点击检查更新，或重新打开下载链接确认更新，再刷新论坛；无需卸载旧版。"]) {
+		for (const text of ["首次安装：安装 Tampermonkey，打开上方下载链接，在脚本管理器中确认安装，再刷新论坛。", "更新脚本：每次进入页面自动检查，页面持续打开时每 6 小时检查；发现新版本会发出系统通知并在页面空闲时提醒，同一版本每 24 小时自动提醒一次。也可手动检查更新，无需卸载旧版。"]) {
 			const step = document.createElement("li");
 			step.textContent = text;
 			steps.append(step);
@@ -10334,7 +10355,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		title: "回帖足迹",
 		description: "手动同步自己的历史评论，按账号缓存并提供帖子入口；可续传和清空。",
 		group: "阅读",
-		defaults: { enabled: false },
+		defaults: { enabled: true },
 		mount(ctx) {
 			const uid = pageConfig()?.user?.member_id;
 			if (!uid) return;

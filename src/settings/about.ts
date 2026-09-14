@@ -17,7 +17,7 @@ export function aboutContent(check: () => Promise<void>): HTMLElement {
     const link = document.createElement('a'); link.href = href; link.textContent = label; link.target = '_blank'; link.rel = 'noopener noreferrer'; links.append(link);
   }
   const steps = document.createElement('ol');
-  for (const text of ['首次安装：安装 Tampermonkey，打开上方下载链接，在脚本管理器中确认安装，再刷新论坛。', '更新脚本：点击检查更新，或重新打开下载链接确认更新，再刷新论坛；无需卸载旧版。']) {
+  for (const text of ['首次安装：安装 Tampermonkey，打开上方下载链接，在脚本管理器中确认安装，再刷新论坛。', '更新脚本：每次进入页面自动检查，页面持续打开时每 6 小时检查；发现新版本会发出系统通知并在页面空闲时提醒，同一版本每 24 小时自动提醒一次。也可手动检查更新，无需卸载旧版。']) {
     const step = document.createElement('li'); step.textContent = text; steps.append(step);
   }
   const button = document.createElement('button'); button.type = 'button'; button.textContent = '检查更新';

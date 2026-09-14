@@ -11,7 +11,7 @@ function pageConfig(): PageConfig | undefined {
 
 export const extraFeatures: Feature[] = [
   {
-    id: 'footprints', title: '回帖足迹', description: '手动同步自己的历史评论，按账号缓存并提供帖子入口；可续传和清空。', group: '阅读', defaults: { enabled: false },
+    id: 'footprints', title: '回帖足迹', description: '手动同步自己的历史评论，按账号缓存并提供帖子入口；可续传和清空。', group: '阅读', defaults: { enabled: true },
     mount(ctx) {
       const uid = pageConfig()?.user?.member_id; if (!uid) return;
       type Entry = { post_id: number; floor_id: number; title?: string };
