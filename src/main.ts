@@ -48,7 +48,7 @@ function main() {
   GM_registerMenuCommand("NodeSeek++ 设置", ui.open);
   const stop = startFeatures(features, loadSettings(features), ui.notify);
   window.addEventListener("pagehide", (event) => {
-    if (!event.persisted) stop();
+    if (!event.persisted) { stop(); ui.stopUpdates(); }
   });
 }
 

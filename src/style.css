@@ -497,11 +497,12 @@
 .nspp-confirm-dialog h2 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
 .nspp-confirm-dialog p { margin: 8px 0 18px; opacity: .7; }
 .nspp-confirm-dialog form { display: flex; justify-content: flex-end; gap: 8px; }
-.nspp-confirm-dialog button { min-height: 32px; padding: 5px 14px; border: 1px solid #818b9840; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.nspp-confirm-dialog :is(button, a) { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 5px 14px; border: 1px solid #818b9840; border-radius: 6px; background: transparent; color: inherit; font: inherit; text-decoration: none; cursor: pointer; }
+.nspp-confirm-dialog .nspp-confirm-primary { border-color: #0969da; background: #0969da; color: #fff; }
 .nspp-confirm-dialog .nspp-confirm-danger { border-color: #cf3434; background: #cf3434; color: #fff; }
 .nspp-confirm-dialog :focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
 .dark-layout .nspp-confirm-dialog { background: #161b22; color: #e6edf3; color-scheme: dark; }
 @media (max-width: 480px) {
   .nspp-confirm-dialog { inset: auto 0 0; width: 100%; max-height: 85dvh; margin: 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 14px 14px 0 0; }
-  .nspp-confirm-dialog form > button { flex: 1; min-height: 38px; }
+  .nspp-confirm-dialog form > :is(button, a) { flex: 1; min-height: 38px; }
 }

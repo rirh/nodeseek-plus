@@ -106,6 +106,67 @@ test('bundle is self-contained, scoped to forum hosts and has no remote require'
   assert.match(bundle, /@noframes/);
 });
 
+test('manual update checks read metadata and open an update link only for a newer release', async () => {
+  const requests: { url: string; anonymous: boolean }[] = [];
+  let version = '99.999.9999';
+  const f = await fixture({}, '', '/', undefined, window => {
+    Object.assign(window, {
+      GM_xmlhttpRequest: (options: { url: string; anonymous: boolean; onload(response: { status: number; responseText: string }): void }) => {
+        requests.push(options);
+        setTimeout(() => options.onload({ status: 200, responseText: `// ==UserScript==\n// @version ${version}\n// ==/UserScript==` }), 0);
+        return { abort() {} };
+      },
+    });
+  });
+  try {
+    f.menus[0]();
+    const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
+    const button = root.querySelector<HTMLButtonElement>('.check-update')!;
+    button.click(); button.click();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js');
+    assert.equal(requests[0].anonymous, true);
+    const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
+    assert.equal(dialog.open, true);
+    assert.match(dialog.textContent!, /99\.999\.9999/);
+    const install = dialog.querySelector<HTMLAnchorElement>('a')!;
+    assert.equal(install.href, 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js');
+    assert.equal(install.target, '_blank');
+    dialog.close('cancel');
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(button.disabled, false);
+    version = '1.0.0'; button.click();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(requests.length, 2);
+    assert.equal(f.window.document.querySelector('.nspp-confirm-dialog'), null);
+    assert.match(root.querySelector('.toast-message')!.textContent!, /当前已是最新版本/);
+  } finally { await f.close(); }
+});
+
+test('background update checks share fresh results and suppress repeated version reminders', async () => {
+  const shared = new Map<string, unknown>([
+    [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false } }],
+    ['nspp:script-update', { checkedAt: Date.now(), version: '99.999.9999' }],
+  ]);
+  const f = await fixture({}, '', '/', shared);
+  let second: Awaited<ReturnType<typeof fixture>> | undefined;
+  try {
+    Object.defineProperty(f.window.document, 'hidden', { configurable: true, value: false });
+    f.window.document.dispatchEvent(new f.window.Event('visibilitychange'));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
+    assert.equal(dialog.open, true);
+    dialog.close('cancel');
+    second = await fixture({}, '', '/', shared);
+    Object.defineProperty(second.window.document, 'hidden', { configurable: true, value: false });
+    second.window.document.dispatchEvent(new second.window.Event('visibilitychange'));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(second.window.document.querySelector('.nspp-confirm-dialog'), null);
+    assert.equal((shared.get('nspp:script-update') as { promptedVersion: string }).promptedVersion, '99.999.9999');
+  } finally { await f.close(); await second?.close(); }
+});
+
 test('boot with monitoring disabled makes no API calls; repeated boot does not duplicate the UI', async () => {
   const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Test post</a></div></li></ul>');
   try {

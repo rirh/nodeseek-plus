@@ -5,6 +5,7 @@ import loadingCss from "../loading.css?inline";
 import { parseSettings, normalizeSettings, exportSettings } from "../core/config";
 import { clearCaches, loadSettings, saveSettings } from "../core/runtime";
 import type { Feature, Settings } from "../core/types";
+import { createUpdateChecker } from "../lib/script-update";
 
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const node = document.createElement(tag);
@@ -31,6 +32,10 @@ export function mountSettings(features: Feature[]) {
   title.id = "nspp-title";
   heading.className = "heading";
   heading.append(title, element("small", `v${__APP_VERSION__}`));
+  const checkUpdate = element("button", "检查更新");
+  checkUpdate.type = "button";
+  checkUpdate.className = "check-update";
+  heading.append(checkUpdate);
   const close = element("button", "关闭");
   close.type = "button";
   close.className = "settings-close";
@@ -115,6 +120,14 @@ export function mountSettings(features: Feature[]) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(dismissToast, 6000);
   };
+  const updates = createUpdateChecker(notify, () => !document.hidden && !dialog.open && !document.querySelector('dialog[open]'));
+  checkUpdate.addEventListener("click", async () => {
+    checkUpdate.disabled = true;
+    checkUpdate.setAttribute("aria-busy", "true");
+    checkUpdate.textContent = "检查中…";
+    try { await updates.check(); }
+    finally { checkUpdate.disabled = false; checkUpdate.removeAttribute("aria-busy"); checkUpdate.textContent = "检查更新"; }
+  });
 
   let sections: HTMLElement[] = [];
   let links: HTMLAnchorElement[] = [];
@@ -286,5 +299,5 @@ export function mountSettings(features: Feature[]) {
     } catch (error) { notify(error instanceof Error ? error.message : "导入失败", "error"); }
     finally { file.value = ""; importButton.disabled = false; importButton.removeAttribute("aria-busy"); importButton.textContent = "导入配置"; }
   });
-  return { open, notify };
+  return { open, notify, stopUpdates: updates.stop };
 }
