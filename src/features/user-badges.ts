@@ -1,4 +1,5 @@
 import { userHover, userHoverSelector, isUserHoverAnchor } from '../views/user-hover';
+import { renderProfileTags, profileTagKey } from '../views/profile-tags';
 import { format } from 'date-fns';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
@@ -56,6 +57,15 @@ export const userBadges: Feature = {
         if (ctx.signal.aborted || !author.isConnected || nodes.get(author)?.badge !== badge) return;
         const info = registration(user);
         const profileDetails = nodes.get(author)!.details;
+        const cardTags = profileDetails.parentElement?.querySelector<HTMLElement>('.nspp-user-profile-tags');
+        if (cardTags) {
+          renderProfileTags(cardTags, user);
+          const tags = cardTags.parentElement!;
+          tags.querySelectorAll('.nspp-user-native-tags > .role-tag').forEach(tag => {
+            if (Array.from(cardTags.children).some(profile => profileTagKey(profile.textContent?.trim() || '') === profileTagKey(tag.textContent?.trim() || ''))) tag.remove();
+          });
+          tags.hidden = !tags.querySelector('.role-tag');
+        }
         profileDetails.replaceChildren();
         for (const [label, value, icon] of [
           ['等级', info.level === null ? '—' : `Lv ${info.level}`, 'level'], ['主题帖', String(user.nPost ?? '—'), 'write-6ncdp62p'],

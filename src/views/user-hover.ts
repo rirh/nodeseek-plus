@@ -2,6 +2,7 @@ import { copyButton } from './copy-button';
 import { userCardActions } from './user-card-actions';
 import { authorId } from '../features/user-profile';
 import type { Context } from '../core/types';
+import { profileTagKey } from './profile-tags';
 
 export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
@@ -27,14 +28,18 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     const copy = copyButton({ notify: ctx.notify, signal: controller.signal }, () => heading.textContent || '', '复制用户名', true);
     identity.append(copy);
     const tags = document.createElement('div'); tags.className = 'nspp-user-hover-tags'; identity.append(tags);
+    const nativeTags = document.createElement('span'); nativeTags.className = 'nspp-user-native-tags';
+    const profileTags = document.createElement('span'); profileTags.className = 'nspp-user-profile-tags';
+    tags.append(nativeTags, profileTags);
     const syncTags = () => {
-      tags.replaceChildren();
+      nativeTags.replaceChildren();
       const source = anchor.closest('.author-info, .info-author, .post-author, .info-last-commenter, .nsk-content-meta-info') || anchor.parentElement;
       source?.querySelectorAll('.role-tag').forEach(tag => {
         if (tag.closest('.nspp-user-hover')) return;
-        const copy = tag.cloneNode(true) as HTMLElement; copy.removeAttribute('id'); tags.append(copy);
+        if (Array.from(profileTags.children).some(profile => profileTagKey(profile.textContent?.trim() || '') === profileTagKey(tag.textContent?.trim() || ''))) return;
+        const copy = tag.cloneNode(true) as HTMLElement; copy.removeAttribute('id'); nativeTags.append(copy);
       });
-      tags.hidden = !tags.children.length;
+      tags.hidden = !nativeTags.children.length && !profileTags.children.length;
     };
     syncTags();
     const avatar = document.createElement('img'); avatar.className = 'nspp-user-hover-avatar'; avatar.alt = ''; avatar.hidden = true;

@@ -1,5 +1,7 @@
 .nspp-messages-container[data-nspp-message-view='new'] > :not(.nspp-messages) { display: none !important; }
 .nspp-messages-container[data-nspp-message-view='native'] > .nspp-messages { display: none !important; }
+.nspp-messages-container[data-nspp-message-view='new'] { border: 0 !important; outline: none !important; box-shadow: none !important; }
+.nspp-messages-container > .nspp-messages { border: 0; outline: none; box-shadow: none; }
 .nspp-messages { --chat-bg: #f5f5f5; --chat-sidebar: #ededed; --chat-surface: #fff; --chat-text: #252525; --chat-muted: #858585; --chat-border: #dedede; position: relative; display: flex; flex-direction: column; width: 100%; height: min(80dvh, 880px); min-height: 420px; box-sizing: border-box; color: var(--chat-text); background: var(--chat-bg); border: 1px solid var(--chat-border); border-radius: 8px; overflow: hidden; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; }
 .nspp-messages *, .nspp-messages *::before, .nspp-messages *::after { box-sizing: border-box; }
 .nspp-messages [hidden], .nspp-messages[hidden] { display: none !important; }
@@ -25,6 +27,51 @@
 .nspp-messages-contact-list > .nspp-messages-conversations { overflow: visible; }
 .nspp-messages .nspp-messages-peer { display: flex; position: relative; align-items: center; gap: 8px; width: 100%; min-height: 58px; margin: 0; padding: 9px 10px; border-radius: 0; text-align: left; }
 .nspp-messages-peer:hover { background: #818b981a; }
+.nspp-messages-peer[role='button'] { cursor: pointer; }
+.nspp-chat-avatar-link { display: inline-flex; flex: none; border: 0; border-radius: 5px; }
+.nspp-chat-profile { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; flex: none; align-items: start; gap: 8px 10px; padding: 12px 16px 10px; background: var(--chat-surface); }
+.nspp-chat-profile > a { display: inline-flex; }
+.nspp-chat-profile > a .nspp-messages-avatar { width: 40px; height: 40px; border-radius: 10px; }
+.nspp-chat-profile-details { min-width: 0; }
+.nspp-chat-profile-heading { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-height: 18px; }
+.nspp-chat-profile-heading > strong { font-size: 13px; font-weight: 600; line-height: 18px; }
+.nspp-chat-profile-level { padding: 0 4px; border-radius: 3px; color: #188593; background: #18859312; font-size: 10px; line-height: 15px; font-weight: 600; }
+.nspp-chat-profile-meta { margin-top: 3px; color: var(--chat-muted); font-size: 10px; line-height: 15px; font-variant-numeric: tabular-nums; }
+.nspp-chat-profile-trust { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; min-width: 40px; color: #ac791e; }
+.nspp-chat-profile-trust[data-tone='good'] { color: #26936a; }
+.nspp-chat-profile-trust > strong { font-size: 25px; font-weight: 600; line-height: 28px; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.nspp-chat-profile-trust > span { font-size: 9px; opacity: .8; }
+.nspp-chat-profile-data { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-column: 1 / -1; gap: 4px 8px; padding: 7px 10px; border-radius: 6px; background: color-mix(in srgb, var(--chat-bg) 70%, transparent); font-size: 11px; color: var(--chat-muted); }
+.nspp-chat-profile-stat { display: flex; align-items: baseline; justify-content: center; gap: 5px; min-width: 0; flex-wrap: wrap; }
+.nspp-chat-profile-stat > small { font-size: 10px; color: var(--chat-muted); }
+.nspp-chat-profile-stat > strong { font-size: 12px; font-weight: 600; color: var(--chat-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.nspp-chat-profile-data button { color: #07994e; padding: 0 4px; }
+.nspp-chat-profile-bio { margin: 3px 0 0; max-height: 3em; overflow: auto; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; color: var(--chat-muted); white-space: pre-wrap; }
+.nspp-chat-profile[data-trust='success'] { background: linear-gradient(115deg, #edf8f1, #f7fbf8 58%, #e9f5f1); }
+.nspp-chat-profile[data-trust='warning'] { background: linear-gradient(115deg, #fff5e4, #fffbf3 58%, #faf0df); }
+.nspp-chat-profile[data-trust='danger'] { background: linear-gradient(115deg, #fff0f0, #fff8f6 58%, #fbe8eb); }
+.nspp-chat-profile[data-trust='danger'] .nspp-chat-profile-trust { color: #b74d58; }
+.nspp-chat-profile-notice { grid-column: 1 / -1; margin: 0; font-size: 10px; line-height: 1.5; color: var(--chat-muted); }
+.nspp-chat-profile[data-trust='danger'] .nspp-chat-profile-notice { color: #ac4b57; }
+.nspp-chat-profile[data-trust='warning'] .nspp-chat-profile-notice { color: #9b702c; }
+.nspp-chat-profile[data-trust='perfect'] { --chat-text: #f2e9d6; --chat-muted: #bcb199; --chat-bg: #b99b5715; position: relative; isolation: isolate; background: radial-gradient(ellipse at 98% 0, #c4a15b27, transparent 55%), linear-gradient(115deg, #262b29, #24251f 58%, #393124); color: var(--chat-text); }
+.nspp-chat-profile[data-trust='perfect']::before { content: ''; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, #d8bb7a99, transparent); pointer-events: none; }
+.nspp-chat-profile[data-trust='perfect'] > a .nspp-messages-avatar { outline: 1px solid #cfb47a70; outline-offset: 2px; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-heading > strong { color: #f6edda; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-trust { color: #e6c681; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-trust > strong { font-size: 32px; line-height: 34px; letter-spacing: -1.5px; text-shadow: 0 2px 18px #dab56c25; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-trust > span { letter-spacing: 1px; color: #c6b590; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-level { color: #e3cb99; background: #d8b77418; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-data { background: #e0c5890a; }
+.nspp-chat-profile[data-trust='perfect'] .nspp-chat-profile-stat > strong { color: #efe2c6; }
+.nspp-chat-profile[data-trust='perfect'] .role-tag[data-nspp-role='admin'] { color: #a4c9ee; background: #679fd222; }
+.nspp-chat-profile[data-trust='perfect'] .role-tag[data-nspp-role='founder'] { color: #9bd6c0; background: #6dbd9822; }
+.nspp-chat-profile[data-trust='perfect'] .role-tag[data-nspp-role='owner'] { color: #e3cb99; background: #d8b77418; }
+.dark-layout .nspp-chat-profile[data-trust='success'] { background: linear-gradient(115deg, #1c2c24, #202923, #24372c); }
+.dark-layout .nspp-chat-profile[data-trust='warning'] { background: linear-gradient(115deg, #30291c, #29271f, #393020); }
+.dark-layout .nspp-chat-profile[data-trust='danger'] { background: linear-gradient(115deg, #302027, #2a2227, #39242c); }
+.dark-layout .nspp-chat-profile[data-trust='danger'] :is(.nspp-chat-profile-notice, .nspp-chat-profile-trust) { color: #e79ca4; }
+.dark-layout .nspp-chat-profile[data-trust='warning'] .nspp-chat-profile-notice { color: #d4b780; }
 .nspp-messages-peer[aria-pressed='true'] { background: #818b9830; }
 .nspp-messages-avatar { width: 32px; height: 32px; flex: none; border-radius: 5px; object-fit: cover; background: #818b9826; }
 .nspp-messages-peer-details { flex: 1; min-width: 0; display: grid; gap: 3px; }

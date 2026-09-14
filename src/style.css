@@ -49,6 +49,11 @@
 .nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #916008; background: #fff3cd; box-shadow: inset 0 0 0 1px #dfba6266; padding: 0 4px; border-radius: 3px; }
 .dark-layout .nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #f0ce78; background: #3c321c; box-shadow: inset 0 0 0 1px #dfba6255; }
 /* Keep native identity labels compact and distinguish roles by color and symbol. */
+.nspp-user-hover-tags, .nspp-user-native-tags, .nspp-user-profile-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.nspp-user-native-tags:empty, .nspp-user-profile-tags:empty, .nspp-user-profile-tags[hidden], .nspp-user-hover-tags[hidden] { display: none; }
+.nspp-user-hover .role-tag, .nspp-chat-profile .role-tag { display: inline-flex; align-items: center; flex: none; gap: 3px; margin: 0; padding: 0 4px; border: 0; border-radius: 3px; box-shadow: none; font: 500 10px/15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; white-space: nowrap; }
+.nspp-user-hover .role-tag:not([data-nspp-role]), .nspp-chat-profile .role-tag:not([data-nspp-role]) { color: #69717a; background: #818b9818; }
+.nspp-user-hover .role-tag[data-nspp-role]::before, .nspp-chat-profile .role-tag[data-nspp-role]::before { width: 8px; height: 9px; }
 .role-tag[data-nspp-role] { display: inline-flex; flex: none; align-items: center; gap: 3px; padding: 0 5px; border: 0; border-radius: 3px; color: #2463a0; background: #eaf3fc; box-shadow: none; font: 600 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; letter-spacing: 0; vertical-align: middle; white-space: nowrap; }
 .role-tag[data-nspp-role]::before { content: ""; flex: none; width: 9px; height: 10px; background: currentColor; clip-path: polygon(50% 0, 95% 17%, 88% 65%, 50% 100%, 12% 65%, 5% 17%); }
 .role-tag[data-nspp-role="founder"] { color: #087f78; background: #e5f4ef; }

@@ -7,6 +7,7 @@ import { createMessageArchive, mergeMessages, type Message, type Conversation } 
 import { renderMessageMarkdown } from '../views/message-markdown';
 import { createMessageEditor } from '../views/message-editor';
 import { findNotificationContainer } from '../views/message-container';
+import { createChatProfile } from '../views/chat-profile';
 import './messages.css';
 
 // Protocol reference: nodyssey's MessageRepository / NodeSeekJsonClient.
@@ -50,6 +51,11 @@ function mountChat(ctx: Context, account: number) {
   const contactList = element('div', 'nspp-messages-contact-list'); contactList.append(navigation, conversations);
   sidebar.append(searchBar, contactList, listStatus, more);
   const chat = element('section', 'nspp-messages-chat');
+  const userCard = createChatProfile(ctx);
+  const avatarLink = (avatar: HTMLImageElement, id: number) => {
+    const link = element('a', 'nspp-chat-avatar-link'); link.href = `/space/${id}`; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.append(avatar);
+    link.addEventListener('click', event => event.stopPropagation()); return link;
+  };
   const chatHeader = element('div', 'nspp-messages-heading');
   const back = button('返回', 'nspp-messages-back');
   const name = element('strong', '', '消息');
@@ -69,7 +75,7 @@ function mountChat(ctx: Context, account: number) {
   const send = element('button', 'nspp-messages-send', '发送'); send.type = 'submit'; send.disabled = true;
   send.title = hint.textContent!;
   input.setAttribute('aria-description', hint.textContent!);
-  controls.append(markdownLabel, hint, send); composer.append(input, controls); chat.append(thread, syncStatus, composer);
+  controls.append(markdownLabel, hint, send); composer.append(input, controls); chat.append(userCard.element, thread, syncStatus, composer);
   workspace.append(sidebar, chat); root.append(top, workspace);
   const nativeToolbar = element('div', 'nspp-message-native-toolbar');
   const returnToNew = button('切回新版聊天', 'nspp-message-return'); returnToNew.hidden = true; nativeToolbar.append(returnToNew);
@@ -156,7 +162,8 @@ function mountChat(ctx: Context, account: number) {
     const items = [...peers.values()].sort((a, b) => Number(b.name === '系统通知') - Number(a.name === '系统通知') || time(b.latest.created_at) - time(a.latest.created_at));
     for (const peer of items) {
       if (query && !`${peer.name} ${peer.latest.content}`.toLocaleLowerCase().includes(query)) continue;
-      const row = button('', 'nspp-messages-peer'); row.dataset.id = String(peer.id); row.setAttribute('aria-pressed', String(peer.id === active));
+      const row = element('div', 'nspp-messages-peer'); row.tabIndex = 0; row.setAttribute('role', 'button'); row.dataset.id = String(peer.id); row.setAttribute('aria-pressed', String(peer.id === active));
+      row.addEventListener('keydown', event => { if (event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); navigate(peer.id); } });
       const avatar = element('img', 'nspp-messages-avatar'); avatar.src = peer.name === '系统通知' ? notificationAvatar('system') : `/avatar/${peer.id}.png`; avatar.alt = ''; avatar.loading = 'lazy';
       const details = element('span', 'nspp-messages-peer-details');
       const title = element('span', 'nspp-messages-peer-title'); title.append(element('strong', '', peer.name === '系统通知' ? '系统消息' : peer.name));
@@ -164,7 +171,7 @@ function mountChat(ctx: Context, account: number) {
       date.textContent = time(peer.latest.created_at) ? new Date(peer.latest.created_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '';
       title.append(date);
       const snippet = element('span', 'nspp-messages-snippet', `${peer.latest.sender_id === account ? '我：' : ''}${preview(peer.latest.content)}`);
-      details.append(title, snippet); row.append(avatar, details);
+      details.append(title, snippet); avatar.alt = peer.name; row.append(peer.name === '系统通知' ? avatar : avatarLink(avatar, peer.id), details);
       if (peer.unread) { const dot = element('span', 'nspp-messages-unread'); dot.setAttribute('aria-label', '有未读消息'); row.append(dot); }
       row.addEventListener('click', () => navigate(peer.id), { signal: ctx.signal }); conversations.append(row);
     }
@@ -208,6 +215,7 @@ function mountChat(ctx: Context, account: number) {
   function renderThread(id: number, peerName: string, messages: Message[], first: boolean) {
     if (!valid() || active !== id) return;
     name.textContent = peerName === '系统通知' ? '系统消息' : peerName; profile.href = `/space/${id}`; profile.hidden = false;
+    void userCard.show(peerName === '系统通知' ? undefined : id, peerName);
     composer.hidden = peerName === '系统通知'; updateSend();
     const limit = visibleHistory.get(id) || 200;
     const visible = messages.slice(-limit);
@@ -233,7 +241,7 @@ function mountChat(ctx: Context, account: number) {
       const avatar = element('img', 'nspp-messages-avatar'); avatar.src = !mine && peerName === '系统通知' ? notificationAvatar('system') : `/avatar/${message.sender_id}.png`; avatar.alt = mine ? '我' : peerName; avatar.loading = 'lazy';
       const bubble = element('div', 'nspp-messages-bubble');
       const isMarkdown = message.is_markdown !== false && message.is_markdown !== 0; bubble.classList.toggle('is-markdown', isMarkdown);
-      bubble.append(renderMessageMarkdown(message.content, isMarkdown)); row.append(avatar, bubble); thread.append(row);
+      bubble.append(renderMessageMarkdown(message.content, isMarkdown)); row.append(!mine && peerName === '系统通知' ? avatar : avatarLink(avatar, message.sender_id), bubble); thread.append(row);
     }
     if (!messages.length) thread.append(element('div', 'nspp-messages-empty', '还没有聊天记录，发送第一条消息吧'));
     threadKey = key; thread.scrollTop = nearBottom ? thread.scrollHeight : scrollTop;
@@ -315,7 +323,7 @@ function mountChat(ctx: Context, account: number) {
     if (changed) {
       saveDraft(); active = undefined; routeController.abort(); threadController.abort();
       routeController = new AbortController(); threadBusy = false; listBusy = false; category = next;
-      root.classList.toggle('has-conversation', category !== 'message'); chat.hidden = category !== 'message'; chatHeader.hidden = category !== 'message';
+      root.classList.toggle('has-conversation', category !== 'message'); chat.hidden = category !== 'message'; chatHeader.hidden = category !== 'message'; void userCard.show();
       inbox.show(category === 'message' ? undefined : category);
       navigation.querySelectorAll<HTMLAnchorElement>('a').forEach(link => { if (link.dataset.category === category) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
       void refreshCounts();
@@ -326,6 +334,7 @@ function mountChat(ctx: Context, account: number) {
     const id = /^[1-9]\d*$/.test(idText) && Number.isSafeInteger(Number(idText)) ? Number(idText) : undefined;
     if (active === id && !changed) return;
     saveDraft(); active = id; threadController.abort(); threadBusy = false; threadKey = '';
+    void userCard.show(id && peers.get(id)?.name !== '系统通知' ? id : undefined, id ? peers.get(id)?.name : '');
     retrySync.hidden = true; retrySync.disabled = false; retrySync.textContent = '重试';
     root.classList.toggle('has-conversation', !!id); profile.hidden = true; composer.hidden = true;
     const draft = id ? drafts.get(id) : undefined; input.value = draft?.text || ''; markdown.checked = draft?.markdown ?? true;
@@ -428,7 +437,7 @@ function mountChat(ctx: Context, account: number) {
   syncRoute();
   return () => {
     stopMount(); lifetime.abort(); clearInterval(timer); routeController.abort(); threadController.abort(); inbox.stop(); archive.close();
-    root.remove(); nativeToolbar.remove(); nativeContainer?.classList.remove('nspp-messages-container'); nativeContainer?.removeAttribute('data-nspp-message-view');
+    userCard.stop(); root.remove(); nativeToolbar.remove(); nativeContainer?.classList.remove('nspp-messages-container'); nativeContainer?.removeAttribute('data-nspp-message-view');
     drafts.clear(); histories.clear(); visibleHistory.clear();
   };
 }

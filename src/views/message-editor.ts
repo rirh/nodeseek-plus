@@ -123,7 +123,7 @@ export function createMessageEditor(ctx: Context, input: HTMLTextAreaElement, ma
         statuses.set(peer, `正在上传 ${index + 1}/${files.length}：${file.name}`); updateStatus();
         let apiKey = key.value.trim();
         if (provider === 'NodeImage') {
-          if (!nodeImageKey) await (auth ||= getNodeImageKey(ctx.signal).then(value => { nodeImageKey = value; }).finally(() => { auth = undefined; }));
+          if (!nodeImageKey) await (auth ||= getNodeImageKey(ctx.signal).then(value => { nodeImageKey = value; return value; }).finally(() => { auth = undefined; }));
           apiKey = nodeImageKey;
         }
         const request = uploadRequest(provider, settings.base || '', apiKey, file);

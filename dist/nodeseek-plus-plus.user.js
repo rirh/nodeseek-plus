@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.914.1132
+// @version      26.914.1337
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @downloadURL  https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js
@@ -94,6 +94,57 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
+## Marked 18.0.13
+
+Source: https://github.com/markedjs/marked
+
+# License information
+
+## Contribution License Agreement
+
+If you contribute code to this project, you are implicitly allowing your code
+to be distributed under the MIT license. You are also implicitly verifying that
+all code is your original work. `</legalese>`
+
+## Marked
+
+Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)
+Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+## Markdown
+
+Copyright © 2004, John Gruber
+http://daringfireball.net/
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+* Neither the name “Markdown” nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+This software is provided by the copyright holders and contributors “as is” and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. In no event shall the copyright owner or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
+
+
+
 BSD 3-Clause License
 
 Copyright (c) 2006, Ivan Sagalaev.
@@ -183,6 +234,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function GM_registerMenuCommand$1(label, callback) {
 		const register = typeof _GM_registerMenuCommand === "function" ? _GM_registerMenuCommand : _monkeyWindow.GM_registerMenuCommand;
 		if (typeof register === "function") register(label, callback);
+	}
+	function hasSystemNotifications() {
+		return typeof _GM_notification === "function" || typeof _monkeyWindow.GM_notification === "function";
 	}
 	function systemNotify(text, url, tag, title = "新消息") {
 		const notify = typeof _GM_notification === "function" ? _GM_notification : _monkeyWindow.GM_notification;
@@ -622,7 +676,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		let prompting = false;
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1132")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1337")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -631,7 +685,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				promptedAt: Date.now()
 			});
 			try {
-				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1132，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
+				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1337，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
 					href: UPDATE_URL,
 					cancelLabel: "稍后提醒"
 				});
@@ -665,8 +719,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					return;
 				}
 				const version = state().version;
-				if (version && isNewerVersion(version, "26.914.1132")) await prompt(manual);
-				else if (manual) notify(`当前已是最新版本（v26.914.1132）`);
+				if (version && isNewerVersion(version, "26.914.1337")) await prompt(manual);
+				else if (manual) notify(`当前已是最新版本（v26.914.1337）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -694,98 +748,98 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}
 		};
 	}
-	var element = (tag, text) => {
+	var element$1 = (tag, text) => {
 		const node = document.createElement(tag);
 		if (text) node.textContent = text;
 		return node;
 	};
 	function mountSettings(features) {
-		const host = element("div");
+		const host = element$1("div");
 		host.id = "nspp-settings";
 		host.toggleAttribute("data-dark", document.body.classList.contains("dark-layout"));
 		const shadow = host.attachShadow({ mode: "open" });
-		const style = element("style", style_default$1 + loading_default);
-		const launch = element("button");
+		const style = element$1("style", style_default$1 + loading_default);
+		const launch = element$1("button");
 		launch.type = "button";
 		launch.append(toolIcon("settings"));
 		launch.className = "launcher";
 		launch.title = "打开 NodeSeek++ 设置";
 		launch.setAttribute("aria-label", launch.title);
-		const dialog = element("dialog");
+		const dialog = element$1("dialog");
 		dialog.setAttribute("aria-labelledby", "nspp-title");
-		const header = element("header");
-		const heading = element("div");
-		const title = element("h2", "NodeSeek++");
+		const header = element$1("header");
+		const heading = element$1("div");
+		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element("small", `v26.914.1132`));
-		const checkUpdate = element("button", "检查更新");
+		heading.append(title, element$1("small", `v26.914.1337`));
+		const checkUpdate = element$1("button", "检查更新");
 		checkUpdate.type = "button";
 		checkUpdate.className = "check-update";
 		heading.append(checkUpdate);
-		const close = element("button", "关闭");
+		const close = element$1("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
 		header.append(heading);
-		const search = element("input");
+		const search = element$1("input");
 		search.type = "search";
 		search.placeholder = "搜索功能…";
 		search.setAttribute("aria-label", "搜索功能");
-		const searchBar = element("div");
+		const searchBar = element$1("div");
 		searchBar.className = "search-bar";
 		searchBar.append(search);
 		header.append(searchBar);
-		const content = element("div");
+		const content = element$1("div");
 		content.className = "content";
-		const navigation = element("nav");
+		const navigation = element$1("nav");
 		navigation.className = "categories";
 		navigation.setAttribute("aria-label", "设置分类");
-		const workspace = element("div");
+		const workspace = element$1("div");
 		workspace.className = "settings-workspace";
 		workspace.append(navigation, content);
-		const form = element("form");
-		const status = element("p");
+		const form = element$1("form");
+		const status = element$1("p");
 		status.className = "status";
 		status.setAttribute("role", "status");
-		const actions = element("div");
+		const actions = element$1("div");
 		actions.className = "actions";
-		const save = element("button", "保存并刷新");
+		const save = element$1("button", "保存并刷新");
 		save.type = "submit";
 		save.className = "primary";
-		const reset = element("button", "恢复默认");
-		const clearCache = element("button", "清空缓存");
+		const reset = element$1("button", "恢复默认");
+		const clearCache = element$1("button", "清空缓存");
 		clearCache.title = "清除当前站点的插件用户资料、通知计数和回帖足迹缓存并刷新页面；保留配置、阅读历史和监控记录，未保存的设置不会保存。";
-		const exportButton = element("button", "导出配置");
-		const importButton = element("button", "导入配置");
+		const exportButton = element$1("button", "导出配置");
+		const importButton = element$1("button", "导入配置");
 		[
 			reset,
 			clearCache,
 			exportButton,
 			importButton
 		].forEach((button) => button.type = "button");
-		const file = element("input");
+		const file = element$1("input");
 		file.type = "file";
 		file.accept = ".json,application/json";
 		file.hidden = true;
 		actions.append(exportButton, importButton, clearCache, reset, close, save, file);
-		const footer = element("footer");
+		const footer = element$1("footer");
 		footer.className = "settings-footer";
 		footer.append(actions);
 		form.append(header, status, workspace, footer);
 		dialog.append(form);
-		const toast = element("div");
+		const toast = element$1("div");
 		toast.className = "toast";
 		toast.hidden = true;
 		toast.setAttribute("role", "status");
 		toast.setAttribute("aria-live", "polite");
 		toast.setAttribute("aria-atomic", "true");
 		toast.setAttribute("popover", "manual");
-		const toastIcon = element("span");
+		const toastIcon = element$1("span");
 		toastIcon.className = "toast-icon";
 		toastIcon.setAttribute("aria-hidden", "true");
-		const toastMessage = element("span");
+		const toastMessage = element$1("span");
 		toastMessage.className = "toast-message";
-		const toastClose = element("button", "×");
+		const toastClose = element$1("button", "×");
 		toastClose.type = "button";
 		toastClose.className = "toast-close";
 		toastClose.setAttribute("aria-label", "关闭提示");
@@ -869,10 +923,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				if (query && !`${feature.title} ${feature.description} ${feature.group} ${category} ${Object.values(feature.fields || {}).map((field) => field.label).join(" ")}`.toLocaleLowerCase().includes(query)) continue;
 				let group = groups.get(category);
 				if (!group) {
-					group = element("section");
+					group = element$1("section");
 					const index = sections.length;
 					group.id = `nspp-category-${index}`;
-					const link = element("a", category);
+					const link = element$1("a", category);
 					link.href = `#${group.id}`;
 					link.addEventListener("click", (event) => {
 						event.preventDefault();
@@ -886,54 +940,54 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					sections.push(group);
 					links.push(link);
 					navigation.append(link);
-					group.append(element("h3", category));
+					group.append(element$1("h3", category));
 					groups.set(category, group);
 					content.append(group);
 				}
-				const row = element("article");
-				const label = element("label");
+				const row = element$1("article");
+				const label = element$1("label");
 				label.className = "feature-heading";
-				const toggle = element("input");
+				const toggle = element$1("input");
 				toggle.type = "checkbox";
 				toggle.checked = draft[feature.id].enabled === true;
 				toggle.addEventListener("change", () => {
 					draft[feature.id].enabled = toggle.checked;
 				});
-				label.append(element("strong", feature.title), toggle);
+				label.append(element$1("strong", feature.title), toggle);
 				row.append(label);
-				if (feature.id === "request-settings") row.append(element("p", feature.description));
+				if (feature.id === "request-settings") row.append(element$1("p", feature.description));
 				if ([
 					"ai-polish",
 					"official-blocklist",
 					"infinite-scroll"
-				].includes(feature.id)) row.append(element("p", {
+				].includes(feature.id)) row.append(element$1("p", {
 					"ai-polish": "手动发送编辑器文本，预览后采用。",
 					"official-blocklist": "添加或解除会修改站点黑名单。",
 					"infinite-scroll": "新增评论的回复、评分需打开原页。"
 				}[feature.id]));
 				const options = Object.keys(feature.defaults).filter((key) => key !== "enabled");
 				if (options.length) {
-					const details = element("div");
+					const details = element$1("div");
 					details.className = "feature-options";
 					for (const key of options) {
 						const metadata = feature.fields?.[key];
 						const value = draft[feature.id][key];
-						const field = element("label");
+						const field = element$1("label");
 						field.className = "field";
-						field.append(element("span", metadata?.label || key));
+						field.append(element$1("span", metadata?.label || key));
 						let control;
 						if (metadata?.type === "select") {
-							control = element("select");
+							control = element$1("select");
 							for (const option of metadata.options || []) {
-								const item = element("option", option.label);
+								const item = element$1("option", option.label);
 								item.value = option.value;
 								control.append(item);
 							}
 						} else if (metadata?.type === "textarea") {
-							control = element("textarea");
+							control = element$1("textarea");
 							control.rows = 4;
 						} else {
-							control = element("input");
+							control = element$1("input");
 							control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
 						}
 						if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
@@ -953,7 +1007,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				}
 				group.append(row);
 			}
-			if (!groups.size) content.append(element("p", "没有匹配的功能"));
+			if (!groups.size) content.append(element$1("p", "没有匹配的功能"));
 			content.scrollTop = 0;
 			activate(0);
 		}
@@ -1014,7 +1068,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		exportButton.addEventListener("click", () => {
 			const blob = new Blob([exportSettings(draft)], { type: "application/json" });
 			const url = URL.createObjectURL(blob);
-			const link = element("a");
+			const link = element$1("a");
 			link.href = url;
 			link.download = "nodeseek-plus-plus-settings.json";
 			link.click();
@@ -4031,6 +4085,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			fans
 		};
 	}
+	function profileTagKey(label) {
+		if (/^(管理|管理员|admin|administrator)$/i.test(label)) return "admin";
+		if (/^(创建者|站点创建者|founder)$/i.test(label)) return "founder";
+		if (/^(服主|拥有者|所有者|站点拥有者|owner)$/i.test(label)) return "owner";
+		return label;
+	}
+	function renderProfileTags(target, user) {
+		const labels = new Map();
+		if (user.isAdmin === true || typeof user.isAdmin === "number" && user.isAdmin > 0) labels.set("admin", "管理");
+		for (const role of Array.isArray(user.roles) ? user.roles : []) {
+			const name = typeof role === "string" ? role : role?.name || role?.title;
+			if (typeof name !== "string" || !name.trim()) continue;
+			const label = name.trim();
+			const key = profileTagKey(label);
+			labels.set(key, {
+				admin: "管理",
+				founder: "创建者",
+				owner: "服主"
+			}[key] || label);
+		}
+		target.replaceChildren();
+		for (const [key, label] of labels) {
+			const tag = document.createElement("span");
+			tag.className = "role-tag nspp-profile-role";
+			tag.textContent = label;
+			if ([
+				"admin",
+				"founder",
+				"owner"
+			].includes(key)) tag.dataset.nsppRole = key;
+			target.append(tag);
+		}
+		target.hidden = !labels.size;
+	}
 	var userHoverSelector = "a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*=\"/space/\"], a[href*=\"/space/\"]:has(img), a[data-uid]";
 	var cards = new WeakMap();
 	function isUserHoverAnchor(anchor) {
@@ -4068,15 +4156,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const tags = document.createElement("div");
 			tags.className = "nspp-user-hover-tags";
 			identity.append(tags);
+			const nativeTags = document.createElement("span");
+			nativeTags.className = "nspp-user-native-tags";
+			const profileTags = document.createElement("span");
+			profileTags.className = "nspp-user-profile-tags";
+			tags.append(nativeTags, profileTags);
 			const syncTags = () => {
-				tags.replaceChildren();
+				nativeTags.replaceChildren();
 				(anchor.closest(".author-info, .info-author, .post-author, .info-last-commenter, .nsk-content-meta-info") || anchor.parentElement)?.querySelectorAll(".role-tag").forEach((tag) => {
 					if (tag.closest(".nspp-user-hover")) return;
+					if (Array.from(profileTags.children).some((profile) => profileTagKey(profile.textContent?.trim() || "") === profileTagKey(tag.textContent?.trim() || ""))) return;
 					const copy = tag.cloneNode(true);
 					copy.removeAttribute("id");
-					tags.append(copy);
+					nativeTags.append(copy);
 				});
-				tags.hidden = !tags.children.length;
+				tags.hidden = !nativeTags.children.length && !profileTags.children.length;
 			};
 			syncTags();
 			const avatar = document.createElement("img");
@@ -4307,6 +4401,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					if (ctx.signal.aborted || !author.isConnected || nodes.get(author)?.badge !== badge) return;
 					const info = registration(user);
 					const profileDetails = nodes.get(author).details;
+					const cardTags = profileDetails.parentElement?.querySelector(".nspp-user-profile-tags");
+					if (cardTags) {
+						renderProfileTags(cardTags, user);
+						const tags = cardTags.parentElement;
+						tags.querySelectorAll(".nspp-user-native-tags > .role-tag").forEach((tag) => {
+							if (Array.from(cardTags.children).some((profile) => profileTagKey(profile.textContent?.trim() || "") === profileTagKey(tag.textContent?.trim() || ""))) tag.remove();
+						});
+						tags.hidden = !tags.querySelector(".role-tag");
+					}
 					profileDetails.replaceChildren();
 					for (const [label, value, icon] of [
 						[
@@ -9042,7 +9145,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function currentUser() {
 		return unsafeWindow$1.__config__?.user;
 	}
-	function button(label, fn, ctx) {
+	function button$2(label, fn, ctx) {
 		const el = document.createElement("button");
 		el.type = "button";
 		el.textContent = label;
@@ -9083,7 +9186,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					if (!user?.member_id) return;
 					const key = `day:${user.member_id}`;
 					const day = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
-					const control = button("签到", () => {
+					const control = button$2("签到", () => {
 						run();
 					}, ctx);
 					control.className = "nspp-action nspp-tool-icon";
@@ -9376,12 +9479,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		group: "监控",
 		defaults: {
 			enabled: true,
-			interval: 300
+			interval: 300,
+			"desktop-notifications": true
 		},
-		fields: { interval: {
-			label: "刷新间隔（秒，60–3600）",
-			type: "number"
-		} },
+		fields: {
+			interval: {
+				label: "刷新间隔（秒，60–3600）",
+				type: "number"
+			},
+			"desktop-notifications": {
+				label: "发现新帖时使用系统通知",
+				type: "text"
+			}
+		},
 		mount(ctx) {
 			if (location.hostname !== "www.nodeseek.com") return;
 			const panel = document.createElement("dialog");
@@ -9600,7 +9710,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						checked: Date.now(),
 						signal
 					} : x);
-					if (signal && updated.some((x) => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, "抽奖状态更新", "lottery");
+					if (signal && updated.some((x) => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, "抽奖状态更新", `lottery:${entry.id}`, entry.url);
 					ctx.set(trackKey, updated);
 					renderTracks();
 				}
@@ -9850,7 +9960,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								found: Date.now()
 							})), ...readUnread()].map((post) => [post.id, post])).values()].slice(0, 200));
 							renderUnread();
-							notify(message, "发现匹配新帖", "posts");
+							notify(message, "发现匹配新帖", `posts:${fresh[0].id}`, fresh[0].url);
 						}
 						await checkTracked();
 						if (force && !ctx.signal.aborted) ctx.notify(`检查完成，匹配 ${matches.length} 条帖子`);
@@ -9885,25 +9995,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					refreshButton.removeAttribute("aria-busy");
 				}
 			}
-			function notify(message, title, category) {
+			function notify(message, title, category, url) {
 				ctx.notify(message);
-				if (ctx.get("desktop-notifications") && typeof Notification !== "undefined" && Notification.permission === "granted") try {
-					new Notification(`NodeSeek++ · ${title}`, {
+				if (!ctx.get("desktop-notifications")) return;
+				const tag = `nspp-monitor:${location.hostname}:${user || "guest"}:${category}`;
+				if (systemNotify(message, url, tag, title)) return;
+				if (typeof Notification !== "undefined" && Notification.permission === "granted") try {
+					const notification = new Notification(`NodeSeek++ · ${title}`, {
 						body: message,
-						tag: `nspp-monitor:${category}`
+						tag
 					});
+					notification.onclick = () => {
+						window.open(url, "_blank", "noopener,noreferrer");
+						notification.close();
+					};
+					return;
 				} catch {}
+				ctx.notify(`${message}\n系统通知未能发出，请检查油猴及系统通知权限。`);
 			}
 			const footer = document.createElement("footer");
 			const permission = control("开启系统通知", () => {
 				(async () => {
-					if (typeof Notification === "undefined") {
-						ctx.notify("当前浏览器不支持系统通知，仍会显示页面提示");
-						return;
-					}
 					if (ctx.get("desktop-notifications")) {
 						ctx.set("desktop-notifications", false);
 						permission.textContent = "开启系统通知";
+						return;
+					}
+					if (hasSystemNotifications()) {
+						ctx.set("desktop-notifications", true);
+						permission.textContent = "关闭系统通知";
+						ctx.notify("系统通知已开启，发现匹配新帖时自动通知");
+						return;
+					}
+					if (typeof Notification === "undefined") {
+						ctx.notify("当前环境不支持系统通知，请确认油猴脚本已正常安装");
 						return;
 					}
 					try {
@@ -9916,7 +10041,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					}
 				})();
 			}, ctx);
-			if (ctx.get("desktop-notifications") && typeof Notification !== "undefined" && Notification.permission === "granted") permission.textContent = "关闭系统通知";
+			if (ctx.get("desktop-notifications")) permission.textContent = "关闭系统通知";
 			const refreshButton = control("刷新", () => {
 				refresh(true);
 			}, ctx);
@@ -18543,15 +18668,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				parent.appendChild(document.createTextNode(node.textContent || ""));
 				return;
 			}
-			if (!(node instanceof Element) || node.matches("script, style, iframe, object, embed, form, input, button, textarea, select, svg, math, link, meta, base")) return;
-			if (!allowed.has(node.tagName)) {
+			if (node.nodeType !== Node.ELEMENT_NODE) return;
+			const sourceElement = node;
+			if (sourceElement.matches("script, style, iframe, object, embed, form, input, button, textarea, select, svg, math, link, meta, base")) return;
+			if (!allowed.has(sourceElement.tagName)) {
 				node.childNodes.forEach((child) => copy(child, parent));
 				return;
 			}
-			const el = document.createElement(node.tagName.toLowerCase());
-			if (node.tagName === "A" || node.tagName === "IMG") {
-				const attribute = node.tagName === "A" ? "href" : "src";
-				const raw = node.getAttribute(attribute);
+			const el = document.createElement(sourceElement.tagName.toLowerCase());
+			if (sourceElement.tagName === "A" || sourceElement.tagName === "IMG") {
+				const attribute = sourceElement.tagName === "A" ? "href" : "src";
+				const raw = sourceElement.getAttribute(attribute);
 				if (!raw) return;
 				let url;
 				try {
@@ -18566,7 +18693,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					el.rel = "noopener noreferrer";
 				}
 				if (el instanceof HTMLImageElement) {
-					el.alt = node.getAttribute("alt") || "";
+					el.alt = sourceElement.getAttribute("alt") || "";
 					el.loading = "lazy";
 					el.tabIndex = 0;
 					el.setAttribute("role", "button");
@@ -19764,7 +19891,3419 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			};
 		}
 	};
-	_css("#nspp-tools{z-index:999;flex-direction:column;align-items:flex-end;gap:.4rem;max-width:min(22rem,75vw);max-height:55dvh;padding:8px 8px 0 0;display:flex;position:fixed;bottom:4rem;right:calc(1rem - 8px);overflow-y:auto}.discussion-wrapper .discussion-item.nspp-discussion-row>a:first-child{overflow-wrap:anywhere;flex:1;min-width:0}.discussion-wrapper .discussion-item.nspp-discussion-row>:not(a:first-child){flex:none;margin-right:0}.discussion-wrapper .nspp-discussion-row>.nspp-discussion-stats{color:#ccc;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;gap:10px;margin:0 0 0 auto;padding-left:12px;font-size:12px;display:inline-flex}.nspp-discussion-stats[hidden],.nspp-discussion-stats>span[hidden]{display:none!important}.nspp-discussion-stats>span{align-items:center;gap:4px;display:inline-flex}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon{color:currentColor;flex:none;width:14px;height:14px}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon:hover{transform:none}#nspp-tools button,[data-nspp-resolve],.nspp-action{font:inherit;border:1px solid var(--border-color,#929a9380);color:var(--text-color,inherit);background:var(--bg-color,Canvas);cursor:pointer;border-radius:.4rem;padding:.35rem .6rem;font-size:.8rem}#nspp-tools a,[data-nspp-footprints] a{text-underline-offset:.2em}#nspp-tools a:hover,[data-nspp-footprints] a:hover{text-decoration:underline}#nspp-tools button:disabled,.nspp-compose button:disabled{opacity:1;cursor:wait}#nspp-tools :focus-visible{outline-offset:2px;outline:2px solid}@media (prefers-reduced-motion:reduce){[class*=nspp-]{scroll-behavior:auto!important}}.nspp-monitor{border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(42rem,92vw);max-height:85dvh;color:var(--text-color,CanvasText);border-radius:.75rem;padding:1rem;overflow:auto}.nspp-monitor::backdrop{background:#0006}.nspp-monitor ul{padding-left:1.25rem}.nspp-monitor li{overflow-wrap:anywhere;margin:.4rem 0}.nspp-monitor a{text-underline-offset:.2em}.nspp-monitor a:hover{text-decoration:underline}.nspp-block-controls{flex-wrap:wrap;gap:.3rem;margin-left:.4rem;font-size:.75rem;display:inline-flex}.nspp-user-badges{vertical-align:baseline;white-space:nowrap;font-variant-numeric:tabular-nums;flex-wrap:nowrap;align-items:center;gap:5px;margin-inline-start:4px;font:10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.nspp-user-badges>span{white-space:nowrap;background:0 0;border:0;padding:0}.nspp-level{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-age{color:#59636e;cursor:help}.nspp-user-badges button{font:inherit;color:inherit;min-height:0;box-shadow:none;cursor:pointer;background:0 0;border:0;border-radius:2px;padding:0}.nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-user-badges .nspp-trust:hover{text-underline-offset:3px;text-decoration:underline}.nspp-user-badges button:focus-visible{outline-offset:2px;outline:2px solid #0969da}.nspp-level[data-level=\"0\"]{--nspp-badge-color:#66717e}.nspp-level[data-level=\"2\"]{--nspp-badge-color:#0969da}.nspp-level[data-level=\"3\"]{--nspp-badge-color:#087f8c}.nspp-level[data-level=\"4\"]{--nspp-badge-color:#218044}.nspp-level[data-level=\"5\"]{--nspp-badge-color:#a66b08}.dark-layout .nspp-level,.dark-layout .nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#9198a1)}.dark-layout .nspp-age{color:#9198a1}.dark-layout .nspp-level[data-level=\"0\"]{--nspp-badge-color:#a3adb8}.dark-layout .nspp-level[data-level=\"2\"]{--nspp-badge-color:#79b8ff}.dark-layout .nspp-level[data-level=\"3\"]{--nspp-badge-color:#56c8ce}.dark-layout .nspp-level[data-level=\"4\"]{--nspp-badge-color:#70cf91}.dark-layout .nspp-level[data-level=\"5\"]{--nspp-badge-color:#dfb653}.nspp-level[data-level=\"1\"],.nspp-trust[data-tier=danger]{--nspp-badge-color:#cf3434}.nspp-trust[data-tier=warning]{--nspp-badge-color:#a66b08}.nspp-trust[data-tier=success]{--nspp-badge-color:#218044}.dark-layout .nspp-level[data-level=\"1\"],.dark-layout .nspp-trust[data-tier=danger]{--nspp-badge-color:#ff8585}.dark-layout .nspp-trust[data-tier=warning]{--nspp-badge-color:#dfb653}.dark-layout .nspp-trust[data-tier=success]{--nspp-badge-color:#70cf91}.nspp-user-badges .nspp-trust[data-tier=perfect]{--nspp-badge-color:#ffe66d;background:#b82025;border-radius:3px;padding:0 4px}.nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#916008;background:#fff3cd;border-radius:3px;padding:0 4px;box-shadow:inset 0 0 0 1px #dfba6266}.dark-layout .nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#f0ce78;background:#3c321c;box-shadow:inset 0 0 0 1px #dfba6255}.role-tag[data-nspp-role]{color:#2463a0;box-shadow:none;letter-spacing:0;vertical-align:middle;white-space:nowrap;background:#eaf3fc;border:0;border-radius:3px;flex:none;align-items:center;gap:3px;padding:0 5px;font:600 10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.role-tag[data-nspp-role]:before{content:\"\";clip-path:polygon(50% 0,95% 17%,88% 65%,50% 100%,12% 65%,5% 17%);background:currentColor;flex:none;width:9px;height:10px}.role-tag[data-nspp-role=founder]{color:#087f78;background:#e5f4ef}.role-tag[data-nspp-role=founder]:before{clip-path:polygon(50% 0,66% 34%,100% 50%,66% 66%,50% 100%,34% 66%,0 50%,34% 34%)}.role-tag[data-nspp-role=owner]{color:#4c596a;background:#eaf0f5}.role-tag[data-nspp-role=owner]:before{clip-path:polygon(0 15%,25% 40%,50% 0,75% 40%,100% 15%,88% 85%,12% 85%)}.dark-layout .role-tag[data-nspp-role=admin]{color:#9ac7f2;background:#23374b}.dark-layout .role-tag[data-nspp-role=founder]{color:#7cd4c1;background:#1e3b35}.dark-layout .role-tag[data-nspp-role=owner]{color:#c1ccd9;background:#303a47}.nspp-history{color:#1f2328;background:#fff;border:1px solid #d1d9e0;border-radius:8px;width:min(640px,100vw - 24px);max-width:none;max-height:80dvh;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;box-shadow:0 8px 28px #1f232833}.nspp-history[open]{flex-direction:column;display:flex}.nspp-history::backdrop{background:#1f232866}.nspp-history *{box-sizing:border-box}.nspp-history header{box-shadow:none;background:0 0;border-bottom:0;flex:none;justify-content:space-between;align-items:center;padding:6px 12px;display:flex}.nspp-history h2{margin:0;font-size:14px;font-weight:600}.nspp-history button{min-height:26px;color:inherit;cursor:pointer;white-space:nowrap;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:5px;padding:2px 8px;font-family:inherit;font-size:12px;line-height:20px}.nspp-history [hidden]{display:none!important}.nspp-history-toolbar{border-bottom:0;flex:none;gap:6px;padding:4px 12px 6px;display:flex}.nspp-history input{width:0;min-width:0;color:inherit;font:inherit;background:0 0;border:1px solid #d1d9e0;border-radius:5px;flex:1;padding:4px 8px}.nspp-history ol{overscroll-behavior:contain;min-height:60px;margin:0;padding:0 12px;list-style:none;overflow-y:auto}.nspp-history li{border:0;align-items:center;gap:8px;margin:0;padding:3px 0;display:flex}.nspp-history li button{background:0 0;border-color:#0000;min-height:24px;padding:1px 6px}.nspp-history li:hover{background:#818b980c}.nspp-history li a{color:#0969da;white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;text-decoration:none;overflow:hidden}.nspp-history a:hover{text-underline-offset:2px;text-decoration:underline}.nspp-history time{color:#59636e;flex:none;font-size:11px}.nspp-history :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-history{color:#f0f6fc;background:#0d1117;border-color:#3d444d}.dark-layout .nspp-history header,.dark-layout .nspp-history button{background:#151b23}.dark-layout .nspp-history a{color:#79c0ff}@media (width<=600px){.nspp-history{width:calc(100vw - 16px)}.nspp-history-toolbar{flex-wrap:wrap}.nspp-history time{display:none}}.nspp-block-toggle{vertical-align:middle;color:#59636e;cursor:pointer;background:0 0;border:0;border-radius:4px;min-width:0;margin-left:5px;padding:0 2px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-block-toggle[data-blocked=true]{color:#cf222e;border-color:#ff818280}.nspp-block-toggle:disabled{opacity:1;cursor:wait}.dark-layout .nspp-block-toggle{color:#9198a1;border-color:#3d444d}.nspp-user-badges[aria-busy=true]{color:#59636e;border-radius:4px;min-width:88px;min-height:16px}.nspp-trust-dialog{padding:16px}.nspp-trust-dialog p{white-space:pre-line;line-height:1.8}.nspp-trust-dialog button{align-self:flex-end}.nspp-post-preview{z-index:2147483644;border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(340px,100vw - 24px);height:auto;max-height:min(320px,100dvh - 24px);color:var(--text-color,CanvasText);text-align:left;border-radius:6px;flex-direction:column;margin:0;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;overflow:hidden;box-shadow:0 3px 12px #00000018}.nspp-post-preview[hidden]{display:none}.nspp-post-preview header{border-bottom:1px solid #929a9350;flex-shrink:0;align-items:center;gap:8px;padding:5px 8px;font-size:12px;line-height:18px;display:flex;position:static;box-shadow:none!important;text-shadow:none!important}.nspp-post-preview header a{white-space:normal;overflow-wrap:anywhere;min-width:0;color:inherit;flex:1;font-weight:500;text-decoration:none;text-shadow:none!important;box-shadow:none!important}.nspp-post-preview button{width:20px;height:20px;min-height:0;color:inherit;cursor:pointer;background:0 0;border:0;border-radius:3px;flex:none;padding:0;font:16px/18px Arial,sans-serif}.nspp-post-preview>p{margin:0;padding:5px 8px;font-size:11px}.nspp-post-preview>p:empty{display:none}.nspp-preview-content{overscroll-behavior:contain;overflow-wrap:anywhere;flex:0 auto;min-height:0;padding:7px 8px;font-size:12px;line-height:1.5;overflow:auto}.nspp-preview-meta{opacity:.65;margin-bottom:5px;font-size:11px}.nspp-preview-content img{object-fit:contain;width:auto;max-width:100%;height:auto;max-height:120px}.nspp-preview-content pre{background:#818b9814;border-radius:6px;padding:6px;overflow:auto}.nspp-preview-content blockquote{border-left:3px solid #818b9850;margin:6px 0;padding-left:8px}.nspp-preview-content table{max-width:100%;display:block;overflow:auto}.nspp-preview-content h3{margin:6px 0;font-size:12px}.nspp-preview-comment{border-top:1px solid #818b9830;padding:6px 0}.nspp-preview-comment>strong{font-size:12px}.nspp-post-preview footer{background:0 0;border-top:1px solid #818b9830;flex-shrink:0;padding:4px 8px;font-size:11px;line-height:16px}.nspp-post-preview footer a,.nspp-preview-content a{color:var(--link-color,#0969da)}.nspp-preview-content article>:first-child{margin-top:0}.nspp-preview-content article>:last-child{margin-bottom:0}.nspp-post-preview,.nspp-post-preview *{box-sizing:border-box}.nspp-preview-content p{font-size:inherit;line-height:inherit;margin:5px 0}.nspp-preview-content :is(ul,ol){margin:5px 0;padding-left:18px}.nspp-preview-content :is(h1,h2,h4){margin:6px 0;font-size:13px;line-height:1.5}.nspp-post-preview button:hover{background:#818b981a}.nspp-post-preview footer a{color:inherit;opacity:.7;text-decoration:none}.nspp-post-preview footer a:hover{opacity:1;text-decoration:underline}.nspp-meta-label{opacity:.6;font-size:10px}.nspp-user-badges :is(.nspp-level,.nspp-age,.nspp-trust){align-items:center;gap:3px;display:inline-flex}.nspp-user-badges .iconpark-icon{flex:none;width:11px;height:11px}.nspp-list-actions{white-space:nowrap;color:var(--text-color,#777);flex-wrap:nowrap;align-items:center;gap:12px;padding-top:5px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;overflow-x:auto}.nspp-list-actions button{color:inherit;font:inherit;cursor:pointer;opacity:.75;background:0 0;border:0;border-radius:0;align-items:center;gap:4px;margin:0;padding:0;display:inline-flex}.nspp-list-actions .iconpark-icon{width:13px;height:13px}.nspp-interaction{background:var(--bg-color,Canvas);color:var(--text-color,CanvasText);border:1px solid #818b9840;border-radius:6px;margin:4px 0 12px 52px;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;list-style:none}.nspp-interaction[hidden],.nspp-interaction form[hidden]{display:none!important}.nspp-interaction header{border-bottom:1px solid #818b9820;align-items:center;gap:8px;padding:6px 10px;display:flex}.nspp-interaction header a{white-space:nowrap;text-overflow:ellipsis;min-width:0;color:inherit;flex:1;overflow:hidden}.nspp-interaction button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0}.nspp-interaction header button{font-size:18px}.nspp-interaction p{margin:0;padding:6px 10px;font-size:11px}.nspp-interaction p:empty{display:none}.nspp-interaction form{padding:8px 10px}.nspp-interaction textarea{box-sizing:border-box;resize:vertical;width:100%;min-height:84px;max-height:240px;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:4px;padding:8px;display:block}.nspp-reply-actions{justify-content:space-between;align-items:center;gap:8px;margin-top:6px;display:flex}.nspp-reply-actions span{opacity:.6;font-size:10px}.nspp-reply-actions button{color:#fff;background:#238636;border-radius:4px;padding:3px 10px}.nspp-reply-actions button:disabled{opacity:.4;cursor:default}@media (width<=600px){.nspp-interaction{margin-left:0}.nspp-list-actions{gap:8px}}.nspp-list-actions [hidden]{display:none!important}.nspp-block-toggle{align-items:center;gap:3px;display:inline-flex}.nspp-block-toggle .iconpark-icon{width:11px;height:11px}.nspp-block-toggle[hidden],#nspp-tools button[hidden]{display:none!important}.nspp-action-category{color:inherit;opacity:.65;flex:none;margin-left:auto;text-decoration:none}.nspp-action-category:hover{text-underline-offset:3px;text-decoration:underline}.nspp-list-actions button{flex-shrink:0}.nspp-post-preview footer .nspp-list-actions{gap:10px;padding:2px 0 5px}.nspp-post-preview footer .nspp-list-actions button{width:auto;height:auto;font:inherit;line-height:18px}.nspp-post-preview footer .nspp-list-actions button:hover{text-underline-offset:3px;background:0 0;text-decoration:underline}.nspp-post-preview::backdrop{background:#0006}@media (width<=600px),(hover:none){.nspp-post-preview{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;inset:auto 0 0}.nspp-post-preview header{padding:10px 16px;font-size:14px}.nspp-post-preview header a{white-space:normal}.nspp-post-preview button{width:40px;height:40px;font-size:22px}.nspp-preview-content{padding:12px 16px;font-size:14px;line-height:1.7}.nspp-post-preview footer{padding:12px 16px;font-size:13px}.nspp-post-preview footer a{padding:8px 0;display:block}}.nspp-count-loading{flex:none;font-size:10px}.nspp-quick-replies{box-sizing:border-box;background:var(--bg-color,Canvas);width:min(440px,100vw - 24px);max-height:85dvh;color:var(--text-color,CanvasText);border:1px solid #818b9838;border-radius:12px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:hidden;box-shadow:0 16px 60px #0003}.nspp-quick-replies[open]{flex-direction:column;display:flex}.nspp-quick-replies::backdrop{background:#0005}.nspp-quick-replies [hidden]{display:none!important}.nspp-quick-head,.nspp-quick-pagination{color:inherit;background:0 0;flex:none;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;display:flex}.nspp-quick-head strong{font-size:14px}.nspp-quick-replies button{font:inherit;color:inherit;cursor:pointer;min-height:28px;box-shadow:none;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:4px 8px}.nspp-quick-replies button:hover:not(:disabled){background:#818b9814}.nspp-quick-replies :is(button,input,textarea):focus-visible{outline:2px solid var(--link-color,#0969da);outline-offset:2px}.nspp-quick-replies button:disabled{opacity:.4;cursor:default}.nspp-quick-head button{border:0;width:28px;padding:0;font-size:18px}.nspp-quick-replies p{margin:0}.nspp-quick-replies .nspp-quick-target{white-space:nowrap;text-overflow:ellipsis;opacity:.65;flex:none;padding:0 12px 6px;font-size:12px;overflow:hidden}.nspp-quick-toolbar{flex:none;gap:6px;padding:2px 12px 8px;display:flex}.nspp-quick-replies input,.nspp-quick-replies textarea{box-sizing:border-box;min-width:0;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:6px;padding:5px 8px}.nspp-quick-toolbar input{flex:1;width:0}.nspp-quick-replies .nspp-quick-primary{color:var(--link-color,#0969da);background:#0969da0c;border-color:#0969da40;flex:none}.nspp-quick-list{overscroll-behavior:contain;min-height:0;padding:0 12px;overflow-y:auto}.nspp-quick-item{border-bottom:1px solid #818b9820;align-items:center;gap:4px;padding:2px 0;display:flex}.nspp-quick-item:last-child{border-bottom:0}.nspp-quick-item .nspp-quick-send{text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;border:0;flex:1;min-width:0;min-height:30px;padding:4px 6px}.nspp-quick-item button:not(.nspp-quick-send){border-color:#0000;flex:none;padding:4px 6px;font-size:11px}.nspp-quick-item .nspp-quick-delete:hover:not(:disabled){color:#cf3434;background:#cf343410}.nspp-quick-list>p{text-align:center;opacity:.6;padding:16px 6px}.nspp-quick-replies form{border-top:1px solid #818b9830;flex:none;padding:8px 12px}.nspp-quick-replies form button+button{margin-left:8px}.nspp-quick-replies textarea{resize:vertical;width:100%;max-height:22dvh;margin-bottom:8px;display:block}.nspp-quick-pagination{border-top:1px solid #818b9830;padding-top:6px;padding-bottom:6px;font-size:11px}.nspp-quick-replies .nspp-quick-status{opacity:.65;flex:none;padding:0 12px 6px;font-size:11px}@media (width<=600px){.nspp-quick-replies{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;margin:auto 0 0}.nspp-quick-replies button{min-height:34px}}#nspp-tools .nspp-tool-icon{flex:none;justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}.nspp-user-badges .nspp-age,.nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#59636e)}.nspp-age[data-tone=new]{--nspp-age-color:#cf3434}.nspp-age[data-tone=recent]{--nspp-age-color:#a66b08}.nspp-age[data-tone=member]{--nspp-age-color:#0969da}.nspp-age[data-tone=longtime]{--nspp-age-color:#218044}.dark-layout .nspp-age[data-tone=new]{--nspp-age-color:#ff8585}.dark-layout .nspp-age[data-tone=recent]{--nspp-age-color:#dfb653}.dark-layout .nspp-age[data-tone=member]{--nspp-age-color:#79b8ff}.dark-layout .nspp-age[data-tone=longtime]{--nspp-age-color:#70cf91}.dark-layout .nspp-user-badges .nspp-age,.dark-layout .nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#9198a1)}.nspp-user-badges button.nspp-age{cursor:pointer}.nspp-user-badges button.nspp-age:hover{text-underline-offset:3px;text-decoration:underline}.nspp-profile-dialog{width:min(320px,100vw - 24px)}.nspp-profile-dialog header{justify-content:space-between;padding:10px 12px}.nspp-profile-summary{align-items:baseline;gap:8px;padding:4px 12px 10px;display:flex}.nspp-profile-summary strong{font-variant-numeric:tabular-nums;font-size:22px;line-height:1.3}.nspp-profile-summary span{font-size:11px}.nspp-profile-dialog dl{border-top:1px solid #818b9830;grid-template-columns:1fr auto;gap:6px 12px;margin:0;padding:10px 12px;display:grid}.nspp-profile-dialog dt{opacity:.65}.nspp-profile-dialog dd{font-variant-numeric:tabular-nums;margin:0}.nspp-profile-dialog>p{opacity:.75;margin:0;padding:0 12px 12px;font-size:11px}.post-title .nspp-readonly{vertical-align:middle;border-radius:3px;flex:none;align-items:center;color:#b52b32!important;box-shadow:none!important;background:#cf343410!important;border:0!important;margin-left:5px!important;padding:0 4px!important;font:500 10px/17px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif!important;display:inline-flex!important}.post-title .nspp-pinned{vertical-align:middle;flex:none;margin-left:4px;color:#768390!important;background:0 0!important;border:0!important;border-radius:0!important;width:13px!important;height:13px!important;padding:0!important}.post-title .nspp-pin-wrap{align-items:center;display:inline-flex;box-shadow:none!important;background:0 0!important;border:0!important;padding:0!important}.dark-layout .post-title .nspp-readonly{color:#ff8585!important;background:#ff858514!important}.dark-layout .post-title .nspp-pinned{color:#9198a1!important}.nspp-monitor{color:#1f2328;background:#fff;border:1px solid #818b9840;border-radius:10px;width:min(560px,100vw - 24px);max-height:80dvh;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}.nspp-monitor[open]{flex-direction:column;display:flex}.nspp-monitor *{box-sizing:border-box}.nspp-monitor header,.nspp-monitor footer{flex:none;align-items:center;gap:8px;padding:8px 12px;display:flex}.nspp-monitor header{border-bottom:1px solid #818b9828;justify-content:space-between}.nspp-monitor h3{margin:0;font-size:14px}.nspp-monitor button{min-height:28px;color:inherit;font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:1px solid #818b9838;border-radius:5px;padding:3px 8px}.nspp-monitor button:hover{background:#818b9814}.nspp-monitor button:disabled{opacity:1;cursor:wait}.nspp-monitor>p{opacity:.65;margin:0;padding:6px 12px;font-size:11px}.nspp-monitor-summary{flex-wrap:wrap;align-items:center;gap:2px 10px;display:flex}.nspp-monitor-results:empty{display:none}.nspp-monitor-results{overscroll-behavior:contain;min-height:0;padding:0 12px 8px;overflow:auto}.nspp-monitor-results section+section{border-top:1px solid #818b9828;margin-top:8px;padding-top:4px}.nspp-monitor h4{color:#768390;align-items:center;gap:6px;margin:5px 0;font-size:11px;display:flex}.nspp-monitor h4 small{background:#818b9814;border-radius:8px;padding:0 5px;font-size:10px}.nspp-monitor ul{margin:0;padding:0;list-style:none}.nspp-monitor li{margin:0;padding:4px 0}.nspp-monitor a{color:inherit;text-decoration:none}.nspp-monitor a:hover{color:#0969da;text-decoration:underline}.nspp-monitor section>p{opacity:.55;margin:6px 0;font-size:11px}.nspp-monitor footer{border-top:1px solid #818b9828;flex-wrap:wrap}.nspp-monitor footer span{opacity:.6;flex:1;font-size:10px}.nspp-monitor-tracked{flex-shrink:0;max-height:25dvh;padding:0 12px 8px;overflow:auto}.nspp-monitor-tracked[hidden]{display:none}.nspp-monitor-tracked>div{align-items:center;gap:8px;padding:3px 0;display:flex}.nspp-monitor-tracked a{flex:1;min-width:0}#nspp-tools button[data-unread=true]{color:#cf3434;background:#fff0f0;border-color:#cf3434}.dark-layout .nspp-monitor{color:#e6edf3;background:#161b22}@media (width<=600px){.nspp-monitor{width:100%;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:12px 12px 0 0;margin:auto 0 0}.nspp-monitor button{min-height:34px}}[data-nspp-monitor-match=\"0\"]{background-color:#fff2c9!important}[data-nspp-monitor-match=\"1\"]{background-color:#dff3e7!important}[data-nspp-monitor-match=\"2\"]{background-color:#e2efff!important}[data-nspp-monitor-match=\"3\"]{background-color:#ffe8dc!important}.dark-layout [data-nspp-monitor-match=\"0\"]{background-color:#3c3420!important}.dark-layout [data-nspp-monitor-match=\"1\"]{background-color:#203a2c!important}.dark-layout [data-nspp-monitor-match=\"2\"]{background-color:#23344c!important}.dark-layout [data-nspp-monitor-match=\"3\"]{background-color:#432f26!important}.nspp-monitor header,.nspp-monitor footer,.nspp-monitor-results section+section{border:0}.nspp-monitor-results section+section{margin-top:12px}.nspp-monitor footer{background:#818b980a}#nspp-tools button[data-monitor-state]{position:relative}.nspp-monitor-badge{box-sizing:border-box;border:1px solid var(--bg-color,Canvas);color:#fff;text-align:center;pointer-events:none;background:#cf3434;border-radius:999px;min-width:16px;padding:0 3px;font:600 9px/14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:absolute;top:-6px;right:-6px}.nspp-monitor-badge[hidden]{display:none}#nspp-tools button[data-monitor-state=running]{color:#218044;background:var(--bg-color,Canvas);border-color:#218044}.dark-layout #nspp-tools button[data-monitor-state=running]{color:#70cf91}.nspp-monitor-editor{flex-wrap:wrap;flex:none;align-items:flex-end;gap:6px;padding:4px 12px 8px;display:flex}.nspp-monitor-editor label{min-width:180px;color:inherit;flex:1;font-size:11px}.nspp-monitor-editor textarea{width:100%;color:inherit;font:inherit;resize:vertical;background:#818b9810;border:0;border-radius:6px;max-height:18dvh;margin-top:4px;padding:6px 8px;display:block}.nspp-monitor-editor>span{opacity:.65;flex-basis:100%;font-size:10px}.nspp-monitor-editor>span:empty{display:none}@media (prefers-reduced-motion:reduce){.nspp-monitor[data-checking=true]>p:before{animation:none}}.nspp-monitor-spinner{vertical-align:-2px;border:2px solid #0969da30;border-top-color:#0969da;border-radius:50%;width:10px;height:10px;margin-right:6px;display:inline-block}.nspp-monitor-spinner[hidden]{display:none}.nspp-regex-help{opacity:.65;border:1px solid;border-radius:50%;justify-content:center;align-items:center;width:16px;height:16px;margin-left:6px;font-size:10px;display:inline-flex;text-decoration:none!important}.nspp-regex-help:hover{opacity:1}.nspp-monitor button,.nspp-footprints-dialog button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-monitor button svg,.nspp-footprints-dialog button svg{flex:none;width:13px;height:13px}.nspp-monitor-editor>small{opacity:.65;flex-basis:100%;font-size:10px;line-height:1.6}.nspp-monitor-editor textarea{min-height:56px}.nspp-footprints-dialog{border-radius:10px;width:min(600px,100vw - 24px);padding:8px}.nspp-footprints-dialog header{padding:4px 4px 10px}.nspp-footprints-toolbar{flex-wrap:wrap;align-items:center;gap:6px;padding:4px;display:flex}.nspp-footprints-toolbar [role=status]{opacity:.6;margin-left:auto;font-size:11px}.nspp-footprints-dialog>div:last-child{padding:8px 4px}.nspp-footprints-dialog a{color:inherit;border-radius:4px;padding:4px 6px;text-decoration:none}.nspp-footprints-dialog a:hover{background:#818b9810}.nspp-footprints-list{gap:4px;max-height:min(55dvh,400px);display:grid;overflow:auto}.nspp-footprints-list>a{align-items:baseline;gap:12px;min-width:0;display:flex}.nspp-footprint-title{overflow-wrap:anywhere;flex:1;min-width:0}.nspp-footprints-list small{opacity:.6;white-space:nowrap;flex:none;font-size:11px}.nspp-monitor>header h3{margin-right:auto}.nspp-monitor-config{width:min(420px,100vw - 24px)}.nspp-monitor-config .nspp-monitor-editor{flex-direction:column;align-items:stretch;gap:8px;padding:8px 14px 14px;display:flex;overflow:auto}.nspp-monitor-config .nspp-monitor-editor label{flex:none;min-width:0}.nspp-monitor-config .nspp-monitor-editor textarea{min-height:88px}.nspp-monitor-config input{width:100%;font:inherit;color:inherit;background:#818b9810;border:0;border-radius:6px;margin-top:5px;padding:7px 8px;display:block}.nspp-monitor-config .nspp-monitor-editor>small,.nspp-monitor-config .nspp-monitor-editor>span{flex-basis:auto}.nspp-monitor-config .nspp-monitor-editor>button{align-self:flex-end;min-width:72px}@media (width<=600px){.nspp-monitor-config{border-radius:12px 12px 0 0;width:100%;margin:auto 0 0}}.md-editor .nspp-upload-status{background:0 0;border:0;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:0 6px;font-size:11px;line-height:24px;display:inline-flex}.nspp-upload-status [hidden]{display:none!important}.nspp-upload-status [role=status]{opacity:.7;overflow-wrap:anywhere;font-size:11px}.nspp-upload-status a{color:inherit;font-size:11px;text-decoration:none}.nspp-upload-status a:hover{text-decoration:underline}.nspp-upload-status button{color:inherit;cursor:pointer;background:0 0;border:0;justify-content:center;align-items:center;padding:4px;display:inline-flex}.nspp-upload-status button svg{width:16px;height:16px}.nspp-ai-compose{flex-wrap:wrap;align-items:start;gap:8px;padding:8px;display:flex}.nspp-ai-compose textarea{min-width:180px;color:inherit;background:0 0;border:1px solid #8885;border-radius:6px;flex:1;padding:6px}.nspp-ai-compose small{opacity:.7;width:100%}.nspp-original-notification{display:none!important}.nspp-ecg-shine{display:none}#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{stroke:#8ce9aa;stroke-dasharray:18 118;animation:1.8s linear infinite nspp-ecg-scan;display:block}@keyframes nspp-ecg-scan{0%{stroke-dashoffset:18px}to{stroke-dashoffset:-118px}}@media (prefers-reduced-motion:reduce){#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{animation:none;display:none}}.user-stat .stat-block:has(>.nspp-notification-row)>:has(>.nspp-original-notification:only-child){display:none}.nspp-list-actions[hidden]{display:none!important}.nspp-user-hover{z-index:10010;box-sizing:border-box;border:1px solid var(--border-color,#818b9840);background:var(--bg-color,Canvas);width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);color:var(--text-color,CanvasText);border-radius:8px;padding:12px;font:12px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;overflow:auto;box-shadow:0 6px 24px #0002}.nspp-user-hover[hidden]{display:none!important}.nspp-user-hover-name{color:inherit;font-weight:600;text-decoration:none}.nspp-user-hover dl{grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0;display:grid}.nspp-user-hover dt{opacity:.65}.nspp-user-hover dd{font-variant-numeric:tabular-nums;margin:0}.nspp-user-hover>.nspp-block-toggle{font:inherit;color:inherit;background:0 0;border:1px solid #818b9840;border-radius:4px;margin:8px 0 0;padding:4px 8px;display:flex}.nspp-user-hover{border-radius:12px;width:280px;padding:12px;box-shadow:0 12px 36px #0002,0 2px 6px #0001}.nspp-user-hover .nspp-user-hover-header{align-items:center;gap:8px;margin-bottom:10px;display:flex}.nspp-user-hover .nspp-user-hover-header>div{flex-wrap:wrap;align-items:center;gap:6px;min-width:0;display:flex}.nspp-user-hover-name{overflow-wrap:anywhere;font-size:13px}.nspp-user-hover-monogram{color:#0969da;background:#0969da10;border-radius:10px;flex:0 0 36px;place-items:center;height:36px;font-size:18px;font-weight:600;display:grid}.nspp-user-hover .nspp-user-hover-rich{background:#818b9808;border:1px solid #818b9824;border-radius:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:7px 6px;font-size:13px;line-height:22px;display:grid}.nspp-user-hover-rich>div{flex-direction:column;align-items:center;gap:4px;min-width:0;display:flex}.nspp-user-hover-rich small{opacity:.6;font-size:11px;line-height:16px}.nspp-user-hover-rich .iconpark-icon{width:13px;height:13px}.nspp-user-hover-rich .nspp-age{font-weight:600}.nspp-user-hover dl{gap:4px 10px;margin:0}.nspp-user-hover dd{text-align:right;font-weight:500}.nspp-user-hover>.nspp-block-toggle{border-radius:6px;justify-content:center;width:100%;margin-top:12px;padding:5px 8px}.nspp-user-hover>.nspp-block-toggle:hover{color:#cf3434;background:#cf343410;border-color:#cf343440}.dark-layout .nspp-user-hover{color:#e6edf3;background:#161b22}.dark-layout .nspp-user-hover-monogram{color:#79b8ff;background:#79b8ff18}.nspp-user-badges[hidden],.nspp-user-hover-tags[hidden]{display:none!important}.nspp-user-hover-tags{flex-wrap:wrap;gap:5px;width:100%;display:flex}.nspp-user-hover-avatar{object-fit:cover;border-radius:10px;flex:0 0 32px;width:32px;height:32px}.nspp-user-hover-avatar[hidden],.nspp-user-hover-monogram[hidden]{display:none!important}.nspp-user-hover-signature{color:inherit;opacity:.7;white-space:pre-wrap;overflow-wrap:anywhere;max-height:5.1em;margin:-2px 0 10px;font-size:11px;line-height:1.7;overflow:auto}.nspp-user-hover[data-trust=danger]{background:#fff3f3;border-color:#e9b9bf}.nspp-user-hover[data-trust=warning]{background:#fff9ed;border-color:#e7d5ae}.nspp-user-hover[data-trust=success]{background:#f0faf4;border-color:#b8ddc5}.nspp-user-hover[data-trust=perfect]{background:#fff8e3;border-color:#ddbc6a}.dark-layout .nspp-user-hover[data-trust=danger]{background:#2b1c22;border-color:#643740}.dark-layout .nspp-user-hover[data-trust=warning]{background:#29251b;border-color:#605234}.dark-layout .nspp-user-hover[data-trust=success]{background:#182820;border-color:#355c45}.dark-layout .nspp-user-hover[data-trust=perfect]{background:#2d2617;border-color:#756031}.nspp-user-hover .nspp-user-hover-header{width:auto;height:auto;min-height:0;box-shadow:none;background:0 0;border:0;padding:0;position:static}.nspp-copy-button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0;border-radius:4px;padding:2px 5px}.nspp-copy-button:hover{background:#818b9820}.nspp-user-hover .nspp-copy-button{opacity:.65;font-size:10px}.nspp-category-actions{white-space:nowrap;flex:none;align-items:center;gap:5px;width:max-content;max-width:none;display:inline-flex}.nspp-category-reply{cursor:pointer;white-space:nowrap;flex:none;margin:0;font-family:inherit;position:static}.nspp-copy-button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-copy-button[data-copied=true]{color:#218044;opacity:1}.nspp-user-hover{width:260px;padding:9px;line-height:1.45}.nspp-user-hover .nspp-user-hover-header{gap:7px;margin-bottom:5px}.nspp-user-hover .nspp-user-hover-header>div{flex:1}.nspp-user-hover .nspp-user-hover-score{color:#768390;cursor:pointer;background:0 0;border:0;flex-direction:column;flex:none;align-items:center;gap:0;margin:0 0 0 auto;padding:0;display:flex}.nspp-user-hover-score strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font:700 26px/1 -apple-system,BlinkMacSystemFont,sans-serif}.nspp-user-hover-score small{opacity:.75;font-size:9px;line-height:16px}.nspp-user-hover[data-trust=danger] .nspp-user-hover-score{color:#c63849}.nspp-user-hover[data-trust=warning] .nspp-user-hover-score{color:#a66b08}.nspp-user-hover[data-trust=success] .nspp-user-hover-score{color:#218044}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#a56b00}.dark-layout .nspp-user-hover .nspp-user-hover-score{filter:brightness(1.5)}.nspp-user-hover dl{border-block:1px solid #818b9824;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 10px;padding:6px 0}.nspp-user-hover dl>div{justify-content:space-between;align-items:baseline;gap:6px;min-width:0;display:flex}.nspp-user-hover dt{opacity:.7;flex:none;align-items:center;gap:4px;font-size:11px;display:inline-flex}.nspp-user-hover dt .iconpark-icon{width:13px;height:13px}.nspp-user-hover dd{overflow-wrap:anywhere;min-width:0;font-size:12px}.nspp-user-hover .nspp-user-hover-rich{background:0 0;border:0;border-radius:0;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px 6px;margin:0;padding:5px 0 0;font-size:10px;line-height:18px;display:flex}.nspp-user-hover .nspp-user-hover-rich .nspp-age{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;gap:3px;padding:1px 4px;font-size:10px;font-weight:400}.nspp-user-hover .nspp-user-hover-rich .nspp-age strong{font-weight:700}.nspp-user-hover dd.nspp-user-badges{margin:0}.nspp-user-hover dd .nspp-level{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;padding:0 4px;font-size:11px;line-height:17px}.nspp-user-hover .nspp-user-hover-rich .iconpark-icon{width:11px;height:11px;display:inline-block}.nspp-user-hover-rich>span{opacity:.65}.nspp-user-hover>.nspp-block-toggle{margin-top:8px;padding:3px 6px}.nspp-user-hover-signature{color:#8d7832;opacity:1;max-height:3em;margin:0 0 5px;line-height:1.5}.dark-layout .nspp-user-hover-signature,.nspp-user-hover[data-trust=perfect] .nspp-user-hover-signature{color:#cdbb87}.nspp-user-hover-actions{gap:4px;margin-top:6px;display:flex}.nspp-user-hover-actions[hidden]{display:none!important}.nspp-user-hover-actions>:is(a,button){box-sizing:border-box;min-width:0;color:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:6px;flex:1;justify-content:center;align-items:center;gap:3px;margin:0;padding:3px;font-family:inherit;font-size:11px;line-height:18px;text-decoration:none;display:inline-flex}.nspp-user-hover-actions .iconpark-icon{width:12px;height:12px}.nspp-user-hover-actions>[data-action=transfer]{color:#fff;background:#218044}.nspp-user-hover-actions>[data-action=follow]{color:#fff;background:#0969da}.nspp-user-hover-actions>[data-action=message]{color:#fff;background:#8250df}.nspp-user-hover-actions>.nspp-block-toggle{color:#fff;background:#cf3434}.nspp-user-hover-actions>:hover{filter:brightness(.9)}.nspp-user-hover-actions>:disabled{opacity:.5;cursor:wait}.nspp-user-transfer{width:min(340px,100vw - 32px)}.nspp-user-transfer form{gap:12px;display:grid}.nspp-user-transfer label{gap:6px;display:grid}.nspp-user-transfer input{box-sizing:border-box;width:100%;color:inherit;font:inherit;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:8px}.nspp-user-transfer [role=status]{overflow-wrap:anywhere;margin:0;font-size:12px}.nspp-user-transfer [role=status]:empty{display:none}.nspp-transfer-actions{justify-content:flex-end;gap:8px;display:flex}.nspp-user-hover[data-trust=perfect],.dark-layout .nspp-user-hover[data-trust=perfect]{color:#eee9df;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:radial-gradient(at 100% 0,#c8a5651c,#0000 65%),linear-gradient(145deg,#26272b,#191a1e);border-color:#ac8e555c;border-radius:10px;padding:9px;box-shadow:inset 0 1px #e8ce9133,0 16px 40px #0004,0 3px 10px #0002}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-header{margin-bottom:5px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-name{color:#f5efe2;font-weight:600}.nspp-user-hover[data-trust=perfect] :is(.nspp-user-hover-avatar,.nspp-user-hover-monogram){outline-offset:2px;border-radius:9px;outline:1px solid #d3b57566}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-monogram{color:#e8ce96;background:#d3b57514}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#ebce91;filter:none}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score strong{letter-spacing:-1px;text-shadow:0 2px 14px #d6b46c20;font-size:26px;font-weight:600}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score small{color:#c6b899;opacity:1;font-size:9px}.nspp-user-hover[data-trust=perfect] dl{border-color:#d3b57526}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich small{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-user-badges :is(.nspp-age,.nspp-level){--nspp-badge-color:#e5ce9c;--nspp-age-color:#b9d0be}.nspp-user-hover[data-trust=perfect] .nspp-user-badges .nspp-level[data-level=\"6\"]{background:#d3b57518;box-shadow:inset 0 0 0 1px #d3b57538}.nspp-user-hover[data-trust=perfect] dt{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] dd{color:#eee6d6}.nspp-user-hover[data-trust=perfect] .nspp-copy-button{color:#cabb9c;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-copy-button[data-copied=true]{color:#9cd3ac}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle{color:#c7bcaa;background:0 0;border-color:#d3b57530}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle:hover{color:#ffb4b4;background:#c9787810;border-color:#c978785c}.nspp-user-hover[data-trust=perfect] :focus-visible{outline-offset:2px;outline:2px solid #e8ce96}.nspp-ai-dialog{box-sizing:border-box;width:min(600px,100vw - 32px);max-height:85dvh;color:var(--text-color,#24292f);background:var(--bg-color,#fff);border:1px solid #8884;border-radius:10px;padding:20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 16px 48px #0002}.nspp-ai-dialog.nspp-ai-config{width:min(460px,100vw - 32px)}.nspp-ai-dialog::backdrop{background:#0005}.nspp-ai-dialog .nspp-ai-header{align-items:center;gap:8px;margin-bottom:8px;display:flex}.nspp-ai-dialog h2{margin:0;font-size:16px;font-weight:600;line-height:24px}.nspp-ai-dialog .nspp-ai-hint{opacity:.65;margin:0 0 18px;font-size:12px}.nspp-ai-dialog label{gap:6px;margin-bottom:14px;font-size:12px;font-weight:500;display:grid}.nspp-ai-dialog :is(input,textarea,select){box-sizing:border-box;color:inherit;font:inherit;background:0 0;border:1px solid #8885;border-radius:6px;padding:7px 10px;line-height:20px}.nspp-ai-dialog :is(input,textarea){width:100%}.nspp-ai-dialog textarea{resize:vertical}.nspp-ai-dialog input::placeholder,.nspp-ai-dialog textarea::placeholder{color:inherit;opacity:.4}.nspp-ai-dialog button{appearance:none;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:#8881;border:1px solid #8885;border-radius:6px;padding:5px 12px}.nspp-ai-dialog button:hover{background:#8882}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#fff;background:#24292f;border-color:#24292f}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]):hover{background:#39414a}.nspp-ai-dialog :focus-visible{outline-offset:2px;outline:2px solid #5989ba}.nspp-ai-dialog .nspp-ai-actions{border-top:1px solid #8883;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;display:flex}.nspp-ai-dialog .nspp-ai-compose{gap:8px;padding:12px 0 0}.dark-layout .nspp-ai-dialog{color:#dce1e7;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#202428}.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#24292f;background:#e0e5eb;border-color:#e0e5eb}@media (width<=480px){.nspp-ai-dialog{padding:16px}.nspp-ai-dialog .nspp-ai-compose textarea{min-width:100%}}.nspp-history .nspp-history-day{color:#768390;justify-content:space-between;margin-top:8px;font-size:11px}.nspp-history button[aria-pressed=true]{color:#0969da;border-color:currentColor}.nspp-history-avatar{vertical-align:middle;border-radius:50%;width:20px;height:20px;margin-right:6px}.nspp-confirm-dialog{box-sizing:border-box;background:var(--bg-color,#fff);width:min(360px,100vw - 32px);max-width:none;max-height:calc(100dvh - 32px);color:var(--text-color,#24292f);border:1px solid #818b9840;border-radius:12px;margin:auto;padding:18px;font:13px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 18px 48px #0003}.nspp-confirm-dialog::backdrop{background:#0006}.nspp-confirm-dialog h2{overflow-wrap:anywhere;margin:0;font-size:15px}.nspp-confirm-dialog p{opacity:.7;margin:8px 0 18px}.nspp-confirm-dialog form{justify-content:flex-end;gap:8px;display:flex}.nspp-confirm-dialog :is(button,a){box-sizing:border-box;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:0 0;border:1px solid #818b9840;border-radius:6px;justify-content:center;align-items:center;padding:5px 14px;text-decoration:none;display:inline-flex}.nspp-confirm-dialog .nspp-confirm-primary{color:#fff;background:#0969da;border-color:#0969da}.nspp-confirm-dialog .nspp-confirm-danger{color:#fff;background:#cf3434;border-color:#cf3434}.nspp-confirm-dialog :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-confirm-dialog{color:#e6edf3;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#161b22}@media (width<=480px){.nspp-confirm-dialog{width:100%;max-height:85dvh;padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:14px 14px 0 0;margin:0;inset:auto 0 0}.nspp-confirm-dialog form>:is(button,a){flex:1;min-height:38px}}");
+	function notificationAvatar(kind) {
+		const content = kind === "atMe" ? "<text x=\"24\" y=\"33\" text-anchor=\"middle\" font-family=\"Arial,sans-serif\" font-size=\"32\" font-weight=\"bold\" fill=\"white\">@</text>" : kind === "reply" ? "<path d=\"M12 13h24v18H23l-7 6v-6h-4z\" fill=\"white\"/><path d=\"M17 19h14M17 24h10\" stroke=\"#269c68\" stroke-width=\"2\" stroke-linecap=\"round\"/>" : "<path d=\"M15 21a9 9 0 0 1 18 0v6l3 5H12l3-5z\" fill=\"white\"/><path d=\"M20 35a4 4 0 0 0 8 0\" fill=\"white\"/><path d=\"M24 10v3\" stroke=\"white\" stroke-width=\"3\" stroke-linecap=\"round\"/>";
+		const color = {
+			atMe: "#5287db",
+			reply: "#269c68",
+			system: "#d99a32"
+		}[kind];
+		return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" rx="9" fill="${color}"/>${content}</svg>`)}`;
+	}
+	var routes = {
+		atMe: {
+			endpoint: "at-me",
+			field: "atMe",
+			label: "@我"
+		},
+		reply: {
+			endpoint: "reply-to-me",
+			field: "replys",
+			label: "回复主题"
+		}
+	};
+	var node = (tag, className = "", text = "") => {
+		const el = document.createElement(tag);
+		el.className = className;
+		el.textContent = text;
+		return el;
+	};
+	var button$1 = (text, className = "") => {
+		const el = node("button", className, text);
+		el.type = "button";
+		return el;
+	};
+	var unread$1 = (notice) => notice.viewed === 0 || notice.viewed === false;
+	function createNotificationInbox(ctx, onRead, onBack) {
+		const root = node("div", "nspp-messages-workspace nspp-notice-workspace");
+		root.hidden = true;
+		const sidebar = node("aside", "nspp-messages-sidebar");
+		const toolbar = node("div", "nspp-messages-search");
+		const contactsBack = button$1("联系人", "nspp-messages-back");
+		contactsBack.addEventListener("click", onBack, { signal: ctx.signal });
+		toolbar.append(contactsBack);
+		const search = node("input");
+		search.type = "search";
+		search.placeholder = "搜索用户或主题";
+		search.setAttribute("aria-label", search.placeholder);
+		const refresh = button$1("刷新");
+		toolbar.append(search, refresh);
+		const list = node("div", "nspp-messages-conversations");
+		const info = node("p", "nspp-messages-list-status");
+		info.setAttribute("role", "status");
+		const more = button$1("加载更多", "nspp-messages-more");
+		sidebar.append(toolbar, list, info, more);
+		const detail = node("section", "nspp-messages-chat");
+		const header = node("div", "nspp-messages-heading");
+		header.hidden = true;
+		const back = button$1("返回通知", "nspp-notice-back");
+		const title = node("strong", "", "通知详情");
+		const categoryAvatar = node("img", "nspp-messages-avatar");
+		categoryAvatar.alt = "";
+		const original = node("a", "nspp-messages-profile", "打开原帖");
+		original.hidden = true;
+		header.append(back, categoryAvatar, title, original);
+		const content = node("div", "nspp-messages-thread nspp-notice-detail");
+		const empty = () => content.replaceChildren(node("div", "nspp-messages-empty", "选择左侧通知查看内容"));
+		empty();
+		detail.append(content);
+		root.append(sidebar, detail);
+		let category, selected, page = 1, busy = false;
+		let controller = new AbortController(), previewController = new AbortController();
+		const notices = new Map();
+		const current = () => !ctx.signal.aborted && !root.hidden && !!category;
+		const signal = () => AbortSignal.any([ctx.signal, controller.signal]);
+		async function api(path, options = {}) {
+			const result = await ctx.request(path, {
+				...options,
+				signal: options.signal || signal()
+			});
+			if (result?.success !== true) throw new Error(result?.message || "通知读取失败");
+			return result;
+		}
+		function render() {
+			const query = search.value.trim().toLocaleLowerCase();
+			list.replaceChildren();
+			for (const item of [...notices.values()].sort((a, b) => b.id - a.id)) {
+				const actor = item.commenter_name || "用户";
+				const subject = item.post_title || item.title || `帖子 ${item.post_id}`;
+				if (query && !`${actor} ${subject} ${item.content || ""}`.toLocaleLowerCase().includes(query)) continue;
+				const row = button$1("", "nspp-messages-peer");
+				row.setAttribute("aria-pressed", String(selected === item.id));
+				const uid = item.commenter_id || item.member_id;
+				if (uid && Number.isSafeInteger(uid)) {
+					const image = node("img", "nspp-messages-avatar");
+					image.src = `/avatar/${uid}.png`;
+					image.alt = "";
+					image.loading = "lazy";
+					row.append(image);
+				}
+				const text = node("span", "nspp-messages-peer-details");
+				const heading = node("span", "nspp-messages-peer-title");
+				heading.append(node("strong", "", actor));
+				const date = new Date(item.created_at || "");
+				if (Number.isFinite(date.getTime())) heading.append(node("time", "", date.toLocaleDateString("zh-CN", {
+					month: "numeric",
+					day: "numeric"
+				})));
+				text.append(heading, node("span", "nspp-messages-snippet", subject));
+				row.append(text);
+				if (unread$1(item)) {
+					const dot = node("span", "nspp-messages-unread");
+					dot.setAttribute("aria-label", "未读");
+					row.append(dot);
+				}
+				row.addEventListener("click", () => {
+					select(item);
+				});
+				list.append(row);
+			}
+			if (!list.childElementCount && !busy) list.append(node("p", "nspp-messages-list-status", query ? "没有匹配的通知" : "暂无通知"));
+		}
+		async function load(next = false) {
+			if (!current() || busy) return;
+			const kind = category;
+			const requestSignal = signal();
+			const targetPage = next ? page + 1 : 1;
+			busy = true;
+			refresh.disabled = true;
+			more.disabled = true;
+			info.textContent = notices.size ? "" : "正在读取通知…";
+			try {
+				const result = await api(`/api/notification/${routes[kind].endpoint}/list?page=${targetPage}`, { signal: requestSignal });
+				if (!current() || requestSignal.aborted) return;
+				const rows = kind === "atMe" ? result.atList : result.replyList;
+				if (!Array.isArray(rows) || rows.some((item) => !Number.isSafeInteger(item.id) || !Number.isSafeInteger(item.post_id))) throw new Error("通知格式已变化，可返回原版页面");
+				let added = 0;
+				for (const item of rows) {
+					if (!notices.has(item.id)) added++;
+					notices.set(item.id, item);
+				}
+				if (next) page = targetPage;
+				if (next || page === 1) more.hidden = !rows.length || next && !added;
+				info.textContent = "";
+			} catch (error) {
+				if (current() && !requestSignal.aborted) info.textContent = error instanceof Error ? error.message : "通知读取失败";
+			} finally {
+				if (!requestSignal.aborted) {
+					busy = false;
+					refresh.disabled = false;
+					more.disabled = false;
+					render();
+				}
+			}
+		}
+		async function select(item) {
+			if (!category || !current()) return;
+			const kind = category;
+			selected = item.id;
+			root.classList.add("has-detail");
+			back.hidden = false;
+			render();
+			previewController.abort();
+			previewController = new AbortController();
+			const requestSignal = AbortSignal.any([signal(), previewController.signal]);
+			title.textContent = routes[kind].label;
+			const floor = Number(String(item.floor_id ?? "0").replace(/^#/, ""));
+			const safeFloor = Number.isSafeInteger(floor) && floor >= 0 ? floor : 0;
+			const path = `/post-${item.post_id}-${Math.max(1, Math.ceil(safeFloor / 10))}`;
+			original.href = `${path}${safeFloor ? `#${safeFloor}` : ""}`;
+			original.hidden = false;
+			const summary = node("div", "nspp-notice-summary");
+			summary.append(node("h3", "", item.post_title || item.title || `帖子 ${item.post_id}`), node("p", "", `${item.commenter_name || "用户"} ${kind === "atMe" ? "@了你" : "回复了你的主题"}${safeFloor ? ` · #${safeFloor}` : ""}`));
+			content.replaceChildren(summary);
+			const body = node("div", "nspp-notice-body", "正在加载内容…");
+			content.append(body);
+			try {
+				const html = await ctx.request(path, {
+					responseType: "text",
+					signal: requestSignal
+				});
+				if (!current() || requestSignal.aborted) return;
+				const doc = new DOMParser().parseFromString(html, "text/html");
+				const floorLink = Array.from(doc.querySelectorAll("a.floor-link")).find((link) => link.getAttribute("href") === `#${safeFloor}` || link.textContent?.trim() === `#${safeFloor}`);
+				const target = safeFloor ? floorLink?.closest("li, .comment-container")?.querySelector(".comment-content") : doc.querySelector(".post-content");
+				const source = target || doc.querySelector(".post-content");
+				if (!source) throw new Error("内容暂不可用，请打开原帖查看");
+				body.replaceChildren();
+				if (!target && safeFloor) body.append(node("p", "nspp-notice-hint", "当前显示主题正文，指定回复请打开原帖查看。"));
+				body.append(readingContent(source, new URL(path, location.origin).href));
+				if (unread$1(item) && !document.hidden) {
+					await api(`/api/notification/${routes[kind].endpoint}/markViewed`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ [routes[kind].field]: [item.id] }),
+						signal: requestSignal
+					});
+					if (!requestSignal.aborted) {
+						item.viewed = true;
+						notices.set(item.id, item);
+						render();
+						onRead();
+					}
+				}
+			} catch (error) {
+				if (!current() || requestSignal.aborted) return;
+				const message = error instanceof Error ? error.message : "内容加载失败";
+				if (body.textContent === "正在加载内容…") body.textContent = message;
+				else body.append(node("p", "nspp-notice-hint", "内容已加载，已读状态同步失败"));
+			}
+		}
+		async function markAll() {
+			if (!current()) return;
+			const kind = category;
+			const requestSignal = signal();
+			await api(`/api/notification/${routes[kind].endpoint}/markViewed?all=true`, {
+				method: "POST",
+				signal: requestSignal
+			});
+			if (!requestSignal.aborted) {
+				notices.forEach((item) => {
+					item.viewed = true;
+				});
+				render();
+				onRead();
+			}
+		}
+		function show(kind) {
+			if (category === kind && !root.hidden) return;
+			controller.abort();
+			previewController.abort();
+			controller = new AbortController();
+			busy = false;
+			category = kind;
+			root.hidden = !kind;
+			header.hidden = !kind;
+			back.hidden = true;
+			root.classList.remove("has-detail");
+			selected = void 0;
+			notices.clear();
+			page = 1;
+			more.hidden = false;
+			more.disabled = false;
+			refresh.disabled = false;
+			search.value = "";
+			info.textContent = "";
+			original.hidden = true;
+			render();
+			empty();
+			if (kind) {
+				title.textContent = routes[kind].label;
+				categoryAvatar.src = notificationAvatar(kind);
+				load();
+			}
+		}
+		search.addEventListener("input", render, { signal: ctx.signal });
+		refresh.addEventListener("click", () => {
+			load();
+		}, { signal: ctx.signal });
+		more.addEventListener("click", () => {
+			load(true);
+		}, { signal: ctx.signal });
+		back.addEventListener("click", () => {
+			previewController.abort();
+			root.classList.remove("has-detail");
+			back.hidden = true;
+			original.hidden = true;
+		}, { signal: ctx.signal });
+		return {
+			element: root,
+			heading: header,
+			show,
+			refresh: () => load(),
+			markAll,
+			stop: () => {
+				controller.abort();
+				previewController.abort();
+				root.remove();
+				header.remove();
+			}
+		};
+	}
+	var timestamp = (message) => Date.parse(message.created_at) || 0;
+	var serverId = (message) => message.id ?? message.max_id;
+	var messageKey = (message) => serverId(message) !== void 0 ? `server:${serverId(message)}` : message.local_id ? `local:${message.local_id}` : `content:${JSON.stringify([
+		message.sender_id,
+		message.receiver_id,
+		message.created_at,
+		message.content
+	])}`;
+	function mergeMessages(previous, incoming) {
+		const result = new Map(previous.map((message) => [messageKey(message), message]));
+		for (const message of incoming) {
+			const key = messageKey(message), id = serverId(message);
+			if (id !== void 0 && !result.has(key)) {
+				const echo = [...result.entries()].find(([, row]) => row.local_id && serverId(row) === void 0 && id > (row.after_id || 0) && row.sender_id === message.sender_id && row.receiver_id === message.receiver_id && row.content === message.content && Math.abs(timestamp(row) - timestamp(message)) < 3e5);
+				if (echo) result.delete(echo[0]);
+			}
+			const fields = Object.fromEntries(Object.entries(message).filter(([, value]) => value !== void 0));
+			result.set(key, {
+				...result.get(key),
+				...fields
+			});
+		}
+		return [...result.values()].sort((a, b) => timestamp(a) - timestamp(b) || (serverId(a) || 0) - (serverId(b) || 0));
+	}
+	function createMessageArchive(account) {
+		let opening, closed = false;
+		function database() {
+			return opening ||= new Promise((resolve, reject) => {
+				const request = indexedDB.open("nspp-message-archive", 1);
+				request.onupgradeneeded = () => {
+					request.result.createObjectStore("messages", { keyPath: [
+						"account",
+						"peer",
+						"key"
+					] }).createIndex("thread", ["account", "peer"]);
+					request.result.createObjectStore("contacts", { keyPath: ["account", "id"] }).createIndex("account", "account");
+				};
+				request.onsuccess = () => {
+					if (closed) {
+						request.result.close();
+						reject(new Error("存档已关闭"));
+						return;
+					}
+					request.result.onversionchange = () => request.result.close();
+					resolve(request.result);
+				};
+				request.onerror = () => {
+					opening = void 0;
+					reject(new Error("本地消息存档不可用"));
+				};
+				request.onblocked = () => {
+					reject(new Error("本地存档被其他页面占用，请关闭旧页面后重试"));
+				};
+			});
+		}
+		async function read(store, index, key) {
+			const db = await database();
+			return new Promise((resolve, reject) => {
+				const transaction = db.transaction(store, "readonly");
+				const request = transaction.objectStore(store).index(index).getAll(key);
+				transaction.oncomplete = () => resolve(request.result);
+				transaction.onabort = transaction.onerror = () => reject(new Error("读取本地消息存档失败"));
+			});
+		}
+		const contacts = () => read("contacts", "account", account);
+		const messages = async (peer) => (await read("messages", "thread", [account, peer])).map((row) => row.message).sort((a, b) => timestamp(a) - timestamp(b) || (serverId(a) || 0) - (serverId(b) || 0));
+		async function merge(peer, name, incoming, mark) {
+			const db = await database();
+			return new Promise((resolve, reject) => {
+				const transaction = db.transaction(["messages", "contacts"], "readwrite");
+				const store = transaction.objectStore("messages"), peers = transaction.objectStore("contacts");
+				const history = store.index("thread").getAll([account, peer]);
+				const contact = peers.get([account, peer]);
+				let ready = 0, merged = [];
+				const write = () => {
+					if (++ready !== 2) return;
+					merged = mergeMessages(history.result.map((row) => row.message), incoming.filter((row) => row.sender_id === account && row.receiver_id === peer || row.sender_id === peer && row.receiver_id === account));
+					if (mark) merged = merged.map((row) => row.receiver_id === account && (mark === "all" || mark.includes(serverId(row))) ? {
+						...row,
+						viewed: true
+					} : row);
+					const keys = new Set(merged.map(messageKey));
+					for (const row of history.result) if (!keys.has(row.key)) store.delete([
+						account,
+						peer,
+						row.key
+					]);
+					const oldMessages = new Map(history.result.map((row) => [row.key, JSON.stringify(row.message)]));
+					for (const message of merged) {
+						const key = messageKey(message);
+						if (oldMessages.get(key) !== JSON.stringify(message)) store.put({
+							account,
+							peer,
+							key,
+							message
+						});
+					}
+					const latest = merged.at(-1);
+					const old = contact.result;
+					if (latest) peers.put({
+						account,
+						id: peer,
+						name: name || old?.name || `用户 ${peer}`,
+						latest,
+						unread: latest.receiver_id === account && (latest.viewed === 0 || latest.viewed === false)
+					});
+				};
+				history.onsuccess = write;
+				contact.onsuccess = write;
+				transaction.oncomplete = () => resolve(merged);
+				transaction.onabort = transaction.onerror = () => reject(new Error("保存本地消息失败，请检查浏览器存储空间"));
+			});
+		}
+		async function mergeList(rows) {
+			const groups = new Map();
+			for (const row of rows) {
+				if (row.sender_id !== account && row.receiver_id !== account) continue;
+				const peer = row.sender_id === account ? row.receiver_id : row.sender_id;
+				groups.set(peer, [...groups.get(peer) || [], row]);
+			}
+			for (const [peer, rows] of groups) {
+				const newest = rows.at(-1);
+				await merge(peer, newest.sender_id === account ? newest.receiver_name : newest.sender_name, rows);
+			}
+			return contacts();
+		}
+		return {
+			contacts,
+			messages,
+			merge,
+			mergeList,
+			close: () => {
+				closed = true;
+				opening?.then((db) => db.close()).catch(() => {});
+			}
+		};
+	}
+	function A() {
+		return {
+			async: !1,
+			breaks: !1,
+			extensions: null,
+			gfm: !0,
+			hooks: null,
+			pedantic: !1,
+			renderer: null,
+			silent: !1,
+			tokenizer: null,
+			walkTokens: null
+		};
+	}
+	var T = A();
+	function U(l) {
+		T = l;
+	}
+	var E = { exec: () => null };
+	function I(l) {
+		let e = [];
+		return (t) => {
+			let n = Math.max(0, Math.min(3, t - 1)), i = e[n];
+			return i || (i = l(n), e[n] = i), i;
+		};
+	}
+	function d(l, e = "") {
+		let t = typeof l == "string" ? l : l.source, n = {
+			replace: (i, r) => {
+				let o = typeof r == "string" ? r : r.source;
+				return o = o.replace(m.caret, "$1"), t = t.replace(i, o), n;
+			},
+			getRegex: () => new RegExp(t, e)
+		};
+		return n;
+	}
+	var we = ((l = "") => {
+		try {
+			return !!new RegExp("(?<=1)(?<!1)" + l);
+		} catch {
+			return !1;
+		}
+	})();
+	var m = {
+		codeRemoveIndent: /^(?: {0,3}\t| {1,4})/gm,
+		outputLinkReplace: /\\([\[\]])/g,
+		indentCodeCompensation: /^(\s+)(?:```)/,
+		beginningSpace: /^\s+/,
+		endingHash: /#$/,
+		startingSpaceChar: /^ /,
+		endingSpaceChar: / $/,
+		endingSpaceTabChar: /[ \t]$/,
+		nonSpaceChar: /[^ ]/,
+		newLineCharGlobal: /\n/g,
+		tabCharGlobal: /\t/g,
+		multipleSpaceGlobal: /\s+/g,
+		blankLine: /^[ \t]*$/,
+		doubleBlankLine: /\n[ \t]*\n[ \t]*$/,
+		blockquoteStart: /^ {0,3}>/,
+		blockquoteSetextReplace: /\n {0,3}((?:=+|-+) *)(?=\n|$)/g,
+		blockquoteSetextReplace2: /^ {0,3}>[ \t]?/gm,
+		listReplaceNesting: /^ {1,4}(?=( {4})*[^ ])/g,
+		listIsTask: /^\[[ xX]\] +\S/,
+		listReplaceTask: /^\[[ xX]\] +/,
+		listTaskCheckbox: /\[[ xX]\]/,
+		anyLine: /\n.*\n/,
+		hrefBrackets: /^<(.*)>$/,
+		tableDelimiter: /[:|]/,
+		tableAlignChars: /^\||\| *$/g,
+		tableRowBlankLine: /\n[ \t]*$/,
+		tableAlignRight: /^ *-+: *$/,
+		tableAlignCenter: /^ *:-+: *$/,
+		tableAlignLeft: /^ *:-+ *$/,
+		startATag: /^<a /i,
+		endATag: /^<\/a>/i,
+		startPreScriptTag: /^<(pre|code|kbd|script)(\s|>)/i,
+		endPreScriptTag: /^<\/(pre|code|kbd|script)(\s|>)/i,
+		startAngleBracket: /^</,
+		endAngleBracket: />$/,
+		pedanticHrefTitle: /^([^'"]*[^\s])\s+(['"])(.*)\2/,
+		unicodeAlphaNumeric: /[\p{L}\p{N}]/u,
+		escapeTest: /[&<>"']/,
+		escapeReplace: /[&<>"']/g,
+		escapeTestNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/,
+		escapeReplaceNoEncode: /[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g,
+		caret: /(^|[^\[])\^/g,
+		percentDecode: /%25/g,
+		findPipe: /\|/g,
+		splitPipe: / \|/,
+		slashPipe: /\\\|/g,
+		carriageReturn: /\r\n|\r/g,
+		spaceLine: /^ +$/gm,
+		notSpaceStart: /^\S*/,
+		endingNewline: /\n$/,
+		listItemRegex: (l) => new RegExp(`^( {0,3}${l})((?:[	 ][^\\n]*)?(?:\\n|$))`),
+		nextBulletRegex: I((l) => new RegExp(`^ {0,${l}}(?:[*+-]|\\d{1,9}[.)])((?:[ 	][^\\n]*)?(?:\\n|$))`)),
+		hrRegex: I((l) => new RegExp(`^ {0,${l}}((?:-[ 	]*){3,}|(?:_[ 	]*){3,}|(?:\\*[ 	]*){3,})(?:\\n+|$)`)),
+		fencesBeginRegex: I((l) => new RegExp(`^ {0,${l}}(?:\`\`\`|~~~)`)),
+		headingBeginRegex: I((l) => new RegExp(`^ {0,${l}}#`)),
+		htmlBeginRegex: I((l) => new RegExp(`^ {0,${l}}(?:</?(?:${H})(?: +|$|/?>)|<(?:script|pre|style|textarea|!--))`, "i")),
+		blockquoteBeginRegex: I((l) => new RegExp(`^ {0,${l}}>`))
+	};
+	var ye = /^(?:[ \t]*(?:\n|$))+/;
+	var Pe = /^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+/;
+	var Se = /^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/;
+	var v = /^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/;
+	var _e = /^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/;
+	var K = / {0,3}(?:[*+-]|\d{1,9}[.)])/;
+	var le = /^(?!bull |blockCode|fences|blockquote|heading|html|table)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html|table))+?)\n {0,3}(=+|-+) *(?:\n+|$)/;
+	var ue = d(le).replace(/bull/g, K).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}(?:\s|$)/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/\|table/g, "").getRegex();
+	var $e = d(le).replace(/bull/g, K).replace(/blockCode/g, /(?: {4}| {0,3}\t)/).replace(/fences/g, / {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g, / {0,3}>/).replace(/heading/g, / {0,3}#{1,6}(?:\s|$)/).replace(/html/g, / {0,3}<[^\n>]+>\n/).replace(/table/g, / {0,3}\|?(?:[:\- ]*\|)+[\:\- ]*\n/).getRegex();
+	var W = /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table|[ \t]+\n)[^\n]+)*)/;
+	var Le = /^[^\n]+/;
+	var X = /(?!\s*\])(?:\\[\s\S]|[^\[\]\\])+/;
+	var ze = d(/^ {0,3}\[(label)\]: *(?:\n[ \t]*)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n[ \t]*)?| *\n[ \t]*)(title))? *(?:\n+|$)/).replace("label", X).replace("title", /(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex();
+	var Ee = d(/^(bull)([ \t][^\n]*?)?(?:\n|$)/).replace(/bull/g, K).getRegex();
+	var H = "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+	var J = /<!--(?:-?>|[\s\S]*?(?:-->|$))/;
+	var Me = d("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n*|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>[^\\n]*\\n*|$)|<![A-Z][\\s\\S]*?(?:>[^\\n]*\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>[^\\n]*\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|<(?!script|pre|style|textarea)([a-z][a-z0-9-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$)|</(?!script|pre|style|textarea)[a-z][a-z0-9-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n[ 	]*)+\\n|$))", "i").replace("comment", J).replace("tag", H).replace("attribute", / +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex();
+	var pe = (l) => d(W).replace("hr", v).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("|table", "").replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", l).replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex();
+	var Ae = pe(/ {0,3}(?:[*+-]|1[.)])[ \t]+[^ \t\n]/);
+	var Ie = pe(/ {0,3}(?:[*+-]|\d{1,9}[.)])(?:[ \t]|\n|$)/);
+	var V = {
+		blockquote: d(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph", Ie).getRegex(),
+		code: Pe,
+		def: ze,
+		fences: Se,
+		heading: _e,
+		hr: v,
+		html: Me,
+		lheading: ue,
+		list: Ee,
+		newline: ye,
+		paragraph: Ae,
+		table: E,
+		text: Le
+	};
+	var ie = d("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr", v).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("blockquote", " {0,3}>").replace("code", "(?: {4}| {0,3}	)[^\\n]").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex();
+	var Be = {
+		...V,
+		lheading: $e,
+		table: ie,
+		paragraph: d(W).replace("hr", v).replace("heading", " {0,3}#{1,6}(?:\\s|$)").replace("|lheading", "").replace("table", ie).replace("blockquote", " {0,3}>").replace("fences", " {0,3}(?:`{3,}(?=[^`\\n]*(?:\\n|$))|~~~)[^\\n]*(?:\\n|$)").replace("list", " {0,3}(?:[*+-]|1[.)])[ \\t]+[^ \\t\\n]").replace("html", "</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag", H).getRegex()
+	};
+	var De = {
+		...V,
+		html: d(`^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:"[^"]*"|'[^']*'|\\s[^'"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))`).replace("comment", J).replace(/tag/g, "(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),
+		def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,
+		heading: /^(#{1,6})(.*)(?:\n+|$)/,
+		fences: E,
+		lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,
+		paragraph: d(W).replace("hr", v).replace("heading", ` *#{1,6} *[^
+]`).replace("lheading", ue).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex()
+	};
+	var qe = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
+	var ve = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
+	var ce = /^( {2,}|\\)\n(?!\s*$)[ \t]*/;
+	var He = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
+	var _ = /[\p{P}\p{S}]/u;
+	var C = /[\s\p{P}\p{S}]/u;
+	var Z = /[^\s\p{P}\p{S}]/u;
+	var Ze = d(/^((?![*_])punctSpace)/, "u").replace(/punctSpace/g, C).getRegex();
+	var Ge = /[\p{Pi}\p{Ps}"']/u;
+	var he = /(?!~)[\p{P}\p{S}]/u;
+	var Qe = /(?!~)[\s\p{P}\p{S}]/u;
+	var Ne = /(?:[^\s\p{P}\p{S}]|~)/u;
+	var je = d(/link|precode-code|html/, "g").replace("link", /\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)/).replace("precode-", we ? "(?<!`)()" : "(^^|[^`])").replace("code", /(?<b>`+)[^`]+\k<b>(?!`)/).replace("html", /<(?! )[^<>]*?>/).getRegex();
+	var de = /^(?:\*+(?:((?!\*)punct)|([^\s*]))?)|^_+(?:((?!_)punct)|([^\s_]))?/;
+	var Ue = d(de, "u").replace(/punct/g, _).getRegex();
+	var Fe = d(de, "u").replace(/punct/g, he).getRegex();
+	var We = d(/^(?:\*+(?:((?!\*)(?!openQuote)punct)|([^\s*]))?)|^_+(?:((?!_)(?!openQuote)punct)|([^\s_]))?/, "u").replace(/openQuote/g, Ge).replace(/punct/g, _).getRegex();
+	var ke = "^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)punctSpace(\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|notPunctSpace(\\*+)(?=notPunctSpace)";
+	var Xe = d(ke, "gu").replace(/notPunctSpace/g, Z).replace(/punctSpace/g, C).replace(/punct/g, _).getRegex();
+	var Je = d(ke, "gu").replace(/notPunctSpace/g, Ne).replace(/punctSpace/g, Qe).replace(/punct/g, he).getRegex();
+	var Ye = d("^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)punct(\\*+)(?=[\\s]|$)|notPunctSpace(\\*+)(?!\\*)(?=punctSpace|$)|(?!\\*)[\\s](\\*+)(?=notPunctSpace)|[\\s](\\*+)(?!\\*)(?=punct)|(?!\\*)punct(\\*+)(?!\\*)(?=punct)|(?:(?!\\*)punct|notPunctSpace)(\\*+)(?!\\*)(?=notPunctSpace)", "gu").replace(/notPunctSpace/g, Z).replace(/punctSpace/g, C).replace(/punct/g, _).getRegex();
+	var et = d("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)punctSpace(_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)", "gu").replace(/notPunctSpace/g, Z).replace(/punctSpace/g, C).replace(/punct/g, _).getRegex();
+	var nt = d("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)punct(_+)(?=[\\s]|$)|notPunctSpace(_+)(?!_)(?=punctSpace|$)|(?!_)[\\s](_+)(?=notPunctSpace)|[\\s](_+)(?!_)(?=punct)|(?!_)punct(_+)(?!_)(?=punct)|(?:(?!_)punct|notPunctSpace)(_+)(?!_)(?=notPunctSpace)", "gu").replace(/notPunctSpace/g, Z).replace(/punctSpace/g, C).replace(/punct/g, _).getRegex();
+	var rt = d(/^~~?(?:((?!~)punct)|[^\s~])/, "u").replace(/punct/g, _).getRegex();
+	var it = d("^[^~]+(?=[^~])|(?!~)punct(~~?)(?=[\\s]|$)|notPunctSpace(~~?)(?!~)(?=punctSpace|$)|(?!~)punctSpace(~~?)(?=notPunctSpace)|[\\s](~~?)(?!~)(?=punct)|(?!~)punct(~~?)(?!~)(?=punct)|notPunctSpace(~~?)(?=notPunctSpace)", "gu").replace(/notPunctSpace/g, Z).replace(/punctSpace/g, C).replace(/punct/g, _).getRegex();
+	var ot = d(/\\(punct)/, "gu").replace(/punct/g, _).getRegex();
+	var at = d(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme", /[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email", /[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex();
+	var lt = d(J).replace("(?:-->|$)", "-->").getRegex();
+	var ut = d("^comment|^</[a-zA-Z][a-zA-Z0-9-]*\\s*>|^<[a-zA-Z][a-zA-Z0-9-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment", lt).replace("attribute", /\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex();
+	var ge = /\[(?:\\[\s\S]|[^\[\]\\])*\]/;
+	var N = d(/(?:\[(?:brackets|\\[\s\S]|[^\[\]\\])*\]|\\[\s\S]|`+(?!`)[^`]*?`+(?!`)|``+(?=\])|[^\[\]\\`])*?/).replace("brackets", ge).getRegex();
+	var pt = d(/^!?\[(label)\]\(\s*(href)(?:(?:[ \t]+(?:\n[ \t]*)?|\n[ \t]*)(title))?\s*\)/).replace("label", N).replace("href", /<(?:\\.|[^\n<>\\])+>|[^ \t\n\x00-\x1f]+|(?=\))/).replace("title", /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex();
+	var ct = d(/^!?\[(label)\]\[(ref)\]/).replace("label", N).replace("ref", X).getRegex();
+	var ht = d(/^!?\[(ref)\](?:\[\])?/).replace("ref", X).getRegex();
+	var oe = /(?!\s*\])(?:\\[\s\S]|[^\[\]\\]){1,999}/;
+	var dt = d(/(?:[^\[\]\\`]*(?:\[(?:brackets|\\[\s\S]|[^\[\]\\])*\]|\\[\s\S]|`+(?!`)[^`]*?`+(?!`)|``+(?=\]))){0,999}?[^\[\]\\`]*?/).replace("brackets", ge).getRegex();
+	var kt = d("reflink|nolink(?!\\()", "g").replace("reflink", d(/^!?\[(label)\]\[(ref)\]/).replace("label", dt).replace("ref", oe).getRegex()).replace("nolink", d(/^!?\[(ref)\](?:\[\])?/).replace("ref", oe).getRegex()).getRegex();
+	var ae = /[hH][tT][tT][pP][sS]?|[fF][tT][pP]/;
+	var Y = {
+		_backpedal: E,
+		anyPunctuation: ot,
+		autolink: at,
+		blockSkip: je,
+		br: ce,
+		code: ve,
+		del: E,
+		delLDelim: E,
+		delRDelim: E,
+		emStrongLDelim: Ue,
+		emStrongRDelimAst: Xe,
+		emStrongRDelimUnd: et,
+		escape: qe,
+		link: pt,
+		nolink: ht,
+		punctuation: Ze,
+		reflink: ct,
+		reflinkSearch: kt,
+		tag: ut,
+		text: He,
+		url: E
+	};
+	var gt = {
+		...Y,
+		emStrongLDelim: We,
+		emStrongRDelimAst: Ye,
+		emStrongRDelimUnd: nt,
+		link: d(/^!?\[(label)\]\((.*?)\)/).replace("label", N).getRegex(),
+		reflink: d(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label", N).getRegex()
+	};
+	var F = {
+		...Y,
+		emStrongRDelimAst: Je,
+		emStrongLDelim: Fe,
+		delLDelim: rt,
+		delRDelim: it,
+		url: d(/^((?:protocol):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/).replace("protocol", ae).replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![\w-])/).getRegex(),
+		_backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,
+		del: /^(~~?)(?=[^\s~])((?:\\[\s\S]|[^\\])*?(?:\\[\s\S]|[^\s~\\]))\1(?=[^~]|$)/,
+		text: d(/^(`+|~+|[^`~])(?:(?=[`~])|(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|protocol:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/).replace("protocol", ae).getRegex()
+	};
+	var ft = {
+		...F,
+		br: d(ce).replace("{2,}", "*").getRegex(),
+		text: d(F.text).replace("\\b_", "\\b_| {2,}\\n").replace(/\{2,\}/g, "*").getRegex()
+	};
+	var G = {
+		normal: V,
+		gfm: Be,
+		pedantic: De
+	};
+	var B = {
+		normal: Y,
+		gfm: F,
+		breaks: ft,
+		pedantic: gt
+	};
+	var mt = {
+		"&": "&amp;",
+		"<": "&lt;",
+		">": "&gt;",
+		"\"": "&quot;",
+		"'": "&#39;"
+	};
+	var fe = (l) => mt[l];
+	function R(l, e) {
+		if (e) {
+			if (m.escapeTest.test(l)) return l.replace(m.escapeReplace, fe);
+		} else if (m.escapeTestNoEncode.test(l)) return l.replace(m.escapeReplaceNoEncode, fe);
+		return l;
+	}
+	function ee(l) {
+		try {
+			l = encodeURI(l).replace(m.percentDecode, "%");
+		} catch {
+			return null;
+		}
+		return l;
+	}
+	function te(l, e) {
+		let n = l.replace(m.findPipe, (r, o, s) => {
+			let u = !1, a = o;
+			for (; --a >= 0 && s[a] === "\\";) u = !u;
+			return u ? "|" : " |";
+		}).split(m.splitPipe), i = 0;
+		if (n[0].trim() || n.shift(), n.length > 0 && !n.at(-1)?.trim() && n.pop(), e) if (n.length > e) n.splice(e);
+		else for (; n.length < e;) n.push("");
+		for (; i < n.length; i++) n[i] = n[i].trim().replace(m.slashPipe, "|");
+		return n;
+	}
+	function $(l, e, t) {
+		let n = l.length;
+		if (n === 0) return "";
+		let i = 0;
+		for (; i < n;) {
+			let r = l.charAt(n - i - 1);
+			if (r === e && !t) i++;
+			else if (r !== e && t) i++;
+			else break;
+		}
+		return l.slice(0, n - i);
+	}
+	function ne(l) {
+		let e = l.split(`
+`), t = e.length - 1;
+		for (; t >= 0 && m.blankLine.test(e[t]);) t--;
+		return e.length - t <= 2 ? l : e.slice(0, t + 1).join(`
+`);
+	}
+	function D(l) {
+		return l.toLowerCase().toUpperCase().toLowerCase();
+	}
+	function me(l, e) {
+		if (l.indexOf(e[1]) === -1) return -1;
+		let t = 0;
+		for (let n = 0; n < l.length; n++) if (l[n] === "\\") n++;
+		else if (l[n] === e[0]) t++;
+		else if (l[n] === e[1] && (t--, t < 0)) return n;
+		return t > 0 ? -2 : -1;
+	}
+	function xe(l, e = 0) {
+		let t = e, n = "";
+		for (let i of l) if (i === "	") {
+			let r = 4 - t % 4;
+			n += " ".repeat(r), t += r;
+		} else n += i, t++;
+		return n;
+	}
+	function be(l, e, t, n, i) {
+		let r = e.href, o = e.title || null, s = l[1].replace(i.other.outputLinkReplace, "$1"), u = l[0].charAt(0) === "!";
+		n.state.inLink = !0;
+		let a = n.state.linkEmitted, p = n.state.inRawBlock;
+		n.state.linkEmitted = !1;
+		let c = n.inlineTokens(s), h = n.state.linkEmitted;
+		if (n.state.linkEmitted = a, n.state.inLink = !1, !u) {
+			if (h) {
+				n.state.inRawBlock = p;
+				return;
+			}
+			n.state.linkEmitted = !0;
+		}
+		return {
+			type: u ? "image" : "link",
+			raw: t,
+			href: r,
+			title: o,
+			text: s,
+			tokens: c
+		};
+	}
+	function xt(l, e, t) {
+		let n = l.match(t.other.indentCodeCompensation);
+		if (n === null) return e;
+		let i = n[1];
+		return e.split(`
+`).map((r) => {
+			let o = r.match(t.other.beginningSpace);
+			if (o === null) return r;
+			let [s] = o;
+			return r.slice(Math.min(s.length, i.length));
+		}).join(`
+`);
+	}
+	function Re(l, e, t, n) {
+		if (!e.includes("<")) return !1;
+		for (let i = 0; i < e.length; i++) {
+			if (e[i] === "\\") {
+				i++;
+				continue;
+			}
+			if (e[i] === "`") {
+				let s = n.inline.code.exec(e.slice(i));
+				if (s) {
+					i += s[0].length - 1;
+					continue;
+				}
+			}
+			if (e[i] !== "<") continue;
+			let r = l.slice(t + i), o = n.inline.tag.exec(r) || n.inline.autolink.exec(r);
+			if (o) {
+				if (o[0].length > e.length - i) return !0;
+				i += o[0].length - 1;
+			}
+		}
+		return !1;
+	}
+	var y = class {
+		options;
+		rules;
+		lexer;
+		constructor(e) {
+			this.options = e || T;
+		}
+		space(e) {
+			let t = this.rules.block.newline.exec(e);
+			if (t && t[0].length > 0) return {
+				type: "space",
+				raw: t[0]
+			};
+		}
+		code(e) {
+			let t = this.rules.block.code.exec(e);
+			if (t) {
+				let n = this.options.pedantic ? t[0] : ne(t[0]);
+				return {
+					type: "code",
+					raw: n,
+					codeBlockStyle: "indented",
+					text: n.replace(this.rules.other.codeRemoveIndent, "")
+				};
+			}
+		}
+		fences(e) {
+			let t = this.rules.block.fences.exec(e);
+			if (t) {
+				let n = t[0], i = xt(n, t[3] || "", this.rules);
+				return {
+					type: "code",
+					raw: n,
+					lang: t[2] ? t[2].trim().replace(this.rules.inline.anyPunctuation, "$1") : t[2],
+					text: i
+				};
+			}
+		}
+		heading(e) {
+			let t = this.rules.block.heading.exec(e);
+			if (t) {
+				let n = t[2].trim();
+				if (this.rules.other.endingHash.test(n)) {
+					let i = $(n, "#");
+					(this.options.pedantic || !i || this.rules.other.endingSpaceTabChar.test(i)) && (n = i.trim());
+				}
+				return {
+					type: "heading",
+					raw: $(t[0], `
+`),
+					depth: t[1].length,
+					text: n,
+					tokens: this.lexer.inline(n)
+				};
+			}
+		}
+		hr(e) {
+			let t = this.rules.block.hr.exec(e);
+			if (t) return {
+				type: "hr",
+				raw: $(t[0], `
+`)
+			};
+		}
+		blockquote(e) {
+			let t = this.rules.block.blockquote.exec(e);
+			if (t) {
+				let n = $(t[0], `
+`).split(`
+`), i = "", r = "", o = [];
+				for (; n.length > 0;) {
+					let s = !1, u = [], a = 0;
+					for (; a < n.length; a++) if (this.rules.other.blockquoteStart.test(n[a])) u.push(n[a]), s = !0;
+					else if (!s) u.push(n[a]);
+					else break;
+					n = n.slice(a);
+					let p = u.join(`
+`), c = p.replace(this.rules.other.blockquoteSetextReplace, `
+    $1`).replace(this.rules.other.blockquoteSetextReplace2, "");
+					i = i ? `${i}
+${p}` : p, r = r ? `${r}
+${c}` : c;
+					let h = this.lexer.state.top;
+					if (this.lexer.state.top = !0, this.lexer.blockTokens(c, o, !0), this.lexer.state.top = h, n.length === 0) break;
+					let k = o.at(-1);
+					if (k?.type === "code") break;
+					if (k?.type === "blockquote") {
+						let O = k, g = n.join(`
+`), w = O.raw + `
+` + g.replace(this.rules.other.blockquoteSetextReplace2, ""), z = this.blockquote(w);
+						o[o.length - 1] = z, i = `${i}
+${g}`, r = r.substring(0, r.length - O.text.length) + z.text;
+						break;
+					} else if (k?.type === "list") {
+						let O = k, g = O.raw + `
+` + n.join(`
+`), w = this.list(g);
+						o[o.length - 1] = w, i = i.substring(0, i.length - k.raw.length) + w.raw, r = r.substring(0, r.length - O.raw.length) + w.raw, n = g.substring(o.at(-1).raw.length).split(`
+`);
+						continue;
+					}
+				}
+				return {
+					type: "blockquote",
+					raw: i,
+					tokens: o,
+					text: r
+				};
+			}
+		}
+		list(e) {
+			let t = this.rules.block.list.exec(e);
+			if (t) {
+				let n = t[1].trim(), i = n.length > 1, r = {
+					type: "list",
+					raw: "",
+					ordered: i,
+					start: i ? +n.slice(0, -1) : "",
+					loose: !1,
+					items: []
+				};
+				n = i ? `\\d{1,9}\\${n.slice(-1)}` : `\\${n}`, this.options.pedantic && (n = i ? n : "[*+-]");
+				let o = this.rules.other.listItemRegex(n), s = !1;
+				for (; e;) {
+					let a = !1, p = "", c = "";
+					if (!(t = o.exec(e)) || this.rules.block.hr.test(e)) break;
+					p = t[0], e = e.substring(p.length);
+					let h = xe(t[2].split(`
+`, 1)[0], t[1].length), k = e.split(`
+`, 1)[0], O = !h.trim(), g = 0;
+					if (this.options.pedantic ? (g = 2, c = h.trimStart()) : O ? g = t[1].length + 1 : (g = h.search(this.rules.other.nonSpaceChar), g = g > 4 ? 1 : g, c = h.slice(g), g += t[1].length), O && this.rules.other.blankLine.test(k) && (p += k + `
+`, e = e.substring(k.length + 1), a = !0), !a) {
+						let w = this.rules.other.nextBulletRegex(g), z = this.rules.other.hrRegex(g), re = this.rules.other.fencesBeginRegex(g), se = this.rules.other.headingBeginRegex(g), Te = this.rules.other.htmlBeginRegex(g), Oe = this.rules.other.blockquoteBeginRegex(g);
+						for (; e;) {
+							let j = e.split(`
+`, 1)[0], q;
+							if (k = j, this.options.pedantic ? (k = k.replace(this.rules.other.listReplaceNesting, "  "), q = k) : q = k.replace(this.rules.other.tabCharGlobal, "    "), re.test(k) || se.test(k) || Te.test(k) || Oe.test(k) || w.test(k) || z.test(k)) break;
+							if (q.search(this.rules.other.nonSpaceChar) >= g || !k.trim()) c += `
+` + q.slice(g);
+							else {
+								if (O || h.replace(this.rules.other.tabCharGlobal, "    ").search(this.rules.other.nonSpaceChar) >= 4 || re.test(h) || se.test(h) || z.test(h)) break;
+								c += `
+` + k;
+							}
+							O = !k.trim(), p += j + `
+`, e = e.substring(j.length + 1), h = q.slice(g);
+						}
+					}
+					r.loose || (s ? r.loose = !0 : this.rules.other.doubleBlankLine.test(p) && (s = !0)), r.items.push({
+						type: "list_item",
+						raw: p,
+						task: !!this.options.gfm && this.rules.other.listIsTask.test(c),
+						loose: !1,
+						text: c,
+						tokens: []
+					}), r.raw += p;
+				}
+				let u = r.items.at(-1);
+				if (u) u.raw = u.raw.trimEnd(), u.text = u.text.trimEnd();
+				else return;
+				r.raw = r.raw.trimEnd();
+				for (let a of r.items) if (this.lexer.state.top = !1, a.tokens = this.lexer.blockTokens(a.text, []), !r.loose) {
+					let p = a.tokens.filter((h) => h.type === "space");
+					r.loose = p.length > 0 && p.some((h) => this.rules.other.anyLine.test(h.raw));
+				}
+				for (let a of r.items) {
+					let p = a.tokens[0];
+					if (a.task && (p?.type === "text" || p?.type === "paragraph")) {
+						a.text = a.text.replace(this.rules.other.listReplaceTask, ""), p.raw = p.raw.replace(this.rules.other.listReplaceTask, ""), p.text = p.text.replace(this.rules.other.listReplaceTask, "");
+						for (let h = this.lexer.inlineQueue.length - 1; h >= 0; h--) if (this.rules.other.listIsTask.test(this.lexer.inlineQueue[h].src)) {
+							this.lexer.inlineQueue[h].src = this.lexer.inlineQueue[h].src.replace(this.rules.other.listReplaceTask, "");
+							break;
+						}
+						let c = this.rules.other.listTaskCheckbox.exec(a.raw);
+						if (c) {
+							let h = {
+								type: "checkbox",
+								raw: c[0] + " ",
+								checked: c[0] !== "[ ]"
+							};
+							a.checked = h.checked, r.loose ? a.tokens[0] && ["paragraph", "text"].includes(a.tokens[0].type) && "tokens" in a.tokens[0] && a.tokens[0].tokens ? (a.tokens[0].raw = h.raw + a.tokens[0].raw, a.tokens[0].text = h.raw + a.tokens[0].text, a.tokens[0].tokens.unshift(h)) : a.tokens.unshift({
+								type: "paragraph",
+								raw: h.raw,
+								text: h.raw,
+								tokens: [h]
+							}) : a.tokens.unshift(h);
+						}
+					} else a.task && (a.task = !1);
+				}
+				if (r.loose) for (let a of r.items) {
+					a.loose = !0;
+					for (let p of a.tokens) p.type === "text" && (p.type = "paragraph");
+				}
+				return r;
+			}
+		}
+		html(e) {
+			let t = this.rules.block.html.exec(e);
+			if (t) {
+				let n = ne(t[0]);
+				return {
+					type: "html",
+					block: !0,
+					raw: n,
+					pre: t[1] === "pre" || t[1] === "script" || t[1] === "style",
+					text: n
+				};
+			}
+		}
+		def(e) {
+			let t = this.rules.block.def.exec(e);
+			if (t) {
+				let n = D(t[1]).replace(this.rules.other.multipleSpaceGlobal, " "), i = t[2] ? t[2].replace(this.rules.other.hrefBrackets, "$1").replace(this.rules.inline.anyPunctuation, "$1") : "", r = t[3] ? t[3].substring(1, t[3].length - 1).replace(this.rules.inline.anyPunctuation, "$1") : t[3];
+				return {
+					type: "def",
+					tag: n,
+					raw: $(t[0], `
+`),
+					href: i,
+					title: r
+				};
+			}
+		}
+		table(e) {
+			let t = this.rules.block.table.exec(e);
+			if (!t || !this.rules.other.tableDelimiter.test(t[2])) return;
+			let n = te(t[1]), i = t[2].replace(this.rules.other.tableAlignChars, "").split("|"), r = t[3]?.trim() ? t[3].replace(this.rules.other.tableRowBlankLine, "").split(`
+`) : [], o = {
+				type: "table",
+				raw: $(t[0], `
+`),
+				header: [],
+				align: [],
+				rows: []
+			};
+			if (n.length === i.length) {
+				for (let s of i) this.rules.other.tableAlignRight.test(s) ? o.align.push("right") : this.rules.other.tableAlignCenter.test(s) ? o.align.push("center") : this.rules.other.tableAlignLeft.test(s) ? o.align.push("left") : o.align.push(null);
+				for (let s = 0; s < n.length; s++) o.header.push({
+					text: n[s],
+					tokens: this.lexer.inline(n[s]),
+					header: !0,
+					align: o.align[s]
+				});
+				for (let s of r) o.rows.push(te(s, o.header.length).map((u, a) => ({
+					text: u,
+					tokens: this.lexer.inline(u),
+					header: !1,
+					align: o.align[a]
+				})));
+				return o;
+			}
+		}
+		lheading(e) {
+			let t = this.rules.block.lheading.exec(e);
+			if (t) {
+				let n = t[1].trim();
+				return {
+					type: "heading",
+					raw: $(t[0], `
+`),
+					depth: t[2].charAt(0) === "=" ? 1 : 2,
+					text: n,
+					tokens: this.lexer.inline(n)
+				};
+			}
+		}
+		paragraph(e) {
+			let t = this.rules.block.paragraph.exec(e);
+			if (t) {
+				let n = t[1].charAt(t[1].length - 1) === `
+` ? t[1].slice(0, -1) : t[1];
+				return {
+					type: "paragraph",
+					raw: t[0],
+					text: n,
+					tokens: this.lexer.inline(n)
+				};
+			}
+		}
+		text(e) {
+			let t = this.rules.block.text.exec(e);
+			if (t) return {
+				type: "text",
+				raw: t[0],
+				text: t[0],
+				tokens: this.lexer.inline(t[0])
+			};
+		}
+		escape(e) {
+			let t = this.rules.inline.escape.exec(e);
+			if (t) return {
+				type: "escape",
+				raw: t[0],
+				text: t[1]
+			};
+		}
+		tag(e) {
+			let t = this.rules.inline.tag.exec(e);
+			if (t) return !this.lexer.state.inLink && this.rules.other.startATag.test(t[0]) ? this.lexer.state.inLink = !0 : this.lexer.state.inLink && this.rules.other.endATag.test(t[0]) && (this.lexer.state.inLink = !1), !this.lexer.state.inRawBlock && this.rules.other.startPreScriptTag.test(t[0]) ? this.lexer.state.inRawBlock = !0 : this.lexer.state.inRawBlock && this.rules.other.endPreScriptTag.test(t[0]) && (this.lexer.state.inRawBlock = !1), {
+				type: "html",
+				raw: t[0],
+				inLink: this.lexer.state.inLink,
+				inRawBlock: this.lexer.state.inRawBlock,
+				block: !1,
+				text: t[0]
+			};
+		}
+		link(e) {
+			let t = this.rules.inline.link.exec(e);
+			if (t) {
+				let n = t[0].charAt(0) === "!" ? 2 : 1;
+				if (!this.options.pedantic && Re(e, t[1], n, this.rules)) return;
+				let i = t[2].trim();
+				if (!this.options.pedantic && this.rules.other.startAngleBracket.test(i)) {
+					if (!this.rules.other.endAngleBracket.test(i)) return;
+					let s = $(i.slice(0, -1), "\\");
+					if ((i.length - s.length) % 2 === 0) return;
+				} else {
+					let s = me(t[2], "()");
+					if (s === -2) return;
+					if (s > -1) {
+						let a = (t[0].indexOf("!") === 0 ? 5 : 4) + t[1].length + s;
+						t[2] = t[2].substring(0, s), t[0] = t[0].substring(0, a).trim(), t[3] = "";
+					}
+				}
+				let r = t[2], o = "";
+				if (this.options.pedantic) {
+					let s = this.rules.other.pedanticHrefTitle.exec(r);
+					s && (r = s[1], o = s[3]);
+				} else o = t[3] ? t[3].slice(1, -1) : "";
+				return r = r.trim(), this.rules.other.startAngleBracket.test(r) && (this.options.pedantic && !this.rules.other.endAngleBracket.test(i) ? r = r.slice(1) : r = r.slice(1, -1)), be(t, {
+					href: r && r.replace(this.rules.inline.anyPunctuation, "$1"),
+					title: o && o.replace(this.rules.inline.anyPunctuation, "$1")
+				}, t[0], this.lexer, this.rules);
+			}
+		}
+		reflink(e, t) {
+			let n;
+			if ((n = this.rules.inline.reflink.exec(e)) || (n = this.rules.inline.nolink.exec(e))) {
+				let i = n[0].charAt(0) === "!" ? 2 : 1;
+				if (!this.options.pedantic && Re(e, n[1], i, this.rules)) return;
+				let o = t[D((n[2] || n[1]).replace(this.rules.other.multipleSpaceGlobal, " "))];
+				if (!o) {
+					let s = n[0].charAt(0);
+					return {
+						type: "text",
+						raw: s,
+						text: s
+					};
+				}
+				return be(n, o, n[0], this.lexer, this.rules);
+			}
+		}
+		emStrong(e, t, n = "") {
+			let i = this.rules.inline.emStrongLDelim.exec(e);
+			if (!i || !i[1] && !i[2] && !i[3] && !i[4] || i[4] && n.match(this.rules.other.unicodeAlphaNumeric)) return;
+			if (!(i[1] || i[3] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+				let o = [...i[0]].length - 1, s, u, a = o, p = 0, c = i[0][0], h = n === c, k = c === "*" ? this.rules.inline.emStrongRDelimAst : this.rules.inline.emStrongRDelimUnd;
+				for (k.lastIndex = 0, t = t.slice(-1 * e.length + o); (i = k.exec(t)) !== null;) {
+					if (s = i[1] || i[2] || i[3] || i[4] || i[5] || i[6], !s) continue;
+					if (u = [...s].length, i[3] || i[4]) {
+						a += u;
+						continue;
+					} else if (i[5] || i[6]) {
+						if (o % 3 && !((o + u) % 3)) {
+							p += u;
+							continue;
+						}
+						if (h) break;
+					}
+					if (a -= u, a > 0) continue;
+					u = Math.min(u, u + a + p);
+					let O = [...i[0]][0].length, g = e.slice(0, o + i.index + O + u);
+					if (Math.min(o, u) % 2) {
+						let z = g.slice(1, -1);
+						return {
+							type: "em",
+							raw: g,
+							text: z,
+							tokens: this.lexer.inlineTokens(z)
+						};
+					}
+					let w = g.slice(2, -2);
+					return {
+						type: "strong",
+						raw: g,
+						text: w,
+						tokens: this.lexer.inlineTokens(w)
+					};
+				}
+			}
+		}
+		codespan(e) {
+			let t = this.rules.inline.code.exec(e);
+			if (t) {
+				let n = t[2].replace(this.rules.other.newLineCharGlobal, " "), i = this.rules.other.nonSpaceChar.test(n), r = this.rules.other.startingSpaceChar.test(n) && this.rules.other.endingSpaceChar.test(n);
+				return i && r && (n = n.substring(1, n.length - 1)), {
+					type: "codespan",
+					raw: t[0],
+					text: n
+				};
+			}
+		}
+		br(e) {
+			let t = this.rules.inline.br.exec(e);
+			if (t) return {
+				type: "br",
+				raw: t[0]
+			};
+		}
+		del(e, t, n = "") {
+			let i = this.rules.inline.delLDelim.exec(e);
+			if (!i) return;
+			if (!(i[1] || "") || !n || this.rules.inline.punctuation.exec(n)) {
+				let o = [...i[0]].length - 1, s, u, a = o, p = this.rules.inline.delRDelim;
+				for (p.lastIndex = 0, t = t.slice(-1 * e.length + o); (i = p.exec(t)) !== null;) {
+					if (s = i[1] || i[2] || i[3] || i[4] || i[5] || i[6], !s || (u = [...s].length, u !== o)) continue;
+					if (i[3] || i[4]) {
+						a += u;
+						continue;
+					}
+					if (a -= u, a > 0) continue;
+					u = Math.min(u, u + a);
+					let c = [...i[0]][0].length, h = e.slice(0, o + i.index + c + u), k = h.slice(o, -o);
+					return {
+						type: "del",
+						raw: h,
+						text: k,
+						tokens: this.lexer.inlineTokens(k)
+					};
+				}
+			}
+		}
+		autolink(e) {
+			let t = this.rules.inline.autolink.exec(e);
+			if (t) {
+				let n, i;
+				return t[2] === "@" ? (n = t[1], i = "mailto:" + n) : (n = t[1], i = n), {
+					type: "link",
+					raw: t[0],
+					text: n,
+					href: i,
+					autolink: !0,
+					tokens: [{
+						type: "text",
+						raw: n,
+						text: n
+					}]
+				};
+			}
+		}
+		url(e) {
+			let t;
+			if (t = this.rules.inline.url.exec(e)) {
+				let n, i;
+				if (t[2] === "@") n = t[0], i = "mailto:" + n;
+				else {
+					let r;
+					do
+						r = t[0], t[0] = this.rules.inline._backpedal.exec(t[0])?.[0] ?? "";
+					while (r !== t[0]);
+					n = t[0], t[1] === "www." ? i = "http://" + t[0] : i = t[0];
+				}
+				return {
+					type: "link",
+					raw: t[0],
+					text: n,
+					href: i,
+					autolink: !0,
+					tokens: [{
+						type: "text",
+						raw: n,
+						text: n
+					}]
+				};
+			}
+		}
+		inlineText(e) {
+			let t = this.rules.inline.text.exec(e);
+			if (t) {
+				let n = this.lexer.state.inRawBlock;
+				return {
+					type: "text",
+					raw: t[0],
+					text: t[0],
+					escaped: n
+				};
+			}
+		}
+	};
+	var x = class l {
+		tokens;
+		options;
+		state;
+		inlineQueue;
+		tokenizer;
+		constructor(e) {
+			this.tokens = [], this.tokens.links = Object.create(null), this.options = e || T, this.options.tokenizer = this.options.tokenizer || new y(), this.tokenizer = this.options.tokenizer, this.tokenizer.options = this.options, this.tokenizer.lexer = this, this.inlineQueue = [], this.state = {
+				inLink: !1,
+				inRawBlock: !1,
+				linkEmitted: !1,
+				top: !0
+			};
+			let t = {
+				other: m,
+				block: G.normal,
+				inline: B.normal
+			};
+			this.options.pedantic ? (t.block = G.pedantic, t.inline = B.pedantic) : this.options.gfm && (t.block = G.gfm, this.options.breaks ? t.inline = B.breaks : t.inline = B.gfm), this.tokenizer.rules = t;
+		}
+		static get rules() {
+			return {
+				block: G,
+				inline: B
+			};
+		}
+		static lex(e, t) {
+			return new l(t).lex(e);
+		}
+		static lexInline(e, t) {
+			return new l(t).inlineTokens(e);
+		}
+		lex(e) {
+			e = e.replace(m.carriageReturn, `
+`), this.blockTokens(e, this.tokens);
+			for (let t = 0; t < this.inlineQueue.length; t++) {
+				let n = this.inlineQueue[t];
+				this.inlineTokens(n.src, n.tokens);
+			}
+			return this.inlineQueue = [], this.tokens;
+		}
+		blockTokens(e, t = [], n = !1) {
+			this.tokenizer.lexer = this, this.options.pedantic && (e = e.replace(m.tabCharGlobal, "    ").replace(m.spaceLine, ""));
+			let i = 1 / 0;
+			for (; e;) {
+				if (e.length < i) i = e.length;
+				else {
+					this.infiniteLoopError(e.charCodeAt(0));
+					break;
+				}
+				let r;
+				if (this.options.extensions?.block?.some((s) => (r = s.call({ lexer: this }, e, t)) ? (e = e.substring(r.raw.length), t.push(r), !0) : !1)) continue;
+				if (r = this.tokenizer.space(e)) {
+					e = e.substring(r.raw.length);
+					let s = t.at(-1);
+					r.raw.length === 1 && s !== void 0 ? s.raw += `
+` : t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.code(e)) {
+					e = e.substring(r.raw.length);
+					let s = t.at(-1);
+					s?.type === "paragraph" || s?.type === "text" ? (s.raw += (s.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, s.text += `
+` + r.text, this.inlineQueue.at(-1).src = s.text) : t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.fences(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.heading(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.hr(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.blockquote(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.list(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.html(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.def(e)) {
+					e = e.substring(r.raw.length);
+					let s = t.at(-1);
+					s?.type === "paragraph" || s?.type === "text" ? (s.raw += (s.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, s.text += `
+` + r.raw, this.inlineQueue.at(-1).src = s.text) : this.tokens.links[r.tag] || (this.tokens.links[r.tag] = {
+						href: r.href,
+						title: r.title
+					}, t.push(r));
+					continue;
+				}
+				if (r = this.tokenizer.table(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				if (r = this.tokenizer.lheading(e)) {
+					e = e.substring(r.raw.length), t.push(r);
+					continue;
+				}
+				let o = e;
+				if (this.options.extensions?.startBlock) {
+					let s = 1 / 0, u = e.slice(1), a;
+					this.options.extensions.startBlock.forEach((p) => {
+						a = p.call({ lexer: this }, u), typeof a == "number" && a >= 0 && (s = Math.min(s, a));
+					}), s < 1 / 0 && s >= 0 && (o = e.substring(0, s + 1));
+				}
+				if (this.state.top && (r = this.tokenizer.paragraph(o))) {
+					let s = t.at(-1);
+					n && s?.type === "paragraph" ? (s.raw += (s.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, s.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = s.text) : t.push(r), n = o.length !== e.length, e = e.substring(r.raw.length);
+					continue;
+				}
+				if (r = this.tokenizer.text(e)) {
+					e = e.substring(r.raw.length);
+					let s = t.at(-1);
+					s?.type === "text" ? (s.raw += (s.raw.endsWith(`
+`) ? "" : `
+`) + r.raw, s.text += `
+` + r.text, this.inlineQueue.pop(), this.inlineQueue.at(-1).src = s.text) : t.push(r);
+					continue;
+				}
+				if (e) {
+					this.infiniteLoopError(e.charCodeAt(0));
+					break;
+				}
+			}
+			return this.state.top = !0, t;
+		}
+		inline(e, t = []) {
+			return this.inlineQueue.push({
+				src: e,
+				tokens: t
+			}), t;
+		}
+		linkInText(e) {
+			if (!e.includes("[")) return !1;
+			let t = this.tokenizer.rules.inline.link;
+			for (let n of e.matchAll(this.tokenizer.rules.inline.blockSkip)) if (t.test(n[0]) && e.charAt(n.index - 1) !== "!") return !0;
+			for (let n of e.matchAll(this.tokenizer.rules.inline.reflinkSearch)) {
+				let i = n[0], r = i.lastIndexOf("[");
+				if (!(i.charAt(0) === "!" || !Object.hasOwn(this.tokens.links, D(i.slice(r + 1, -1)))) && !(r > 1 && this.linkInText(i.slice(1, r - 1)))) return !0;
+			}
+			return !1;
+		}
+		inlineTokens(e, t = []) {
+			this.tokenizer.lexer = this;
+			let n = e;
+			if (this.tokens.links && e.includes("[")) {
+				let s = this.tokenizer.rules.inline.reflinkSearch, u = (a) => {
+					let p = a.lastIndexOf("[");
+					if (!Object.hasOwn(this.tokens.links, D(a.slice(p + 1, -1)))) return a;
+					if (p > 1 && a.charAt(0) !== "!") {
+						let c = a.slice(1, p - 1);
+						if (this.linkInText(c)) return "[" + c.replace(s, u) + "][" + "a".repeat(a.length - p - 2) + "]";
+					}
+					return "[" + "a".repeat(a.length - 2) + "]";
+				};
+				n = n.replace(s, u);
+			}
+			n = n.replace(this.tokenizer.rules.inline.anyPunctuation, (s) => "+".repeat(s.length)), n = n.replace(this.tokenizer.rules.inline.blockSkip, (s, u, a) => {
+				let p = a ? a.length : 0;
+				return s.slice(0, p) + "[" + "a".repeat(s.length - p - 2) + "]";
+			}), n = this.options.hooks?.emStrongMask?.call({ lexer: this }, n) ?? n;
+			let i = !1, r = "", o = 1 / 0;
+			for (; e;) {
+				if (e.length < o) o = e.length;
+				else {
+					this.infiniteLoopError(e.charCodeAt(0));
+					break;
+				}
+				i || (r = ""), i = !1;
+				let s;
+				if (this.options.extensions?.inline?.some((a) => (s = a.call({ lexer: this }, e, t)) ? (e = e.substring(s.raw.length), t.push(s), !0) : !1)) continue;
+				if (s = this.tokenizer.escape(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.tag(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.link(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.reflink(e, this.tokens.links)) {
+					e = e.substring(s.raw.length);
+					let a = t.at(-1);
+					s.type === "text" && a?.type === "text" ? (a.raw += s.raw, a.text += s.text) : t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.emStrong(e, n, r)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.codespan(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.br(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.del(e, n, r)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (s = this.tokenizer.autolink(e)) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				if (!this.state.inLink && (s = this.tokenizer.url(e))) {
+					e = e.substring(s.raw.length), t.push(s);
+					continue;
+				}
+				let u = e;
+				if (this.options.extensions?.startInline) {
+					let a = 1 / 0, p = e.slice(1), c;
+					this.options.extensions.startInline.forEach((h) => {
+						c = h.call({ lexer: this }, p), typeof c == "number" && c >= 0 && (a = Math.min(a, c));
+					}), a < 1 / 0 && a >= 0 && (u = e.substring(0, a + 1));
+				}
+				if (s = this.tokenizer.inlineText(u)) {
+					e = e.substring(s.raw.length), s.raw.slice(-1) !== "_" && (r = s.raw.slice(-1)), i = !0;
+					let a = t.at(-1);
+					a?.type === "text" ? (a.raw += s.raw, a.text += s.text) : t.push(s);
+					continue;
+				}
+				if (e) {
+					this.infiniteLoopError(e.charCodeAt(0));
+					break;
+				}
+			}
+			return t;
+		}
+		infiniteLoopError(e) {
+			let t = "Infinite loop on byte: " + e;
+			if (this.options.silent) console.error(t);
+			else throw new Error(t);
+		}
+	};
+	var P = class {
+		options;
+		parser;
+		constructor(e) {
+			this.options = e || T;
+		}
+		space(e) {
+			return "";
+		}
+		code({ text: e, lang: t, escaped: n }) {
+			let i = (t || "").match(m.notSpaceStart)?.[0], r = e ? e.replace(m.endingNewline, "") + `
+` : "";
+			return i ? "<pre><code class=\"language-" + R(i) + "\">" + (n ? r : R(r, !0)) + `</code></pre>
+` : "<pre><code>" + (n ? r : R(r, !0)) + `</code></pre>
+`;
+		}
+		blockquote({ tokens: e }) {
+			return `<blockquote>
+${this.parser.parse(e)}</blockquote>
+`;
+		}
+		html({ text: e }) {
+			return e;
+		}
+		def(e) {
+			return "";
+		}
+		heading({ tokens: e, depth: t }) {
+			return `<h${t}>${this.parser.parseInline(e)}</h${t}>
+`;
+		}
+		hr(e) {
+			return `<hr>
+`;
+		}
+		list(e) {
+			let t = e.ordered, n = e.start, i = "";
+			for (let s = 0; s < e.items.length; s++) {
+				let u = e.items[s];
+				i += this.listitem(u);
+			}
+			let r = t ? "ol" : "ul", o = t && n !== 1 ? " start=\"" + n + "\"" : "";
+			return "<" + r + o + `>
+` + i + "</" + r + `>
+`;
+		}
+		listitem(e) {
+			return `<li>${this.parser.parse(e.tokens)}</li>
+`;
+		}
+		checkbox({ checked: e }) {
+			return "<input " + (e ? "checked=\"\" " : "") + "disabled=\"\" type=\"checkbox\"> ";
+		}
+		paragraph({ tokens: e }) {
+			return `<p>${this.parser.parseInline(e)}</p>
+`;
+		}
+		table(e) {
+			let t = "", n = "";
+			for (let r = 0; r < e.header.length; r++) n += this.tablecell(e.header[r]);
+			t += this.tablerow({ text: n });
+			let i = "";
+			for (let r = 0; r < e.rows.length; r++) {
+				let o = e.rows[r];
+				n = "";
+				for (let s = 0; s < o.length; s++) n += this.tablecell(o[s]);
+				i += this.tablerow({ text: n });
+			}
+			return i && (i = `<tbody>${i}</tbody>`), `<table>
+<thead>
+` + t + `</thead>
+` + i + `</table>
+`;
+		}
+		tablerow({ text: e }) {
+			return `<tr>
+${e}</tr>
+`;
+		}
+		tablecell(e) {
+			let t = this.parser.parseInline(e.tokens), n = e.header ? "th" : "td";
+			return (e.align ? `<${n} align="${e.align}">` : `<${n}>`) + t + `</${n}>
+`;
+		}
+		strong({ tokens: e }) {
+			return `<strong>${this.parser.parseInline(e)}</strong>`;
+		}
+		em({ tokens: e }) {
+			return `<em>${this.parser.parseInline(e)}</em>`;
+		}
+		codespan({ text: e }) {
+			return `<code>${R(e, !0)}</code>`;
+		}
+		br(e) {
+			return "<br>";
+		}
+		del({ tokens: e }) {
+			return `<del>${this.parser.parseInline(e)}</del>`;
+		}
+		link({ href: e, title: t, text: n, tokens: i, autolink: r }) {
+			let o = r ? R(n, !0) : this.parser.parseInline(i), s = ee(e);
+			if (s === null) return o;
+			e = R(s, r);
+			let u = "<a href=\"" + e + "\"";
+			return t && (u += " title=\"" + R(t) + "\""), u += ">" + o + "</a>", u;
+		}
+		image({ href: e, title: t, text: n, tokens: i }) {
+			i && (n = this.parser.parseInline(i, this.parser.textRenderer));
+			let r = ee(e);
+			if (r === null) return R(n);
+			e = r;
+			let o = `<img src="${R(e)}" alt="${R(n)}"`;
+			return t && (o += ` title="${R(t)}"`), o += ">", o;
+		}
+		text(e) {
+			return "tokens" in e && e.tokens ? this.parser.parseInline(e.tokens) : "escaped" in e && e.escaped ? e.text : R(e.text);
+		}
+	};
+	var L = class {
+		strong({ text: e }) {
+			return e;
+		}
+		em({ text: e }) {
+			return e;
+		}
+		codespan({ text: e }) {
+			return e;
+		}
+		del({ text: e }) {
+			return e;
+		}
+		html({ text: e }) {
+			return e;
+		}
+		text({ text: e }) {
+			return e;
+		}
+		link({ text: e }) {
+			return "" + e;
+		}
+		image({ text: e }) {
+			return "" + e;
+		}
+		br() {
+			return "";
+		}
+		checkbox({ raw: e }) {
+			return e;
+		}
+	};
+	var b = class l {
+		options;
+		renderer;
+		textRenderer;
+		constructor(e) {
+			this.options = e || T, this.options.renderer = this.options.renderer || new P(), this.renderer = this.options.renderer, this.renderer.options = this.options, this.renderer.parser = this, this.textRenderer = new L();
+		}
+		static parse(e, t) {
+			return new l(t).parse(e);
+		}
+		static parseInline(e, t) {
+			return new l(t).parseInline(e);
+		}
+		parse(e) {
+			this.renderer.parser = this;
+			let t = "";
+			for (let n = 0; n < e.length; n++) {
+				let i = e[n];
+				if (this.options.extensions?.renderers?.[i.type]) {
+					let o = i, s = this.options.extensions.renderers[o.type].call({ parser: this }, o);
+					if (s !== !1 || ![
+						"space",
+						"hr",
+						"heading",
+						"code",
+						"table",
+						"blockquote",
+						"list",
+						"checkbox",
+						"html",
+						"def",
+						"paragraph",
+						"text"
+					].includes(o.type)) {
+						t += s || "";
+						continue;
+					}
+				}
+				let r = i;
+				switch (r.type) {
+					case "space":
+						t += this.renderer.space(r);
+						break;
+					case "hr":
+						t += this.renderer.hr(r);
+						break;
+					case "heading":
+						t += this.renderer.heading(r);
+						break;
+					case "code":
+						t += this.renderer.code(r);
+						break;
+					case "table":
+						t += this.renderer.table(r);
+						break;
+					case "blockquote":
+						t += this.renderer.blockquote(r);
+						break;
+					case "list":
+						t += this.renderer.list(r);
+						break;
+					case "checkbox":
+						t += this.renderer.checkbox(r);
+						break;
+					case "html":
+						t += this.renderer.html(r);
+						break;
+					case "def":
+						t += this.renderer.def(r);
+						break;
+					case "paragraph":
+						t += this.renderer.paragraph(r);
+						break;
+					case "text":
+						t += this.renderer.text(r);
+						break;
+					default: {
+						let o = "Token with \"" + r.type + "\" type was not found.";
+						if (this.options.silent) return console.error(o), "";
+						throw new Error(o);
+					}
+				}
+			}
+			return t;
+		}
+		parseInline(e, t = this.renderer) {
+			this.renderer.parser = this;
+			let n = "";
+			for (let i = 0; i < e.length; i++) {
+				let r = e[i];
+				if (this.options.extensions?.renderers?.[r.type]) {
+					let s = this.options.extensions.renderers[r.type].call({ parser: this }, r);
+					if (s !== !1 || ![
+						"escape",
+						"html",
+						"link",
+						"image",
+						"checkbox",
+						"strong",
+						"em",
+						"codespan",
+						"br",
+						"del",
+						"text"
+					].includes(r.type)) {
+						n += s || "";
+						continue;
+					}
+				}
+				let o = r;
+				switch (o.type) {
+					case "escape":
+						n += t.text(o);
+						break;
+					case "html":
+						n += t.html(o);
+						break;
+					case "link":
+						n += t.link(o);
+						break;
+					case "image":
+						n += t.image(o);
+						break;
+					case "checkbox":
+						n += t.checkbox(o);
+						break;
+					case "strong":
+						n += t.strong(o);
+						break;
+					case "em":
+						n += t.em(o);
+						break;
+					case "codespan":
+						n += t.codespan(o);
+						break;
+					case "br":
+						n += t.br(o);
+						break;
+					case "del":
+						n += t.del(o);
+						break;
+					case "text":
+						n += t.text(o);
+						break;
+					default: {
+						let s = "Token with \"" + o.type + "\" type was not found.";
+						if (this.options.silent) return console.error(s), "";
+						throw new Error(s);
+					}
+				}
+			}
+			return n;
+		}
+	};
+	var S = class {
+		options;
+		block;
+		constructor(e) {
+			this.options = e || T;
+		}
+		static passThroughHooks = new Set([
+			"preprocess",
+			"postprocess",
+			"processAllTokens",
+			"emStrongMask"
+		]);
+		static passThroughHooksRespectAsync = new Set([
+			"preprocess",
+			"postprocess",
+			"processAllTokens"
+		]);
+		preprocess(e) {
+			return e;
+		}
+		postprocess(e) {
+			return e;
+		}
+		processAllTokens(e) {
+			return e;
+		}
+		emStrongMask(e) {
+			return e;
+		}
+		provideLexer(e = this.block) {
+			return e ? x.lex : x.lexInline;
+		}
+		provideParser(e = this.block) {
+			return e ? b.parse : b.parseInline;
+		}
+	};
+	var Q = class {
+		defaults = A();
+		options = this.setOptions;
+		parse = this.parseMarkdown(!0);
+		parseInline = this.parseMarkdown(!1);
+		Parser = b;
+		Renderer = P;
+		TextRenderer = L;
+		Lexer = x;
+		Tokenizer = y;
+		Hooks = S;
+		constructor(...e) {
+			this.use(...e);
+		}
+		walkTokens(e, t) {
+			let n = [];
+			for (let i of e) switch (n = n.concat(t.call(this, i)), i.type) {
+				case "table": {
+					let r = i;
+					for (let o of r.header) n = n.concat(this.walkTokens(o.tokens, t));
+					for (let o of r.rows) for (let s of o) n = n.concat(this.walkTokens(s.tokens, t));
+					break;
+				}
+				case "list": {
+					let r = i;
+					n = n.concat(this.walkTokens(r.items, t));
+					break;
+				}
+				default: {
+					let r = i;
+					this.defaults.extensions?.childTokens?.[r.type] ? this.defaults.extensions.childTokens[r.type].forEach((o) => {
+						let s = r[o].flat(1 / 0);
+						n = n.concat(this.walkTokens(s, t));
+					}) : r.tokens && (n = n.concat(this.walkTokens(r.tokens, t)));
+				}
+			}
+			return n;
+		}
+		use(...e) {
+			let t = this.defaults.extensions || {
+				renderers: {},
+				childTokens: {}
+			};
+			return e.forEach((n) => {
+				let i = { ...n };
+				if (i.async = this.defaults.async || i.async || !1, n.extensions && (n.extensions.forEach((r) => {
+					if (!r.name) throw new Error("extension name required");
+					if ("renderer" in r) {
+						let o = t.renderers[r.name];
+						o ? t.renderers[r.name] = function(...s) {
+							let u = r.renderer.apply(this, s);
+							return u === !1 && (u = o.apply(this, s)), u;
+						} : t.renderers[r.name] = r.renderer;
+					}
+					if ("tokenizer" in r) {
+						if (!r.level || r.level !== "block" && r.level !== "inline") throw new Error("extension level must be 'block' or 'inline'");
+						let o = t[r.level];
+						o ? o.unshift(r.tokenizer) : t[r.level] = [r.tokenizer], r.start && (r.level === "block" ? t.startBlock ? t.startBlock.push(r.start) : t.startBlock = [r.start] : r.level === "inline" && (t.startInline ? t.startInline.push(r.start) : t.startInline = [r.start]));
+					}
+					"childTokens" in r && r.childTokens && (t.childTokens[r.name] = r.childTokens);
+				}), i.extensions = t), n.renderer) {
+					let r = this.defaults.renderer || new P(this.defaults);
+					for (let o in n.renderer) {
+						if (!(o in r)) throw new Error(`renderer '${o}' does not exist`);
+						if (["options", "parser"].includes(o)) continue;
+						let s = o, u = n.renderer[s], a = r[s];
+						r[s] = (...p) => {
+							let c = u.apply(r, p);
+							return c === !1 && (c = a.apply(r, p)), c || "";
+						};
+					}
+					i.renderer = r;
+				}
+				if (n.tokenizer) {
+					let r = this.defaults.tokenizer || new y(this.defaults);
+					for (let o in n.tokenizer) {
+						if (!(o in r)) throw new Error(`tokenizer '${o}' does not exist`);
+						if ([
+							"options",
+							"rules",
+							"lexer"
+						].includes(o)) continue;
+						let s = o, u = n.tokenizer[s], a = r[s];
+						r[s] = (...p) => {
+							let c = u.apply(r, p);
+							return c === !1 && (c = a.apply(r, p)), c;
+						};
+					}
+					i.tokenizer = r;
+				}
+				if (n.hooks) {
+					let r = this.defaults.hooks || new S();
+					for (let o in n.hooks) {
+						if (!(o in r)) throw new Error(`hook '${o}' does not exist`);
+						if (["options", "block"].includes(o)) continue;
+						let s = o, u = n.hooks[s], a = r[s];
+						S.passThroughHooks.has(o) ? r[s] = (p) => {
+							if (this.defaults.async && S.passThroughHooksRespectAsync.has(o)) return (async () => {
+								let h = await u.call(r, p);
+								return a.call(r, h);
+							})();
+							let c = u.call(r, p);
+							return a.call(r, c);
+						} : r[s] = (...p) => {
+							if (this.defaults.async) return (async () => {
+								let h = await u.apply(r, p);
+								return h === !1 && (h = await a.apply(r, p)), h;
+							})();
+							let c = u.apply(r, p);
+							return c === !1 && (c = a.apply(r, p)), c;
+						};
+					}
+					i.hooks = r;
+				}
+				if (n.walkTokens) {
+					let r = this.defaults.walkTokens, o = n.walkTokens;
+					i.walkTokens = function(s) {
+						let u = [];
+						return u.push(o.call(this, s)), r && (u = u.concat(r.call(this, s))), u;
+					};
+				}
+				this.defaults = {
+					...this.defaults,
+					...i
+				};
+			}), this;
+		}
+		setOptions(e) {
+			return this.defaults = {
+				...this.defaults,
+				...e
+			}, this;
+		}
+		lexer(e, t) {
+			return x.lex(e, t ?? this.defaults);
+		}
+		parser(e, t) {
+			return b.parse(e, t ?? this.defaults);
+		}
+		parseMarkdown(e) {
+			return (n, i) => {
+				let r = { ...i }, o = {
+					...this.defaults,
+					...r
+				}, s = this.onError(!!o.silent, !!o.async);
+				if (this.defaults.async === !0 && r.async === !1) return s(new Error("marked(): The async option was set to true by an extension. Remove async: false from the parse options object to return a Promise."));
+				if (typeof n > "u" || n === null) return s(new Error("marked(): input parameter is undefined or null"));
+				if (typeof n != "string") return s(new Error("marked(): input parameter is of type " + Object.prototype.toString.call(n) + ", string expected"));
+				if (o.hooks && (o.hooks.options = o, o.hooks.block = e), o.async) return (async () => {
+					let u = o.hooks ? await o.hooks.preprocess(n) : n, p = await (o.hooks ? await o.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(u, o), c = o.hooks ? await o.hooks.processAllTokens(p) : p;
+					o.walkTokens && await Promise.all(this.walkTokens(c, o.walkTokens));
+					let k = await (o.hooks ? await o.hooks.provideParser(e) : e ? b.parse : b.parseInline)(c, o);
+					return o.hooks ? await o.hooks.postprocess(k) : k;
+				})().catch(s);
+				try {
+					o.hooks && (n = o.hooks.preprocess(n));
+					let a = (o.hooks ? o.hooks.provideLexer(e) : e ? x.lex : x.lexInline)(n, o);
+					o.hooks && (a = o.hooks.processAllTokens(a)), o.walkTokens && this.walkTokens(a, o.walkTokens);
+					let c = (o.hooks ? o.hooks.provideParser(e) : e ? b.parse : b.parseInline)(a, o);
+					return o.hooks && (c = o.hooks.postprocess(c)), c;
+				} catch (u) {
+					return s(u);
+				}
+			};
+		}
+		onError(e, t) {
+			return (n) => {
+				if (n.message += `
+Please report this to https://github.com/markedjs/marked.`, e) {
+					let i = "<p>An error occurred:</p><pre>" + R(n.message + "", !0) + "</pre>";
+					return t ? Promise.resolve(i) : i;
+				}
+				if (t) return Promise.reject(n);
+				throw n;
+			};
+		}
+	};
+	var M = new Q();
+	function f(l, e) {
+		return M.parse(l, e);
+	}
+	f.options = f.setOptions = function(l) {
+		return M.setOptions(l), f.defaults = M.defaults, U(f.defaults), f;
+	};
+	f.getDefaults = A;
+	f.defaults = T;
+	function bt(...l) {
+		return M.use(...l), f.defaults = M.defaults, U(f.defaults), f;
+	}
+	f.use = bt;
+	f.walkTokens = function(l, e) {
+		return M.walkTokens(l, e);
+	};
+	f.parseInline = M.parseInline;
+	f.Parser = b;
+	f.parser = b.parse;
+	f.Renderer = P;
+	f.TextRenderer = L;
+	f.Lexer = x;
+	f.lexer = x.lex;
+	f.Tokenizer = y;
+	f.Hooks = S;
+	f.parse = f;
+	f.options;
+	f.setOptions;
+	f.walkTokens;
+	f.parseInline;
+	b.parse;
+	x.lex;
+	function renderMessageMarkdown(text, markdown = true) {
+		if (!markdown) {
+			const result = document.createDocumentFragment();
+			result.append(document.createTextNode(text));
+			return result;
+		}
+		const html = f.parse(text, {
+			async: false,
+			gfm: true,
+			breaks: true
+		});
+		const result = readingContent(new DOMParser().parseFromString(html, "text/html").body, location.origin);
+		result.querySelectorAll("img").forEach((image) => {
+			image.removeAttribute("role");
+			image.removeAttribute("tabindex");
+			image.referrerPolicy = "no-referrer";
+			if (!image.closest("a")) {
+				const link = document.createElement("a");
+				link.href = image.src;
+				link.target = "_blank";
+				link.rel = "noopener noreferrer";
+				image.replaceWith(link);
+				link.append(image);
+			}
+		});
+		if (text.trim() && !result.textContent?.trim() && !result.querySelector("img, hr, table")) result.replaceChildren(document.createTextNode(text));
+		return result;
+	}
+	var paths = {
+		bold: "M7 4h6a4 4 0 0 1 0 8H7m0 0h7a4 4 0 0 1 0 8H7V4",
+		italic: "M10 4h8M6 20h8M14 4 10 20",
+		strike: "M17 6c-1-2-8-3-10 1-2 4 4 5 7 6s5 5 1 7c-3 1-7 0-9-2M3 12h18",
+		heading: "M5 4v16M19 4v16M5 12h14",
+		unordered: "M8 5h13M8 12h13M8 19h13M3 5h.1M3 12h.1M3 19h.1",
+		ordered: "M9 5h12M9 12h12M9 19h12M2 3h2v5M2 12c4-3 4 1 0 4h4",
+		quote: "M4 12h6v7H3v-7c0-5 3-7 6-7M16 12h5v7h-7v-7c0-5 3-7 6-7",
+		link: "m10 13 4-4M8 15l-2 2a3 3 0 0 1-4-4l5-5a3 3 0 0 1 4 0M16 9l2-2a3 3 0 0 0-4-4l-5 5",
+		image: "M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1",
+		code: "m7 6-5 6 5 6m10-12 5 6-5 6M14 3l-4 18",
+		table: "M3 4h18v16H3zM3 9h18M3 15h18M10 4v16",
+		rule: "M3 12h18",
+		undo: "M3 10h11a6 6 0 0 1 0 12M3 10l5-5m-5 5 5 5",
+		redo: "M21 10H10a6 6 0 0 0 0 12m17-12-5-5m5 5-5 5",
+		clear: "m9 4 12 10-7 8H8L1 16zM6 11l10 9M14 22h8",
+		document: "M5 2h9l5 5v15H5zM14 2v6h5M8 12h8M8 16h8"
+	};
+	function createMessageEditor(ctx, input, markdown, options) {
+		const root = document.createElement("div");
+		root.className = "nspp-message-editor";
+		const toolbar = document.createElement("div");
+		toolbar.className = "nspp-message-editor-toolbar";
+		toolbar.setAttribute("role", "toolbar");
+		toolbar.setAttribute("aria-label", "Markdown 格式");
+		const body = document.createElement("div");
+		body.className = "nspp-message-editor-body";
+		const preview = document.createElement("div");
+		preview.className = "nspp-message-editor-preview";
+		preview.hidden = true;
+		const status = document.createElement("div");
+		status.className = "nspp-message-editor-status";
+		status.setAttribute("role", "status");
+		const images = document.createElement("input");
+		images.type = "file";
+		images.accept = "image/*";
+		images.multiple = true;
+		images.hidden = true;
+		const documentFile = document.createElement("input");
+		documentFile.type = "file";
+		documentFile.accept = ".md,.markdown,text/markdown,text/plain";
+		documentFile.hidden = true;
+		const uploadSettings = () => GM_getValue$1(`nspp:settings:${location.hostname}`, {})["image-upload"] || {};
+		const key = document.createElement("input");
+		key.type = "password";
+		key.autocomplete = "off";
+		key.placeholder = "图床 API Key（仅本页）";
+		key.setAttribute("aria-label", key.placeholder);
+		key.hidden = !uploadSettings().provider || uploadSettings().provider === "NodeImage";
+		const login = document.createElement("a");
+		login.href = "https://www.nodeimage.com/";
+		login.target = "_blank";
+		login.rel = "noopener noreferrer";
+		login.textContent = "登录 NodeImage";
+		login.hidden = true;
+		const uploadHelp = document.createElement("div");
+		uploadHelp.className = "nspp-message-upload-help";
+		uploadHelp.append(key, login);
+		body.append(input, preview);
+		root.append(body, status, uploadHelp, images, documentFile);
+		const histories = new Map(), uploads = new Set(), statuses = new Map();
+		let applying = false, previewing = false, disabled = false, nodeImageKey = "";
+		let auth;
+		const toolButtons = [];
+		function history() {
+			const peer = options.peer();
+			if (!peer) return;
+			let history = histories.get(peer);
+			if (!history) {
+				history = {
+					entries: [input.value],
+					cursor: 0
+				};
+				histories.set(peer, history);
+			}
+			return history;
+		}
+		function changed() {
+			if (!applying) {
+				const value = history();
+				if (value && value.entries[value.cursor] !== input.value) {
+					value.entries.splice(value.cursor + 1);
+					value.entries.push(input.value);
+					if (value.entries.length > 100) value.entries.shift();
+					value.cursor = value.entries.length - 1;
+				}
+			}
+			if (previewing) preview.replaceChildren(renderMessageMarkdown(input.value, markdown.checked));
+		}
+		function apply(value, start, end = start) {
+			input.value = value;
+			input.focus();
+			input.setSelectionRange(start, end);
+			input.dispatchEvent(new Event("input", { bubbles: true }));
+		}
+		function insert(before, after = "", placeholder = "") {
+			const start = input.selectionStart, end = input.selectionEnd;
+			const selected = input.value.slice(start, end) || placeholder;
+			markdown.checked = true;
+			apply(input.value.slice(0, start) + before + selected + after + input.value.slice(end), start + before.length, start + before.length + selected.length);
+		}
+		function lines(prefix) {
+			const start = input.value.lastIndexOf("\n", input.selectionStart - 1) + 1;
+			const newline = input.value.indexOf("\n", input.selectionEnd);
+			const end = newline < 0 ? input.value.length : newline;
+			const text = input.value.slice(start, end).split("\n").map((line, index) => `${typeof prefix === "function" ? prefix(index) : prefix}${line}`).join("\n");
+			markdown.checked = true;
+			apply(input.value.slice(0, start) + text + input.value.slice(end), start, start + text.length);
+		}
+		const tool = (name, label, action) => {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.title = label;
+			button.setAttribute("aria-label", label);
+			const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+			svg.setAttribute("viewBox", "0 0 24 24");
+			svg.setAttribute("aria-hidden", "true");
+			const path = document.createElementNS(svg.namespaceURI, "path");
+			path.setAttribute("d", paths[name]);
+			svg.append(path);
+			button.append(svg);
+			button.addEventListener("click", () => {
+				if (!disabled && options.peer()) action();
+			}, { signal: ctx.signal });
+			toolbar.append(button);
+			toolButtons.push(button);
+			return button;
+		};
+		tool("bold", "加粗", () => insert("**", "**", "粗体文字"));
+		tool("italic", "斜体", () => insert("*", "*", "斜体文字"));
+		tool("strike", "删除线", () => insert("~~", "~~", "删除文字"));
+		tool("heading", "标题", () => lines("## "));
+		tool("unordered", "无序列表", () => lines("- "));
+		tool("ordered", "有序列表", () => lines((index) => `${index + 1}. `));
+		tool("quote", "引用", () => lines("> "));
+		tool("link", "链接", () => insert("[", "](https://)", "链接文字"));
+		tool("image", "上传图片（支持粘贴和拖拽）", () => images.click());
+		tool("code", "代码块", () => insert("\n```\n", "\n```\n", "代码"));
+		tool("table", "表格", () => insert("\n| 标题 | 标题 |\n| --- | --- |\n| 内容 | 内容 |\n"));
+		tool("rule", "分隔线", () => insert("\n\n---\n\n"));
+		const travel = (step) => {
+			const value = history();
+			if (!value) return;
+			value.cursor = Math.max(0, Math.min(value.entries.length - 1, value.cursor + step));
+			applying = true;
+			apply(value.entries[value.cursor], value.entries[value.cursor].length);
+			applying = false;
+		};
+		tool("undo", "撤销", () => travel(-1));
+		tool("redo", "重做", () => travel(1));
+		tool("clear", "清除格式", () => {
+			const start = input.selectionStart, end = input.selectionEnd;
+			const all = start === end;
+			const text = (all ? input.value : input.value.slice(start, end)).replace(/^\s*(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+)/gm, "").replace(/(\*\*|__|~~|`)(.*?)\1/g, "$2").replace(/\*([^*\n]+)\*/g, "$1");
+			apply(all ? text : input.value.slice(0, start) + text + input.value.slice(end), all ? text.length : start + text.length);
+		});
+		tool("document", "导入 Markdown 文件", () => documentFile.click());
+		const previewButton = document.createElement("button");
+		previewButton.type = "button";
+		previewButton.className = "nspp-message-editor-tab";
+		previewButton.textContent = "预览";
+		previewButton.setAttribute("aria-pressed", "false");
+		previewButton.addEventListener("click", () => {
+			previewing = !previewing;
+			input.hidden = previewing;
+			preview.hidden = !previewing;
+			previewButton.textContent = previewing ? "编辑" : "预览";
+			previewButton.setAttribute("aria-pressed", String(previewing));
+			if (previewing) preview.replaceChildren(renderMessageMarkdown(input.value, markdown.checked));
+			else input.focus();
+		}, { signal: ctx.signal });
+		toolbar.append(previewButton);
+		const original = document.createElement("button");
+		original.type = "button";
+		original.className = "nspp-message-editor-tab";
+		original.textContent = "原版编辑器";
+		original.addEventListener("click", options.original, { signal: ctx.signal });
+		toolbar.append(original);
+		const updateStatus = () => {
+			status.textContent = statuses.get(options.peer() || 0) || "";
+			options.changed();
+		};
+		async function uploadFiles(files) {
+			const peer = options.peer();
+			if (!peer || disabled || uploads.has(peer) || !files.length) return;
+			const settings = uploadSettings(), provider = settings.provider || "NodeImage";
+			if (settings.enabled === false) {
+				statuses.set(peer, "请先在设置中开启图片上传");
+				updateStatus();
+				return;
+			}
+			uploads.add(peer);
+			updateStatus();
+			try {
+				for (let index = 0; index < files.length; index++) {
+					if (ctx.signal.aborted) return;
+					const file = files[index];
+					if (!file.type.startsWith("image/")) continue;
+					statuses.set(peer, `正在上传 ${index + 1}/${files.length}：${file.name}`);
+					updateStatus();
+					let apiKey = key.value.trim();
+					if (provider === "NodeImage") {
+						if (!nodeImageKey) await (auth ||= getNodeImageKey(ctx.signal).then((value) => {
+							nodeImageKey = value;
+							return value;
+						}).finally(() => {
+							auth = void 0;
+						}));
+						apiKey = nodeImageKey;
+					}
+					const request = uploadRequest(provider, settings.base || "", apiKey, file);
+					const result = provider === "NodeImage" ? await uploadNodeImage(request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
+						method: "POST",
+						headers: request.headers,
+						body: request.body
+					});
+					const url = uploadResult(provider, request.base, result);
+					if (ctx.signal.aborted) return;
+					options.insert(peer, `![image](<${url.href.replace(/>/g, "%3E")}>)\n`);
+				}
+				statuses.set(peer, "图片已插入草稿");
+				login.hidden = true;
+			} catch (error) {
+				if (provider === "NodeImage") {
+					nodeImageKey = "";
+					login.hidden = false;
+				}
+				statuses.set(peer, error instanceof Error ? error.message : "图片上传失败，请重试");
+			} finally {
+				uploads.delete(peer);
+				images.value = "";
+				if (!ctx.signal.aborted) updateStatus();
+			}
+		}
+		images.addEventListener("change", () => {
+			uploadFiles(Array.from(images.files || []));
+		}, { signal: ctx.signal });
+		input.addEventListener("paste", (event) => {
+			const files = Array.from(event.clipboardData?.items || []).filter((item) => item.kind === "file" && item.type.startsWith("image/")).map((item) => item.getAsFile()).filter((file) => !!file);
+			if (files.length && !disabled) {
+				event.preventDefault();
+				uploadFiles(files);
+			}
+		}, { signal: ctx.signal });
+		root.addEventListener("dragover", (event) => {
+			if (event.dataTransfer?.types.includes("Files")) event.preventDefault();
+		}, { signal: ctx.signal });
+		root.addEventListener("drop", (event) => {
+			const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith("image/"));
+			if (files.length) {
+				event.preventDefault();
+				uploadFiles(files);
+			}
+		}, { signal: ctx.signal });
+		documentFile.addEventListener("change", async () => {
+			const file = documentFile.files?.[0], peer = options.peer();
+			documentFile.value = "";
+			if (!file || !peer || disabled) return;
+			if (uploads.has(peer)) {
+				statuses.set(peer, "当前会话仍在处理文件，请稍后再导入");
+				updateStatus();
+				return;
+			}
+			uploads.add(peer);
+			updateStatus();
+			try {
+				if (file.size > 2e6) throw new Error("Markdown 文件不能超过 2 MB");
+				const text = await file.text();
+				if (!ctx.signal.aborted) options.insert(peer, text);
+				statuses.set(peer, "Markdown 文件已导入草稿");
+			} catch (error) {
+				statuses.set(peer, error instanceof Error ? error.message : "文件读取失败");
+			} finally {
+				uploads.delete(peer);
+				if (!ctx.signal.aborted) updateStatus();
+			}
+		}, { signal: ctx.signal });
+		input.addEventListener("input", changed, { signal: ctx.signal });
+		markdown.addEventListener("change", changed, { signal: ctx.signal });
+		input.addEventListener("keydown", (event) => {
+			if (event.isComposing || disabled || !(event.ctrlKey || event.metaKey)) return;
+			if (event.key.toLowerCase() === "z") {
+				event.preventDefault();
+				travel(event.shiftKey ? 1 : -1);
+			} else if (event.key.toLowerCase() === "y") {
+				event.preventDefault();
+				travel(1);
+			} else if (event.key.toLowerCase() === "b") {
+				event.preventDefault();
+				insert("**", "**", "粗体文字");
+			} else if (event.key.toLowerCase() === "i") {
+				event.preventDefault();
+				insert("*", "*", "斜体文字");
+			}
+		}, { signal: ctx.signal });
+		return {
+			element: root,
+			toolbar,
+			busy: (peer) => uploads.has(peer),
+			activate: () => {
+				previewing = false;
+				preview.hidden = true;
+				input.hidden = false;
+				previewButton.textContent = "预览";
+				previewButton.setAttribute("aria-pressed", "false");
+				changed();
+				status.textContent = statuses.get(options.peer() || 0) || "";
+			},
+			setDisabled: (value) => {
+				disabled = value;
+				toolButtons.forEach((button) => {
+					button.disabled = value;
+				});
+				images.disabled = value;
+				documentFile.disabled = value;
+				original.disabled = value;
+			}
+		};
+	}
+	function findNotificationContainer() {
+		const tabs = new Map();
+		for (const node of document.querySelectorAll("a, button, li, span")) {
+			if (node.closest(".nspp-messages, .nspp-message-native-toolbar, #nspp-settings, #nspp-tools, .user-card, .user-panel, .user-stat, aside")) continue;
+			let kind;
+			if (node instanceof HTMLAnchorElement) {
+				const url = new URL(node.href, location.href);
+				if (url.origin === location.origin && url.pathname === "/notification") kind = url.hash.match(/^#\/(atMe|reply|message)(?:\?|$)/)?.[1];
+			}
+			const label = node.textContent?.replace(/\s+/g, "") || "";
+			kind ||= /^@我\d*$/.test(label) ? "atMe" : /^回复主题\d*$/.test(label) ? "reply" : /^私信\d*$/.test(label) ? "message" : void 0;
+			if (kind) tabs.set(kind, [...tabs.get(kind) || [], node]);
+		}
+		for (const mention of tabs.get("atMe") || []) {
+			let group = mention.parentElement;
+			while (group && group !== document.body && group !== document.documentElement) {
+				if ((tabs.get("reply") || []).some((tab) => group.contains(tab)) && (tabs.get("message") || []).some((tab) => group.contains(tab))) {
+					const container = !!group.querySelector(".md-editor, .comment-content") || Array.from(group.children).some((child) => !child.contains(mention) && !!child.querySelector("img")) ? group : group.parentElement;
+					if (container && container !== document.body && container !== document.documentElement && !container.matches("header, nav, aside, footer")) return container;
+					break;
+				}
+				group = group.parentElement;
+			}
+		}
+	}
+	function createChatProfile(ctx) {
+		const card = document.createElement("section");
+		card.className = "nspp-chat-profile";
+		card.hidden = true;
+		card.setAttribute("aria-label", "对方资料");
+		let current, controller = new AbortController();
+		async function show(id, name = "") {
+			if (id === current) {
+				if (id && name && name !== `用户 ${id}`) {
+					const heading = card.querySelector(".nspp-chat-profile-heading > strong");
+					if (heading && heading.textContent !== name) heading.textContent = name;
+					const image = card.querySelector(":scope > a > img");
+					if (image) image.alt = name;
+				}
+				return;
+			}
+			current = id;
+			controller.abort();
+			controller = new AbortController();
+			card.replaceChildren();
+			card.hidden = !id;
+			card.dataset.trust = "unknown";
+			if (!id) return;
+			const avatarLink = document.createElement("a");
+			avatarLink.href = `/space/${id}`;
+			avatarLink.target = "_blank";
+			avatarLink.rel = "noopener noreferrer";
+			const image = document.createElement("img");
+			image.src = `/avatar/${id}.png`;
+			image.alt = name;
+			image.className = "nspp-messages-avatar";
+			avatarLink.append(image);
+			const details = document.createElement("div");
+			details.className = "nspp-chat-profile-details";
+			const heading = document.createElement("strong");
+			heading.textContent = name || `用户 ${id}`;
+			const headingRow = document.createElement("div");
+			headingRow.className = "nspp-chat-profile-heading";
+			const tags = document.createElement("span");
+			tags.className = "nspp-user-profile-tags";
+			headingRow.append(heading, tags);
+			const level = document.createElement("span");
+			level.className = "nspp-chat-profile-level";
+			level.hidden = true;
+			headingRow.append(level);
+			const meta = document.createElement("div");
+			meta.className = "nspp-chat-profile-meta";
+			meta.textContent = `UID ${id}`;
+			const data = document.createElement("div");
+			data.className = "nspp-chat-profile-data";
+			data.textContent = "正在读取用户资料…";
+			const bio = document.createElement("p");
+			bio.className = "nspp-chat-profile-bio";
+			bio.hidden = true;
+			const trust = document.createElement("div");
+			trust.className = "nspp-chat-profile-trust";
+			trust.hidden = true;
+			trust.title = "根据公开资料计算的本地参考分";
+			const points = document.createElement("strong");
+			const caption = document.createElement("span");
+			caption.textContent = "信任分";
+			trust.append(points, caption);
+			const notice = document.createElement("p");
+			notice.className = "nspp-chat-profile-notice";
+			notice.hidden = true;
+			details.append(headingRow, bio, meta);
+			card.append(avatarLink, details, trust, data, notice);
+			const signal = AbortSignal.any([ctx.signal, controller.signal]);
+			try {
+				const key = `nspp:state:${location.hostname}:user-level`;
+				const saved = GM_getValue$1(key, {}).profiles?.[String(id)];
+				let user = saved && Date.now() >= saved.time && Date.now() - saved.time < 864e5 ? saved.user : void 0;
+				if (!user) {
+					const result = await ctx.request(`/api/account/getInfo/${id}`, { signal });
+					if (!result.success || !result.detail) throw new Error("资料暂不可用");
+					user = result.detail;
+					if (signal.aborted) return;
+					const state = GM_getValue$1(key, {});
+					state.profiles ||= {};
+					state.profiles[id] = {
+						time: Date.now(),
+						user
+					};
+					GM_setValue$1(key, state);
+				}
+				if (signal.aborted) return;
+				if (user.member_name?.trim()) {
+					heading.textContent = user.member_name.trim();
+					image.alt = user.member_name.trim();
+				}
+				renderProfileTags(tags, user);
+				const info = registration(user), score = trustScore(user);
+				const tier = !score ? "unknown" : score.score === 100 ? "perfect" : score.score >= 70 ? "success" : score.score >= 40 ? "warning" : "danger";
+				card.dataset.trust = tier;
+				notice.hidden = false;
+				notice.textContent = !score ? "资料不完整，暂不评分；交易前请核实身份与历史记录。" : tier === "danger" ? "参与记录较少，交易前请核实身份与历史记录；低分不代表不良行为。" : tier === "warning" ? "资料仅供参考，交易前请独立核实；分数不代表交易信用。" : "参与记录较充分，分数仍是本地参考，不代表交易信用。";
+				level.textContent = info.level === null ? "" : `Lv ${info.level}`;
+				level.hidden = info.level === null;
+				meta.textContent = `UID ${id}${info.days === null ? "" : ` · 加入 ${info.days} 天`}`;
+				trust.hidden = !score;
+				points.textContent = score ? String(score.score) : "";
+				trust.dataset.tone = score && score.score >= 70 ? "good" : "normal";
+				data.replaceChildren();
+				for (const [label, value] of [
+					["主题", user.nPost],
+					["评论", user.nComment],
+					["鸡腿", user.coin],
+					["星辰", user.stardust],
+					["粉丝", user.fans]
+				]) {
+					const item = document.createElement("span");
+					item.className = "nspp-chat-profile-stat";
+					const term = document.createElement("small");
+					term.textContent = label;
+					const count = document.createElement("strong");
+					count.textContent = value === void 0 ? "—" : String(value);
+					item.append(term, count);
+					data.append(item);
+				}
+				bio.textContent = user.bio || user.introduction || user.signature_text || user.signature || "";
+				bio.hidden = !bio.textContent;
+			} catch {
+				if (signal.aborted) return;
+				data.textContent = "资料读取失败 ";
+				const retry = document.createElement("button");
+				retry.type = "button";
+				retry.textContent = "重试";
+				retry.addEventListener("click", () => {
+					current = void 0;
+					show(id, name);
+				});
+				data.append(retry);
+			}
+		}
+		return {
+			element: card,
+			show,
+			stop: () => {
+				controller.abort();
+				card.remove();
+			}
+		};
+	}
+	_css(".nspp-messages-container[data-nspp-message-view=new]>:not(.nspp-messages),.nspp-messages-container[data-nspp-message-view=native]>.nspp-messages{display:none!important}.nspp-messages-container[data-nspp-message-view=new]{box-shadow:none!important;border:0!important;outline:none!important}.nspp-messages-container>.nspp-messages{box-shadow:none;border:0;outline:none}.nspp-messages{--chat-bg:#f5f5f5;--chat-sidebar:#ededed;--chat-surface:#fff;--chat-text:#252525;--chat-muted:#858585;--chat-border:#dedede;box-sizing:border-box;width:100%;height:min(80dvh,880px);min-height:420px;color:var(--chat-text);background:var(--chat-bg);border:1px solid var(--chat-border);border-radius:8px;flex-direction:column;font:14px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:relative;overflow:hidden}.nspp-messages *,.nspp-messages :before,.nspp-messages :after{box-sizing:border-box}.nspp-messages [hidden],.nspp-messages[hidden]{display:none!important}.nspp-messages button,.nspp-messages input,.nspp-messages textarea{font:inherit;color:inherit}.nspp-messages button{appearance:none;cursor:pointer;background:0 0;border:0;border-radius:5px}.nspp-messages button:disabled{cursor:default;opacity:.5}.nspp-messages :focus-visible{outline-offset:-2px;outline:2px solid #07a65a}.nspp-messages a{color:inherit;text-decoration:none}.nspp-messages-top{background:var(--chat-surface);border-bottom:1px solid var(--chat-border);flex:none;justify-content:space-between;align-items:center;min-height:38px;padding:0 12px;display:flex}.nspp-messages-fixed-contacts a[aria-current]{background:#818b9830}.nspp-messages-fixed-contacts strong{font-size:13px;font-weight:600}.nspp-messages-fixed-contacts .nspp-messages-count{flex:none}.nspp-messages-top-actions{flex:none;gap:4px;margin-left:10px;display:flex}.nspp-messages-top-actions button{color:var(--chat-muted);white-space:nowrap;padding:4px 6px;font-size:11px}.nspp-messages-count{color:#fff;text-align:center;background:#fa5151;border-radius:8px;min-width:16px;padding:0 4px;font-size:10px;line-height:16px}.nspp-messages-workspace{flex:1;grid-template-columns:248px minmax(0,1fr);min-height:0;display:grid}.nspp-messages-sidebar{background:var(--chat-sidebar);border-right:1px solid var(--chat-border);flex-direction:column;min-height:0;display:flex}.nspp-messages-search{flex:none;gap:6px;padding:8px;display:flex}.nspp-messages-search input{background:#818b981a;border:0;border-radius:5px;width:100%;min-width:0;padding:7px 10px;font-size:12px}.nspp-messages-refresh{flex:none;place-items:center;width:30px;display:grid}.nspp-messages-contact-list,.nspp-messages-conversations{overscroll-behavior:contain;flex:1;min-height:0;overflow-y:auto}.nspp-messages-contact-list>.nspp-messages-conversations{overflow:visible}.nspp-messages .nspp-messages-peer{text-align:left;border-radius:0;align-items:center;gap:8px;width:100%;min-height:58px;margin:0;padding:9px 10px;display:flex;position:relative}.nspp-messages-peer:hover{background:#818b981a}.nspp-messages-peer[role=button]{cursor:pointer}.nspp-chat-avatar-link{border:0;border-radius:5px;flex:none;display:inline-flex}.nspp-chat-profile{background:var(--chat-surface);flex:none;grid-template-columns:40px minmax(0,1fr) auto;align-items:start;gap:8px 10px;padding:12px 16px 10px;display:grid}.nspp-chat-profile>a{display:inline-flex}.nspp-chat-profile>a .nspp-messages-avatar{border-radius:10px;width:40px;height:40px}.nspp-chat-profile-details{min-width:0}.nspp-chat-profile-heading{flex-wrap:wrap;align-items:center;gap:5px;min-height:18px;display:flex}.nspp-chat-profile-heading>strong{font-size:13px;font-weight:600;line-height:18px}.nspp-chat-profile-level{color:#188593;background:#18859312;border-radius:3px;padding:0 4px;font-size:10px;font-weight:600;line-height:15px}.nspp-chat-profile-meta{color:var(--chat-muted);font-variant-numeric:tabular-nums;margin-top:3px;font-size:10px;line-height:15px}.nspp-chat-profile-trust{color:#ac791e;flex-direction:column;align-items:flex-end;gap:1px;min-width:40px;display:flex}.nspp-chat-profile-trust[data-tone=good]{color:#26936a}.nspp-chat-profile-trust>strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;line-height:28px}.nspp-chat-profile-trust>span{opacity:.8;font-size:9px}.nspp-chat-profile-data{background:color-mix(in srgb, var(--chat-bg) 70%, transparent);color:var(--chat-muted);border-radius:6px;grid-column:1/-1;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px 8px;padding:7px 10px;font-size:11px;display:grid}.nspp-chat-profile-stat{flex-wrap:wrap;justify-content:center;align-items:baseline;gap:5px;min-width:0;display:flex}.nspp-chat-profile-stat>small{color:var(--chat-muted);font-size:10px}.nspp-chat-profile-stat>strong{color:var(--chat-text);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;font-size:12px;font-weight:600}.nspp-chat-profile-data button{color:#07994e;padding:0 4px}.nspp-chat-profile-bio{overflow-wrap:anywhere;max-height:3em;color:var(--chat-muted);white-space:pre-wrap;margin:3px 0 0;font-size:11px;line-height:1.5;overflow:auto}.nspp-chat-profile[data-trust=success]{background:linear-gradient(115deg,#edf8f1,#f7fbf8 58%,#e9f5f1)}.nspp-chat-profile[data-trust=warning]{background:linear-gradient(115deg,#fff5e4,#fffbf3 58%,#faf0df)}.nspp-chat-profile[data-trust=danger]{background:linear-gradient(115deg,#fff0f0,#fff8f6 58%,#fbe8eb)}.nspp-chat-profile[data-trust=danger] .nspp-chat-profile-trust{color:#b74d58}.nspp-chat-profile-notice{color:var(--chat-muted);grid-column:1/-1;margin:0;font-size:10px;line-height:1.5}.nspp-chat-profile[data-trust=danger] .nspp-chat-profile-notice{color:#ac4b57}.nspp-chat-profile[data-trust=warning] .nspp-chat-profile-notice{color:#9b702c}.nspp-chat-profile[data-trust=perfect]{--chat-text:#f2e9d6;--chat-muted:#bcb199;--chat-bg:#b99b5715;isolation:isolate;color:var(--chat-text);background:radial-gradient(at 98% 0,#c4a15b27,#0000 55%),linear-gradient(115deg,#262b29,#24251f 58%,#393124);position:relative}.nspp-chat-profile[data-trust=perfect]:before{content:\"\";pointer-events:none;background:linear-gradient(90deg,#0000,#d8bb7a99,#0000);height:1px;position:absolute;inset:0 0 auto}.nspp-chat-profile[data-trust=perfect]>a .nspp-messages-avatar{outline-offset:2px;outline:1px solid #cfb47a70}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-heading>strong{color:#f6edda}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-trust{color:#e6c681}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-trust>strong{letter-spacing:-1.5px;text-shadow:0 2px 18px #dab56c25;font-size:32px;line-height:34px}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-trust>span{letter-spacing:1px;color:#c6b590}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-level{color:#e3cb99;background:#d8b77418}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-data{background:#e0c5890a}.nspp-chat-profile[data-trust=perfect] .nspp-chat-profile-stat>strong{color:#efe2c6}.nspp-chat-profile[data-trust=perfect] .role-tag[data-nspp-role=admin]{color:#a4c9ee;background:#679fd222}.nspp-chat-profile[data-trust=perfect] .role-tag[data-nspp-role=founder]{color:#9bd6c0;background:#6dbd9822}.nspp-chat-profile[data-trust=perfect] .role-tag[data-nspp-role=owner]{color:#e3cb99;background:#d8b77418}.dark-layout .nspp-chat-profile[data-trust=success]{background:linear-gradient(115deg,#1c2c24,#202923,#24372c)}.dark-layout .nspp-chat-profile[data-trust=warning]{background:linear-gradient(115deg,#30291c,#29271f,#393020)}.dark-layout .nspp-chat-profile[data-trust=danger]{background:linear-gradient(115deg,#302027,#2a2227,#39242c)}.dark-layout .nspp-chat-profile[data-trust=danger] :is(.nspp-chat-profile-notice,.nspp-chat-profile-trust){color:#e79ca4}.dark-layout .nspp-chat-profile[data-trust=warning] .nspp-chat-profile-notice{color:#d4b780}.nspp-messages-peer[aria-pressed=true]{background:#818b9830}.nspp-messages-avatar{object-fit:cover;background:#818b9826;border-radius:5px;flex:none;width:32px;height:32px}.nspp-messages-peer-details{flex:1;gap:3px;min-width:0;display:grid}.nspp-messages-peer-title{justify-content:space-between;align-items:center;gap:8px;display:flex}.nspp-messages-peer-title strong{text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;overflow:hidden}.nspp-messages-peer-title time{color:var(--chat-muted);flex:none;font-size:10px}.nspp-messages-snippet{color:var(--chat-muted);white-space:nowrap;text-overflow:ellipsis;font-size:12px;overflow:hidden}.nspp-messages-unread{border:1px solid var(--chat-sidebar);background:#fa5151;border-radius:50%;width:8px;height:8px;position:absolute;top:6px;left:36px}.nspp-messages-list-status{color:var(--chat-muted);overflow-wrap:anywhere;margin:0;padding:6px 14px;font-size:12px}.nspp-messages-list-status:empty,.nspp-messages-status:empty{display:none}.nspp-messages-more{padding:10px;color:var(--chat-muted)!important;font-size:12px!important}.nspp-messages-chat{flex-direction:column;min-width:0;min-height:0;display:flex}.nspp-messages-heading{flex:1;align-items:center;gap:8px;min-width:0;padding:6px 0;display:flex}.nspp-messages-heading strong{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:13px;font-weight:600;overflow:hidden}.nspp-messages-heading .nspp-messages-avatar{width:24px;height:24px}.nspp-messages-heading .nspp-messages-profile{white-space:nowrap;flex:none;font-size:11px}.nspp-messages-profile{margin-left:auto;font-size:12px;color:var(--chat-muted)!important}.nspp-messages-back{display:none}.nspp-messages-thread{overscroll-behavior:contain;flex:1;min-height:0;padding:12px 16px;overflow-y:auto}.nspp-messages-empty{min-height:100%;color:var(--chat-muted);justify-content:center;align-items:center;font-size:13px;display:flex}.nspp-messages-stamp{text-align:center;color:var(--chat-muted);margin:2px 0 12px;font-size:10px;display:block}.nspp-messages-message{align-items:flex-start;gap:8px;margin:0 0 12px;display:flex}.nspp-messages-message.is-mine{flex-direction:row-reverse}.nspp-messages-bubble{background:var(--chat-surface);overflow-wrap:anywhere;white-space:pre-wrap;border-radius:6px;max-width:min(76%,640px);min-height:32px;padding:7px 10px;font-size:13px;line-height:1.6;position:relative;box-shadow:0 1px 2px #00000008}.nspp-messages-bubble:before{content:\"\";background:inherit;clip-path:polygon(100% 0,100% 100%,0 50%);width:6px;height:10px;position:absolute;top:11px;left:-5px}.nspp-messages-message.is-mine .nspp-messages-bubble{color:#183015;background:#95ec69}.nspp-messages-message.is-mine .nspp-messages-bubble:before{clip-path:polygon(0 0,100% 50%,0 100%);left:auto;right:-5px}.nspp-messages-bubble a{color:#0969da;text-decoration:underline}.nspp-messages-bubble img{border-radius:5px;max-width:min(100%,340px);height:auto;max-height:300px;display:block}.nspp-messages-status{color:var(--chat-muted);margin:0;padding:8px 20px;font-size:12px}.nspp-messages-sync-status{flex:none;align-items:center;gap:8px;display:flex}.nspp-messages-sync-status .nspp-messages-status{padding-right:0}.nspp-messages .nspp-messages-sync-retry{color:#07994e;background:#07994e12;flex:none;margin:4px 12px 4px 0;padding:3px 9px;font-size:12px}.nspp-messages-composer{background:var(--chat-surface);border-top:1px solid var(--chat-border);flex:none;margin:0;padding:0}.nspp-messages-composer textarea{resize:vertical;background:0 0;border:0;outline:none;width:100%;min-height:52px;max-height:25dvh;padding:0;line-height:1.6;display:block}.nspp-messages-compose-actions{background:var(--chat-surface);align-items:center;gap:10px;padding:6px 10px 8px;display:flex}.nspp-messages-compose-actions>label,.nspp-messages-compose-actions>.nspp-messages-send{white-space:nowrap;flex:none}.nspp-messages-compose-actions>small{display:none}.nspp-messages-compose-actions label{color:var(--chat-muted);align-items:center;gap:4px;font-size:12px;display:flex}.nspp-messages-compose-actions small{color:var(--chat-muted);font-size:11px}.nspp-messages .nspp-messages-send{color:#fff;background:#07a65a;min-width:78px;margin-left:auto;padding:6px 20px}.nspp-messages-retry{margin:32px auto;padding:8px 16px;display:block}.nspp-notice-summary{border-bottom:1px solid var(--chat-border);margin-bottom:12px;padding-bottom:10px}.nspp-notice-summary h3{overflow-wrap:anywhere;margin:0 0 4px;font-size:15px;line-height:1.5}.nspp-notice-summary p,.nspp-notice-hint{color:var(--chat-muted);margin:0;font-size:12px}.nspp-notice-body{overflow-wrap:anywhere;font-size:13px;line-height:1.7}.nspp-notice-body p{margin:6px 0}.nspp-notice-body img{max-width:100%;height:auto}.nspp-notice-body a{color:#0969da;text-decoration:underline}.nspp-notice-body pre{background:var(--chat-surface);border-radius:5px;padding:10px;overflow:auto}.nspp-notice-body table{max-width:100%;display:block;overflow-x:auto}.nspp-notice-body blockquote{border-left:3px solid var(--chat-border);margin:8px 0;padding:4px 12px}.nspp-messages .nspp-notice-workspace{flex-direction:column;min-width:0;display:flex}.nspp-notice-workspace>.nspp-messages-sidebar{background:var(--chat-bg);border:0;flex:1}.nspp-notice-workspace>.nspp-messages-chat{flex:1}.nspp-notice-workspace:not(.has-detail)>.nspp-messages-chat,.nspp-notice-workspace.has-detail>.nspp-messages-sidebar{display:none}.nspp-notice-back{flex:none;padding:4px;color:#07994e!important;font-size:12px!important}.nspp-message-editor{background:var(--chat-surface);border:0;border-radius:0;margin:0;padding:0}.nspp-message-editor-toolbar{scrollbar-width:thin;background:0 0;border:0;flex-wrap:nowrap;flex:1;align-items:center;gap:2px;min-width:0;padding:0;display:flex;overflow-x:auto}.nspp-message-editor-toolbar button{width:27px;height:27px;color:var(--chat-muted);flex:none;justify-content:center;align-items:center;padding:5px;display:inline-flex}.nspp-message-editor-toolbar button:hover:not(:disabled),.nspp-message-editor-toolbar button[aria-pressed=true]{color:var(--chat-text);background:#818b9824}.nspp-message-editor-toolbar svg{fill:none;stroke:currentColor;stroke-width:1.7px;stroke-linecap:round;stroke-linejoin:round;width:17px;height:17px}.nspp-message-editor-toolbar .nspp-message-editor-tab{white-space:nowrap;width:auto;padding:4px 7px;font-size:11px}.nspp-message-editor-body{min-height:90px}.nspp-message-editor-body textarea{caret-color:#07a65a;min-height:90px;padding:12px 13px;font-size:13px;line-height:1.65}.nspp-messages .nspp-message-editor-body textarea:is(:focus,:focus-visible){border:0;box-shadow:none!important;outline:none!important}.nspp-message-editor-body textarea::placeholder{color:var(--chat-muted);opacity:.7}.nspp-message-editor-preview{overflow-wrap:anywhere;min-height:90px;max-height:25dvh;padding:10px 13px;font-size:13px;overflow:auto}.nspp-message-editor-status{color:var(--chat-muted);border:0;padding:2px 12px;font-size:11px}.nspp-message-editor-status:empty{display:none}.nspp-message-upload-help{padding:0 10px;font-size:11px}.nspp-message-upload-help:has(input:not([hidden]),a:not([hidden])){padding:6px 10px}.nspp-message-upload-help input{border:1px solid var(--chat-border);background:0 0;border-radius:4px;max-width:100%;padding:5px 8px;font-size:12px}.nspp-message-upload-help a{color:#0969da}.nspp-messages-bubble.is-markdown{white-space:normal}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview)>:first-child{margin-top:0}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview)>:last-child{margin-bottom:0}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) p{margin:5px 0}.nspp-messages .nspp-messages-bubble.is-markdown>p{color:inherit;font:inherit;display:block}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) :is(ul,ol){margin:6px 0;padding-left:22px}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) blockquote{color:inherit;opacity:.85;border-left:3px solid #818b9860;margin:6px 0;padding:3px 10px}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) pre{white-space:pre;background:#0000000d;border-radius:5px;max-width:100%;margin:8px 0;padding:9px;overflow:auto}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) code{font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) :is(th,td){border:1px solid #818b9850;padding:5px 8px}:is(.nspp-messages-bubble.is-markdown,.nspp-message-editor-preview) :is(h1,h2,h3,h4){margin:8px 0;font-size:15px;line-height:1.5}.nspp-message-editor-preview img{object-fit:contain;max-width:100%;max-height:200px}.nspp-messages-earlier{margin:0 auto 14px;padding:5px 10px;display:block;color:var(--chat-muted)!important;font-size:12px!important}.nspp-message-native-toolbar{justify-content:flex-end;padding:6px 8px;display:flex}.nspp-message-native-toolbar[hidden]{display:none!important}.nspp-message-return{color:#fff;cursor:pointer;background:#07a65a;border:1px solid #07a65a;border-radius:5px;padding:5px 10px;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-message-return[hidden]{display:none!important}.dark-layout .nspp-messages{--chat-bg:#151718;--chat-sidebar:#202324;--chat-surface:#26292b;--chat-text:#e4e6e7;--chat-muted:#91999d;--chat-border:#34383a}@media (width<=700px){.nspp-messages{border-radius:6px;height:calc(100dvh - 96px);min-height:360px}.nspp-messages-workspace{grid-template-columns:minmax(0,1fr)}.nspp-messages:not(.has-conversation)>.nspp-messages-workspace>.nspp-messages-chat,.nspp-messages.has-conversation>.nspp-messages-workspace>.nspp-messages-sidebar{display:none}.nspp-messages-top{flex-wrap:nowrap;gap:6px;padding:0 8px}.nspp-messages-sidebar{padding-bottom:env(safe-area-inset-bottom);border:0}.nspp-messages-back{padding:4px 0;display:block;color:#07994e!important}.nspp-messages-thread{padding:14px}.nspp-messages-bubble{max-width:calc(100% - 70px)}.nspp-messages-compose-actions small{display:none}.nspp-messages-composer{padding:0 0 env(safe-area-inset-bottom)}.nspp-messages-compose-actions{flex-wrap:wrap;gap:6px;padding:4px 8px 8px}.nspp-messages-compose-actions .nspp-message-editor-toolbar{flex-basis:100%}.nspp-messages-composer textarea{min-height:60px;font-size:16px}.nspp-message-editor-toolbar{flex-wrap:nowrap;overflow-x:auto}.nspp-message-editor-toolbar button{flex:none;min-width:30px;height:30px}.nspp-message-editor-body textarea{min-height:82px}}");
+	var endpoint = "/api/notification/message";
+	var element = (tag, className = "", text = "") => {
+		const node = document.createElement(tag);
+		node.className = className;
+		node.textContent = text;
+		return node;
+	};
+	var button = (label, className = "") => {
+		const node = element("button", className, label);
+		node.type = "button";
+		return node;
+	};
+	var time = (value) => {
+		const date = new Date(value);
+		return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+	};
+	var preview = (text) => text.replace(/!\[[^\]]*\]\([^)]+\)/g, "[图片]").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/\s+/g, " ").trim();
+	var unread = (message) => message.viewed === false || message.viewed === 0;
+	function mountChat(ctx, account) {
+		const lifetime = new AbortController();
+		ctx = {
+			...ctx,
+			signal: AbortSignal.any([ctx.signal, lifetime.signal])
+		};
+		const root = element("section", "nspp-messages");
+		root.hidden = true;
+		root.setAttribute("aria-label", "消息中心");
+		const top = element("header", "nspp-messages-top");
+		const navigation = element("nav", "nspp-messages-fixed-contacts");
+		navigation.setAttribute("aria-label", "固定联系人");
+		for (const [label, kind, description] of [[
+			"@我",
+			"atMe",
+			"查看提到我的消息"
+		], [
+			"回复主题",
+			"reply",
+			"查看主题回复"
+		]]) {
+			const link = element("a", "nspp-messages-peer");
+			link.href = `/notification#/${kind}`;
+			link.dataset.category = kind;
+			const avatar = element("img", "nspp-messages-avatar");
+			avatar.src = notificationAvatar(kind);
+			avatar.alt = "";
+			const details = element("span", "nspp-messages-peer-details");
+			details.append(element("strong", "", label), element("span", "nspp-messages-snippet", description));
+			link.append(avatar, details);
+			const count = element("span", "nspp-messages-count");
+			count.hidden = true;
+			link.append(count);
+			navigation.append(link);
+		}
+		const original = button("原版页面");
+		original.title = "本次返回站点原有通知页面";
+		const markAll = button("全部已读");
+		markAll.title = "将当前分类全部标为已读";
+		const topActions = element("div", "nspp-messages-top-actions");
+		topActions.append(markAll, original);
+		top.append(topActions);
+		const workspace = element("div", "nspp-messages-workspace");
+		const sidebar = element("aside", "nspp-messages-sidebar");
+		const searchBar = element("div", "nspp-messages-search");
+		const search = element("input");
+		search.type = "search";
+		search.placeholder = "搜索联系人或消息";
+		search.setAttribute("aria-label", search.placeholder);
+		const refresh = button("", "nspp-messages-refresh");
+		refresh.append(toolIcon("refresh"));
+		refresh.title = "刷新会话";
+		refresh.setAttribute("aria-label", refresh.title);
+		searchBar.append(search, refresh);
+		const conversations = element("div", "nspp-messages-conversations");
+		conversations.setAttribute("aria-label", "会话列表");
+		const listStatus = element("p", "nspp-messages-list-status");
+		listStatus.setAttribute("role", "status");
+		const more = button("加载更多会话", "nspp-messages-more");
+		const contactList = element("div", "nspp-messages-contact-list");
+		contactList.append(navigation, conversations);
+		sidebar.append(searchBar, contactList, listStatus, more);
+		const chat = element("section", "nspp-messages-chat");
+		const userCard = createChatProfile(ctx);
+		const avatarLink = (avatar, id) => {
+			const link = element("a", "nspp-chat-avatar-link");
+			link.href = `/space/${id}`;
+			link.target = "_blank";
+			link.rel = "noopener noreferrer";
+			link.append(avatar);
+			link.addEventListener("click", (event) => event.stopPropagation());
+			return link;
+		};
+		const chatHeader = element("div", "nspp-messages-heading");
+		const back = button("返回", "nspp-messages-back");
+		const name = element("strong", "", "消息");
+		const profile = element("a", "nspp-messages-profile", "用户主页");
+		profile.target = "_blank";
+		profile.rel = "noopener noreferrer";
+		profile.hidden = true;
+		chatHeader.append(back, name, profile);
+		top.prepend(chatHeader);
+		const thread = element("div", "nspp-messages-thread");
+		thread.setAttribute("role", "log");
+		thread.setAttribute("aria-label", "聊天记录");
+		thread.tabIndex = 0;
+		const empty = element("div", "nspp-messages-empty", "选择左侧会话，开始聊天");
+		thread.append(empty);
+		const status = element("p", "nspp-messages-status");
+		status.setAttribute("role", "status");
+		const retrySync = button("重试", "nspp-messages-sync-retry");
+		retrySync.hidden = true;
+		const syncStatus = element("div", "nspp-messages-sync-status");
+		syncStatus.append(status, retrySync);
+		const composer = element("form", "nspp-messages-composer");
+		composer.hidden = true;
+		const input = element("textarea");
+		input.placeholder = "输入消息…";
+		input.setAttribute("aria-label", "消息内容");
+		input.rows = 3;
+		const controls = element("div", "nspp-messages-compose-actions");
+		const markdownLabel = element("label");
+		const markdown = element("input");
+		markdown.type = "checkbox";
+		markdown.checked = true;
+		markdownLabel.append(markdown, " Markdown");
+		const hint = element("small", "", "Enter 发送，Shift + Enter 换行");
+		const send = element("button", "nspp-messages-send", "发送");
+		send.type = "submit";
+		send.disabled = true;
+		send.title = hint.textContent;
+		input.setAttribute("aria-description", hint.textContent);
+		controls.append(markdownLabel, hint, send);
+		composer.append(input, controls);
+		chat.append(userCard.element, thread, syncStatus, composer);
+		workspace.append(sidebar, chat);
+		root.append(top, workspace);
+		const nativeToolbar = element("div", "nspp-message-native-toolbar");
+		const returnToNew = button("切回新版聊天", "nspp-message-return");
+		returnToNew.hidden = true;
+		nativeToolbar.append(returnToNew);
+		let nativeContainer;
+		function attachToNative() {
+			if (!nativeContainer?.isConnected) {
+				nativeContainer?.classList.remove("nspp-messages-container");
+				nativeContainer?.removeAttribute("data-nspp-message-view");
+				nativeContainer = findNotificationContainer();
+			}
+			if (!nativeContainer) return false;
+			nativeContainer.classList.add("nspp-messages-container");
+			if (root.parentElement !== nativeContainer) nativeContainer.append(root);
+			if (nativeToolbar.parentElement !== nativeContainer) nativeContainer.prepend(nativeToolbar);
+			return true;
+		}
+		const drafts = new Map();
+		const peers = new Map();
+		const archive = createMessageArchive(account);
+		const histories = new Map();
+		const visibleHistory = new Map();
+		const sending = new Set();
+		const uncertain = new Set();
+		const deliveryStatus = new Map();
+		let active, page = 1, listBusy = false, listReady = false, suppressed = false;
+		let category;
+		let countsBusy = false;
+		let listPageSignature = "";
+		let threadKey = "", threadBusy = false;
+		let routeController = new AbortController(), threadController = new AbortController();
+		const owner = () => unsafeWindow$1.__config__?.user?.member_id;
+		const panelValid = () => !ctx.signal.aborted && !root.hidden && owner() === account;
+		const valid = () => panelValid() && category === "message";
+		const signal = () => AbortSignal.any([ctx.signal, routeController.signal]);
+		const inbox = createNotificationInbox(ctx, () => {
+			refreshCounts();
+		}, () => navigate());
+		workspace.append(inbox.element);
+		top.insertBefore(inbox.heading, topActions);
+		const editor = createMessageEditor(ctx, input, markdown, {
+			peer: () => active,
+			original: () => original.click(),
+			changed: () => updateSend(),
+			insert: (peer, text) => {
+				if (ctx.signal.aborted || owner() !== account) return;
+				if (active === peer && valid()) {
+					markdown.checked = true;
+					input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
+					input.dispatchEvent(new Event("input", { bubbles: true }));
+				} else {
+					const draft = drafts.get(peer);
+					drafts.set(peer, {
+						text: `${draft?.text || ""}${draft?.text ? "\n" : ""}${text}`,
+						markdown: true
+					});
+				}
+			}
+		});
+		composer.insertBefore(editor.element, controls);
+		controls.prepend(editor.toolbar);
+		async function refreshCounts() {
+			if (!panelValid() || countsBusy) return;
+			countsBusy = true;
+			try {
+				const result = await ctx.request("/api/notification/unread-count", { signal: ctx.signal });
+				if (!panelValid() || !result.success || !result.unreadCount) return;
+				navigation.querySelectorAll("a").forEach((link) => {
+					const value = result.unreadCount[link.dataset.category];
+					const badge = link.querySelector(".nspp-messages-count");
+					badge.hidden = !Number.isSafeInteger(value) || value <= 0;
+					badge.textContent = badge.hidden ? "" : String(value);
+				});
+			} catch {} finally {
+				countsBusy = false;
+			}
+		}
+		const saveDraft = () => {
+			if (active) drafts.set(active, {
+				text: input.value,
+				markdown: markdown.checked
+			});
+		};
+		const updateSend = () => {
+			const busy = !!active && sending.has(active);
+			send.disabled = !active || busy || !input.value.trim() || uncertain.has(active) || editor.busy(active);
+			send.textContent = busy ? "发送中…" : "发送";
+			if (busy) send.setAttribute("aria-busy", "true");
+			else send.removeAttribute("aria-busy");
+			input.disabled = busy;
+			markdown.disabled = busy;
+			editor.setDisabled(busy);
+		};
+		async function api(path, options = {}) {
+			const result = await ctx.request(`${endpoint}${path}`, {
+				...options,
+				signal: options.signal || signal()
+			});
+			if (result?.success !== true) throw new Error(result?.message || "私信请求未成功，请重试");
+			return result;
+		}
+		function rows(result) {
+			if (!Array.isArray(result.msgArray) || result.msgArray.some((row) => !row || !Number.isSafeInteger(row.sender_id) || !Number.isSafeInteger(row.receiver_id) || typeof row.content !== "string")) throw new Error("私信数据格式已变化，可返回原版页面");
+			return result.msgArray;
+		}
+		function renderList() {
+			const query = search.value.trim().toLocaleLowerCase();
+			conversations.replaceChildren();
+			const items = [...peers.values()].sort((a, b) => Number(b.name === "系统通知") - Number(a.name === "系统通知") || time(b.latest.created_at) - time(a.latest.created_at));
+			for (const peer of items) {
+				if (query && !`${peer.name} ${peer.latest.content}`.toLocaleLowerCase().includes(query)) continue;
+				const row = element("div", "nspp-messages-peer");
+				row.tabIndex = 0;
+				row.setAttribute("role", "button");
+				row.dataset.id = String(peer.id);
+				row.setAttribute("aria-pressed", String(peer.id === active));
+				row.addEventListener("keydown", (event) => {
+					if (event.target === row && (event.key === "Enter" || event.key === " ")) {
+						event.preventDefault();
+						navigate(peer.id);
+					}
+				});
+				const avatar = element("img", "nspp-messages-avatar");
+				avatar.src = peer.name === "系统通知" ? notificationAvatar("system") : `/avatar/${peer.id}.png`;
+				avatar.alt = "";
+				avatar.loading = "lazy";
+				const details = element("span", "nspp-messages-peer-details");
+				const title = element("span", "nspp-messages-peer-title");
+				title.append(element("strong", "", peer.name === "系统通知" ? "系统消息" : peer.name));
+				const date = element("time");
+				date.dateTime = peer.latest.created_at;
+				date.textContent = time(peer.latest.created_at) ? new Date(peer.latest.created_at).toLocaleDateString("zh-CN", {
+					month: "numeric",
+					day: "numeric"
+				}) : "";
+				title.append(date);
+				const snippet = element("span", "nspp-messages-snippet", `${peer.latest.sender_id === account ? "我：" : ""}${preview(peer.latest.content)}`);
+				details.append(title, snippet);
+				avatar.alt = peer.name;
+				row.append(peer.name === "系统通知" ? avatar : avatarLink(avatar, peer.id), details);
+				if (peer.unread) {
+					const dot = element("span", "nspp-messages-unread");
+					dot.setAttribute("aria-label", "有未读消息");
+					row.append(dot);
+				}
+				row.addEventListener("click", () => navigate(peer.id), { signal: ctx.signal });
+				conversations.append(row);
+			}
+			if (!conversations.childElementCount && listReady) conversations.append(element("p", "nspp-messages-list-status", query ? "没有匹配的会话" : "暂无私信"));
+		}
+		function restoreContacts(contacts) {
+			for (const peer of contacts) {
+				const old = peers.get(peer.id);
+				if (!old || time(peer.latest.created_at) >= time(old.latest.created_at)) peers.set(peer.id, peer);
+			}
+			if (peers.size) listReady = true;
+			renderList();
+		}
+		archive.contacts().then((contacts) => {
+			if (!ctx.signal.aborted && owner() === account) restoreContacts(contacts);
+		}).catch((error) => {
+			if (!ctx.signal.aborted) listStatus.textContent = error instanceof Error ? error.message : "本地存档读取失败";
+		});
+		async function loadList(next = false) {
+			if (!panelValid() || listBusy) return;
+			const requestSignal = signal();
+			listBusy = true;
+			refresh.disabled = true;
+			more.disabled = true;
+			const targetPage = next ? page + 1 : 1;
+			listStatus.textContent = next ? "正在加载更多…" : listReady ? "" : "正在读取会话…";
+			try {
+				const messages = rows(await api(`/list?page=${targetPage}`, { signal: requestSignal }));
+				if (!panelValid() || requestSignal.aborted) return;
+				for (const message of messages) {
+					if (message.sender_id !== account && message.receiver_id !== account) continue;
+					const id = message.sender_id === account ? message.receiver_id : message.sender_id;
+					const old = peers.get(id);
+					if (!old || time(message.created_at) >= time(old.latest.created_at)) peers.set(id, {
+						id,
+						name: (message.sender_id === account ? message.receiver_name : message.sender_name) || `用户 ${id}`,
+						latest: message,
+						unread: message.receiver_id === account && unread(message)
+					});
+				}
+				listReady = true;
+				if (next) page = targetPage;
+				const signature = messages.map((row) => row.max_id ?? row.id ?? `${row.sender_id}:${row.receiver_id}:${row.created_at}`).join("|");
+				if (next || page === 1) {
+					more.hidden = messages.length === 0 || next && signature === listPageSignature;
+					listPageSignature = signature;
+				}
+				listStatus.textContent = "";
+				renderList();
+				try {
+					const contacts = await archive.mergeList(messages);
+					if (panelValid() && !requestSignal.aborted) restoreContacts(contacts);
+				} catch (error) {
+					if (panelValid() && !requestSignal.aborted) listStatus.textContent = error instanceof Error ? error.message : "本地存档保存失败";
+				}
+			} catch (error) {
+				if (panelValid() && !requestSignal.aborted) listStatus.textContent = error instanceof Error ? error.message : "会话读取失败";
+			} finally {
+				if (!requestSignal.aborted) {
+					listBusy = false;
+					refresh.disabled = false;
+					more.disabled = false;
+				}
+			}
+		}
+		function renderThread(id, peerName, messages, first) {
+			if (!valid() || active !== id) return;
+			name.textContent = peerName === "系统通知" ? "系统消息" : peerName;
+			profile.href = `/space/${id}`;
+			profile.hidden = false;
+			userCard.show(peerName === "系统通知" ? void 0 : id, peerName);
+			composer.hidden = peerName === "系统通知";
+			updateSend();
+			const limit = visibleHistory.get(id) || 200;
+			const visible = messages.slice(-limit);
+			const key = JSON.stringify([
+				limit,
+				messages.length,
+				visible.map((row) => [
+					row.id,
+					row.max_id,
+					row.local_id,
+					row.content,
+					row.created_at,
+					row.is_markdown
+				])
+			]);
+			if (key === threadKey && !first) return;
+			const nearBottom = first || thread.scrollHeight - thread.scrollTop - thread.clientHeight < 100;
+			const scrollTop = thread.scrollTop;
+			thread.replaceChildren();
+			let previous = 0;
+			if (messages.length > limit) {
+				const earlier = button(`加载更早的本地记录（还有 ${messages.length - limit} 条）`, "nspp-messages-earlier");
+				earlier.addEventListener("click", () => {
+					const oldHeight = thread.scrollHeight, oldTop = thread.scrollTop;
+					visibleHistory.set(id, limit + 200);
+					renderThread(id, peerName, histories.get(id) || messages, false);
+					thread.scrollTop = oldTop + thread.scrollHeight - oldHeight;
+				});
+				thread.append(earlier);
+			}
+			for (const message of visible) {
+				const timestamp = time(message.created_at);
+				if (timestamp && (!previous || timestamp - previous > 3e5)) {
+					const stamp = element("time", "nspp-messages-stamp", new Date(timestamp).toLocaleString("zh-CN", {
+						month: "numeric",
+						day: "numeric",
+						hour: "2-digit",
+						minute: "2-digit"
+					}));
+					stamp.dateTime = message.created_at;
+					thread.append(stamp);
+				}
+				previous = timestamp;
+				const mine = message.sender_id === account;
+				const row = element("div", `nspp-messages-message${mine ? " is-mine" : ""}`);
+				const avatar = element("img", "nspp-messages-avatar");
+				avatar.src = !mine && peerName === "系统通知" ? notificationAvatar("system") : `/avatar/${message.sender_id}.png`;
+				avatar.alt = mine ? "我" : peerName;
+				avatar.loading = "lazy";
+				const bubble = element("div", "nspp-messages-bubble");
+				const isMarkdown = message.is_markdown !== false && message.is_markdown !== 0;
+				bubble.classList.toggle("is-markdown", isMarkdown);
+				bubble.append(renderMessageMarkdown(message.content, isMarkdown));
+				row.append(!mine && peerName === "系统通知" ? avatar : avatarLink(avatar, message.sender_id), bubble);
+				thread.append(row);
+			}
+			if (!messages.length) thread.append(element("div", "nspp-messages-empty", "还没有聊天记录，发送第一条消息吧"));
+			threadKey = key;
+			thread.scrollTop = nearBottom ? thread.scrollHeight : scrollTop;
+		}
+		async function loadThread(first = false) {
+			const id = active;
+			if (!id || !valid() || threadBusy && !first) return;
+			threadController.abort();
+			threadController = new AbortController();
+			const requestSignal = AbortSignal.any([signal(), threadController.signal]);
+			threadBusy = true;
+			retrySync.disabled = true;
+			retrySync.textContent = "重试中…";
+			let peerName = peers.get(id)?.name || `用户 ${id}`;
+			if (first) {
+				const known = histories.get(id);
+				if (known?.length) renderThread(id, peerName, known, true);
+				else thread.replaceChildren(element("div", "nspp-messages-empty", "正在读取聊天记录…"));
+				status.textContent = "";
+			}
+			try {
+				try {
+					const saved = await archive.messages(id);
+					if (!valid() || requestSignal.aborted || active !== id) return;
+					const combined = mergeMessages(saved, histories.get(id) || []);
+					histories.set(id, combined);
+					peerName = peers.get(id)?.name || peerName;
+					if (combined.length) renderThread(id, peerName, combined, first);
+				} catch {
+					if (first && valid() && active === id) status.textContent = "本地存档暂不可用，正在读取服务器记录";
+				}
+				const result = await api(`/with/${id}`, { signal: requestSignal });
+				const incoming = rows(result).filter((row) => row.sender_id === id && row.receiver_id === account || row.sender_id === account && row.receiver_id === id);
+				if (!valid() || requestSignal.aborted || active !== id) return;
+				peerName = result.talkTo?.member_name || peers.get(id)?.name || `用户 ${id}`;
+				let messages = mergeMessages(histories.get(id) || [], incoming);
+				let saveError = "";
+				try {
+					messages = await archive.merge(id, peerName, messages);
+				} catch (error) {
+					saveError = error instanceof Error ? error.message : "本地存档保存失败";
+				}
+				if (!valid() || requestSignal.aborted || active !== id) return;
+				histories.set(id, messages);
+				renderThread(id, peerName, messages, first && !threadKey);
+				if (messages.length) {
+					const latest = messages.at(-1);
+					peers.set(id, {
+						id,
+						name: peerName,
+						latest,
+						unread: latest.receiver_id === account && unread(latest)
+					});
+					renderList();
+				}
+				status.textContent = deliveryStatus.get(id) || saveError;
+				retrySync.hidden = !saveError;
+				const ids = incoming.filter((row) => row.receiver_id === account && unread(row) && Number.isSafeInteger(row.id)).map((row) => row.id);
+				if (ids.length && !document.hidden) try {
+					await api("/markViewed", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ messages: ids }),
+						signal: requestSignal
+					});
+					if (!valid() || requestSignal.aborted) return;
+					const peer = peers.get(id);
+					if (peer) peer.unread = false;
+					renderList();
+					refreshCounts();
+					try {
+						histories.set(id, await archive.merge(id, peerName, [], ids));
+					} catch {
+						if (active === id) {
+							status.textContent = "已读状态已同步，本地存档保存失败";
+							retrySync.hidden = false;
+						}
+					}
+				} catch {
+					if (valid() && active === id && !requestSignal.aborted) {
+						status.textContent = "消息已加载，已读状态同步失败";
+						retrySync.hidden = false;
+					}
+				}
+			} catch (error) {
+				if (valid() && active === id && !requestSignal.aborted) {
+					const cached = histories.get(id) || [];
+					status.textContent = cached.length ? "同步失败，当前显示本地保存的聊天记录" : error instanceof Error ? error.message : "聊天记录读取失败";
+					retrySync.hidden = false;
+					if (first && !cached.length) thread.replaceChildren(element("div", "nspp-messages-empty", "聊天记录加载失败，请点击下方重试"));
+				}
+			} finally {
+				if (!requestSignal.aborted) {
+					threadBusy = false;
+					retrySync.disabled = false;
+					retrySync.textContent = "重试";
+				}
+			}
+		}
+		function navigate(id) {
+			history.pushState(null, "", `/notification#/message?mode=${id ? `talk&to=${id}` : "list"}`);
+			syncRoute();
+		}
+		function syncRoute() {
+			const next = location.hash.match(/^#\/(atMe|reply|message)(?:\?|$)/)?.[1] || (!location.hash || location.hash === "#/" ? "atMe" : void 0);
+			const params = new URLSearchParams(location.hash.split("?")[1] || "");
+			returnToNew.hidden = params.get("native") !== "1";
+			if (!next) suppressed = false;
+			const show = attachToNative() && !!next && !suppressed && params.get("native") !== "1";
+			const wasHidden = root.hidden;
+			root.hidden = !show;
+			if (nativeContainer) nativeContainer.dataset.nsppMessageView = show ? "new" : "native";
+			nativeToolbar.hidden = show || !next;
+			if (!show) {
+				saveDraft();
+				routeController.abort();
+				threadController.abort();
+				threadBusy = false;
+				listBusy = false;
+				active = void 0;
+				category = void 0;
+				inbox.show();
+				return;
+			}
+			const changed = wasHidden || category !== next;
+			if (changed) {
+				saveDraft();
+				active = void 0;
+				routeController.abort();
+				threadController.abort();
+				routeController = new AbortController();
+				threadBusy = false;
+				listBusy = false;
+				category = next;
+				root.classList.toggle("has-conversation", category !== "message");
+				chat.hidden = category !== "message";
+				chatHeader.hidden = category !== "message";
+				userCard.show();
+				inbox.show(category === "message" ? void 0 : category);
+				navigation.querySelectorAll("a").forEach((link) => {
+					if (link.dataset.category === category) link.setAttribute("aria-current", "page");
+					else link.removeAttribute("aria-current");
+				});
+				refreshCounts();
+				more.disabled = false;
+				refresh.disabled = false;
+				loadList();
+				renderList();
+			}
+			if (category !== "message") return;
+			const idText = params.get("to") || "";
+			const id = /^[1-9]\d*$/.test(idText) && Number.isSafeInteger(Number(idText)) ? Number(idText) : void 0;
+			if (active === id && !changed) return;
+			saveDraft();
+			active = id;
+			threadController.abort();
+			threadBusy = false;
+			threadKey = "";
+			userCard.show(id && peers.get(id)?.name !== "系统通知" ? id : void 0, id ? peers.get(id)?.name : "");
+			retrySync.hidden = true;
+			retrySync.disabled = false;
+			retrySync.textContent = "重试";
+			root.classList.toggle("has-conversation", !!id);
+			profile.hidden = true;
+			composer.hidden = true;
+			const draft = id ? drafts.get(id) : void 0;
+			input.value = draft?.text || "";
+			markdown.checked = draft?.markdown ?? true;
+			editor.activate();
+			name.textContent = id ? peers.get(id)?.name || "聊天" : "消息";
+			back.hidden = !id;
+			status.textContent = id ? deliveryStatus.get(id) || "" : "";
+			updateSend();
+			renderList();
+			if (id) loadThread(true);
+			else thread.replaceChildren(empty);
+		}
+		composer.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			const id = active, content = input.value.trim(), markdownEnabled = markdown.checked;
+			if (!id || !content || !valid() || sending.has(id) || uncertain.has(id) || editor.busy(id)) return;
+			saveDraft();
+			sending.add(id);
+			updateSend();
+			status.textContent = "";
+			try {
+				const result = await ctx.request(`${endpoint}/send`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						receiverUid: id,
+						content,
+						markdown: markdownEnabled
+					}),
+					signal: ctx.signal
+				});
+				if (owner() !== account || ctx.signal.aborted) return;
+				if (result?.success === false) {
+					deliveryStatus.set(id, result.message || "发送失败，请稍后重试");
+					return;
+				}
+				if (result?.success !== true) throw new Error("发送结果未确认");
+				drafts.delete(id);
+				deliveryStatus.delete(id);
+				if (active === id) {
+					input.value = "";
+					editor.activate();
+				}
+				const acceptedId = Number.isSafeInteger(result.data?.id) ? result.data.id : void 0;
+				const latest = {
+					id: acceptedId,
+					local_id: acceptedId === void 0 ? crypto.randomUUID() : void 0,
+					after_id: (histories.get(id) || []).reduce((last, row) => Math.max(last, row.id || row.max_id || 0), 0),
+					sender_id: account,
+					receiver_id: id,
+					content,
+					created_at: result.data?.created_at || new Date().toISOString(),
+					viewed: true,
+					is_markdown: markdownEnabled
+				};
+				const peerName = peers.get(id)?.name || (active === id ? name.textContent : `用户 ${id}`);
+				histories.set(id, mergeMessages(histories.get(id) || [], [latest]));
+				peers.set(id, {
+					id,
+					name: peerName,
+					latest,
+					unread: false
+				});
+				renderList();
+				if (active === id && valid()) renderThread(id, peerName, histories.get(id), true);
+				try {
+					histories.set(id, await archive.merge(id, peerName, [latest]));
+				} catch {
+					deliveryStatus.set(id, "消息已发送，本地保存失败，请检查浏览器存储空间");
+				}
+				if (active === id && valid()) await loadThread(true);
+			} catch {
+				if (!ctx.signal.aborted && owner() === account) {
+					uncertain.add(id);
+					deliveryStatus.set(id, "发送结果未确认，草稿已保留。请刷新聊天记录核对后，再编辑草稿发送，避免重复。");
+				}
+			} finally {
+				sending.delete(id);
+				if (active === id && valid()) {
+					if (deliveryStatus.has(id)) status.textContent = deliveryStatus.get(id);
+					updateSend();
+				}
+			}
+		}, { signal: ctx.signal });
+		input.addEventListener("input", () => {
+			if (active) {
+				uncertain.delete(active);
+				deliveryStatus.delete(active);
+			}
+			saveDraft();
+			status.textContent = "";
+			updateSend();
+		}, { signal: ctx.signal });
+		markdown.addEventListener("change", saveDraft, { signal: ctx.signal });
+		input.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+			event.preventDefault();
+			if (!event.repeat && !send.disabled) composer.requestSubmit();
+		}, { signal: ctx.signal });
+		search.addEventListener("input", renderList, { signal: ctx.signal });
+		retrySync.addEventListener("click", () => {
+			if (!retrySync.disabled) loadThread();
+		}, { signal: ctx.signal });
+		refresh.addEventListener("click", () => {
+			loadList();
+			if (active) loadThread();
+		}, { signal: ctx.signal });
+		more.addEventListener("click", () => {
+			loadList(true);
+		}, { signal: ctx.signal });
+		back.addEventListener("click", () => navigate(), { signal: ctx.signal });
+		original.addEventListener("click", () => {
+			suppressed = true;
+			const params = new URLSearchParams(location.hash.split("?")[1] || "");
+			params.set("native", "1");
+			location.hash = `#/${category || "atMe"}?${params}`;
+			syncRoute();
+		}, { signal: ctx.signal });
+		returnToNew.addEventListener("click", () => {
+			const params = new URLSearchParams(location.hash.split("?")[1] || "");
+			const id = Number(params.get("to"));
+			const nativeHost = Array.from(nativeContainer?.querySelectorAll(".md-editor") || []).find((host) => !root.contains(host));
+			const text = ((nativeHost?.querySelector(".CodeMirror"))?.CodeMirror)?.getValue() || nativeHost?.querySelector("textarea")?.value || "";
+			if (Number.isSafeInteger(id) && id > 0 && text) drafts.set(id, {
+				text,
+				markdown: true
+			});
+			params.delete("native");
+			suppressed = false;
+			history.pushState(null, "", `/notification${location.hash.split("?")[0] || "#/message"}${params.size ? `?${params}` : ""}`);
+			syncRoute();
+		}, { signal: ctx.signal });
+		markAll.addEventListener("click", async () => {
+			if (!panelValid() || markAll.disabled) return;
+			markAll.disabled = true;
+			const kind = category;
+			const requestSignal = signal();
+			try {
+				if (kind === "message") {
+					await api("/markViewed?all=true", {
+						method: "POST",
+						signal: requestSignal
+					});
+					if (!requestSignal.aborted) {
+						peers.forEach((peer) => {
+							peer.unread = false;
+						});
+						renderList();
+						await Promise.all([...peers.values()].map(async (peer) => {
+							histories.set(peer.id, await archive.merge(peer.id, peer.name, [], "all"));
+						}));
+					}
+				} else await inbox.markAll();
+				if (panelValid()) refreshCounts();
+			} catch (error) {
+				if (panelValid() && !requestSignal.aborted) ctx.notify(error instanceof Error ? error.message : "标记已读失败");
+			} finally {
+				markAll.disabled = false;
+			}
+		}, { signal: ctx.signal });
+		const followLink = (event) => {
+			if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+			if (!(event.target instanceof Element)) return;
+			const link = event.target.closest("a[href]");
+			if (!link) return;
+			const url = new URL(link.href, location.href);
+			if (url.origin !== location.origin || url.pathname !== "/notification" || url.hash && !/^#\/(atMe|reply|message)(?:\?|$)/.test(url.hash) || suppressed || new URLSearchParams(location.hash.split("?")[1] || "").get("native") === "1") return;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			history.pushState(null, "", url);
+			syncRoute();
+		};
+		document.addEventListener("click", followLink, {
+			capture: true,
+			signal: ctx.signal
+		});
+		window.addEventListener("hashchange", syncRoute, { signal: ctx.signal });
+		window.addEventListener("popstate", syncRoute, { signal: ctx.signal });
+		const poll = () => {
+			if (!panelValid() || document.hidden) return;
+			refreshCounts();
+			if (category === "message") {
+				loadList();
+				if (active && !sending.has(active)) loadThread();
+			} else inbox.refresh();
+		};
+		const timer = setInterval(poll, 3e4);
+		document.addEventListener("visibilitychange", poll, { signal: ctx.signal });
+		const stopMount = ctx.watch(() => {
+			if (!(root.isConnected && root.parentElement === nativeContainer && nativeToolbar.parentElement === nativeContainer) && attachToNative()) syncRoute();
+		});
+		syncRoute();
+		return () => {
+			stopMount();
+			lifetime.abort();
+			clearInterval(timer);
+			routeController.abort();
+			threadController.abort();
+			inbox.stop();
+			archive.close();
+			userCard.stop();
+			root.remove();
+			nativeToolbar.remove();
+			nativeContainer?.classList.remove("nspp-messages-container");
+			nativeContainer?.removeAttribute("data-nspp-message-view");
+			drafts.clear();
+			histories.clear();
+			visibleHistory.clear();
+		};
+	}
+	var messagesFeature = {
+		id: "private-messages",
+		title: "紧凑消息中心",
+		description: "会话与消息按账号本地存档、去重合并；默认 Markdown 编辑器支持图片上传与预览，可切回原版。",
+		group: "操作辅助",
+		defaults: { enabled: true },
+		mount(ctx) {
+			if (location.pathname !== "/notification") return;
+			let account, dispose;
+			const stop = ctx.watch(() => {
+				const uid = unsafeWindow$1.__config__?.user?.member_id;
+				if (uid === account) return;
+				dispose?.();
+				dispose = void 0;
+				account = uid;
+				if (uid) dispose = mountChat(ctx, uid);
+			});
+			return () => {
+				stop();
+				dispose?.();
+			};
+		}
+	};
+	_css("#nspp-tools{z-index:999;flex-direction:column;align-items:flex-end;gap:.4rem;max-width:min(22rem,75vw);max-height:55dvh;padding:8px 8px 0 0;display:flex;position:fixed;bottom:4rem;right:calc(1rem - 8px);overflow-y:auto}.discussion-wrapper .discussion-item.nspp-discussion-row>a:first-child{overflow-wrap:anywhere;flex:1;min-width:0}.discussion-wrapper .discussion-item.nspp-discussion-row>:not(a:first-child){flex:none;margin-right:0}.discussion-wrapper .nspp-discussion-row>.nspp-discussion-stats{color:#ccc;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;gap:10px;margin:0 0 0 auto;padding-left:12px;font-size:12px;display:inline-flex}.nspp-discussion-stats[hidden],.nspp-discussion-stats>span[hidden]{display:none!important}.nspp-discussion-stats>span{align-items:center;gap:4px;display:inline-flex}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon{color:currentColor;flex:none;width:14px;height:14px}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon:hover{transform:none}#nspp-tools button,[data-nspp-resolve],.nspp-action{font:inherit;border:1px solid var(--border-color,#929a9380);color:var(--text-color,inherit);background:var(--bg-color,Canvas);cursor:pointer;border-radius:.4rem;padding:.35rem .6rem;font-size:.8rem}#nspp-tools a,[data-nspp-footprints] a{text-underline-offset:.2em}#nspp-tools a:hover,[data-nspp-footprints] a:hover{text-decoration:underline}#nspp-tools button:disabled,.nspp-compose button:disabled{opacity:1;cursor:wait}#nspp-tools :focus-visible{outline-offset:2px;outline:2px solid}@media (prefers-reduced-motion:reduce){[class*=nspp-]{scroll-behavior:auto!important}}.nspp-monitor{border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(42rem,92vw);max-height:85dvh;color:var(--text-color,CanvasText);border-radius:.75rem;padding:1rem;overflow:auto}.nspp-monitor::backdrop{background:#0006}.nspp-monitor ul{padding-left:1.25rem}.nspp-monitor li{overflow-wrap:anywhere;margin:.4rem 0}.nspp-monitor a{text-underline-offset:.2em}.nspp-monitor a:hover{text-decoration:underline}.nspp-block-controls{flex-wrap:wrap;gap:.3rem;margin-left:.4rem;font-size:.75rem;display:inline-flex}.nspp-user-badges{vertical-align:baseline;white-space:nowrap;font-variant-numeric:tabular-nums;flex-wrap:nowrap;align-items:center;gap:5px;margin-inline-start:4px;font:10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.nspp-user-badges>span{white-space:nowrap;background:0 0;border:0;padding:0}.nspp-level{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-age{color:#59636e;cursor:help}.nspp-user-badges button{font:inherit;color:inherit;min-height:0;box-shadow:none;cursor:pointer;background:0 0;border:0;border-radius:2px;padding:0}.nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-user-badges .nspp-trust:hover{text-underline-offset:3px;text-decoration:underline}.nspp-user-badges button:focus-visible{outline-offset:2px;outline:2px solid #0969da}.nspp-level[data-level=\"0\"]{--nspp-badge-color:#66717e}.nspp-level[data-level=\"2\"]{--nspp-badge-color:#0969da}.nspp-level[data-level=\"3\"]{--nspp-badge-color:#087f8c}.nspp-level[data-level=\"4\"]{--nspp-badge-color:#218044}.nspp-level[data-level=\"5\"]{--nspp-badge-color:#a66b08}.dark-layout .nspp-level,.dark-layout .nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#9198a1)}.dark-layout .nspp-age{color:#9198a1}.dark-layout .nspp-level[data-level=\"0\"]{--nspp-badge-color:#a3adb8}.dark-layout .nspp-level[data-level=\"2\"]{--nspp-badge-color:#79b8ff}.dark-layout .nspp-level[data-level=\"3\"]{--nspp-badge-color:#56c8ce}.dark-layout .nspp-level[data-level=\"4\"]{--nspp-badge-color:#70cf91}.dark-layout .nspp-level[data-level=\"5\"]{--nspp-badge-color:#dfb653}.nspp-level[data-level=\"1\"],.nspp-trust[data-tier=danger]{--nspp-badge-color:#cf3434}.nspp-trust[data-tier=warning]{--nspp-badge-color:#a66b08}.nspp-trust[data-tier=success]{--nspp-badge-color:#218044}.dark-layout .nspp-level[data-level=\"1\"],.dark-layout .nspp-trust[data-tier=danger]{--nspp-badge-color:#ff8585}.dark-layout .nspp-trust[data-tier=warning]{--nspp-badge-color:#dfb653}.dark-layout .nspp-trust[data-tier=success]{--nspp-badge-color:#70cf91}.nspp-user-badges .nspp-trust[data-tier=perfect]{--nspp-badge-color:#ffe66d;background:#b82025;border-radius:3px;padding:0 4px}.nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#916008;background:#fff3cd;border-radius:3px;padding:0 4px;box-shadow:inset 0 0 0 1px #dfba6266}.dark-layout .nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#f0ce78;background:#3c321c;box-shadow:inset 0 0 0 1px #dfba6255}.nspp-user-hover-tags,.nspp-user-native-tags,.nspp-user-profile-tags{flex-wrap:wrap;align-items:center;gap:3px;display:inline-flex}.nspp-user-native-tags:empty,.nspp-user-profile-tags:empty,.nspp-user-profile-tags[hidden],.nspp-user-hover-tags[hidden]{display:none}.nspp-user-hover .role-tag,.nspp-chat-profile .role-tag{box-shadow:none;white-space:nowrap;border:0;border-radius:3px;flex:none;align-items:center;gap:3px;margin:0;padding:0 4px;font:500 10px/15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;display:inline-flex}.nspp-user-hover .role-tag:not([data-nspp-role]),.nspp-chat-profile .role-tag:not([data-nspp-role]){color:#69717a;background:#818b9818}.nspp-user-hover .role-tag[data-nspp-role]:before,.nspp-chat-profile .role-tag[data-nspp-role]:before{width:8px;height:9px}.role-tag[data-nspp-role]{color:#2463a0;box-shadow:none;letter-spacing:0;vertical-align:middle;white-space:nowrap;background:#eaf3fc;border:0;border-radius:3px;flex:none;align-items:center;gap:3px;padding:0 5px;font:600 10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.role-tag[data-nspp-role]:before{content:\"\";clip-path:polygon(50% 0,95% 17%,88% 65%,50% 100%,12% 65%,5% 17%);background:currentColor;flex:none;width:9px;height:10px}.role-tag[data-nspp-role=founder]{color:#087f78;background:#e5f4ef}.role-tag[data-nspp-role=founder]:before{clip-path:polygon(50% 0,66% 34%,100% 50%,66% 66%,50% 100%,34% 66%,0 50%,34% 34%)}.role-tag[data-nspp-role=owner]{color:#4c596a;background:#eaf0f5}.role-tag[data-nspp-role=owner]:before{clip-path:polygon(0 15%,25% 40%,50% 0,75% 40%,100% 15%,88% 85%,12% 85%)}.dark-layout .role-tag[data-nspp-role=admin]{color:#9ac7f2;background:#23374b}.dark-layout .role-tag[data-nspp-role=founder]{color:#7cd4c1;background:#1e3b35}.dark-layout .role-tag[data-nspp-role=owner]{color:#c1ccd9;background:#303a47}.nspp-history{color:#1f2328;background:#fff;border:1px solid #d1d9e0;border-radius:8px;width:min(640px,100vw - 24px);max-width:none;max-height:80dvh;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;box-shadow:0 8px 28px #1f232833}.nspp-history[open]{flex-direction:column;display:flex}.nspp-history::backdrop{background:#1f232866}.nspp-history *{box-sizing:border-box}.nspp-history header{box-shadow:none;background:0 0;border-bottom:0;flex:none;justify-content:space-between;align-items:center;padding:6px 12px;display:flex}.nspp-history h2{margin:0;font-size:14px;font-weight:600}.nspp-history button{min-height:26px;color:inherit;cursor:pointer;white-space:nowrap;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:5px;padding:2px 8px;font-family:inherit;font-size:12px;line-height:20px}.nspp-history [hidden]{display:none!important}.nspp-history-toolbar{border-bottom:0;flex:none;gap:6px;padding:4px 12px 6px;display:flex}.nspp-history input{width:0;min-width:0;color:inherit;font:inherit;background:0 0;border:1px solid #d1d9e0;border-radius:5px;flex:1;padding:4px 8px}.nspp-history ol{overscroll-behavior:contain;min-height:60px;margin:0;padding:0 12px;list-style:none;overflow-y:auto}.nspp-history li{border:0;align-items:center;gap:8px;margin:0;padding:3px 0;display:flex}.nspp-history li button{background:0 0;border-color:#0000;min-height:24px;padding:1px 6px}.nspp-history li:hover{background:#818b980c}.nspp-history li a{color:#0969da;white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;text-decoration:none;overflow:hidden}.nspp-history a:hover{text-underline-offset:2px;text-decoration:underline}.nspp-history time{color:#59636e;flex:none;font-size:11px}.nspp-history :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-history{color:#f0f6fc;background:#0d1117;border-color:#3d444d}.dark-layout .nspp-history header,.dark-layout .nspp-history button{background:#151b23}.dark-layout .nspp-history a{color:#79c0ff}@media (width<=600px){.nspp-history{width:calc(100vw - 16px)}.nspp-history-toolbar{flex-wrap:wrap}.nspp-history time{display:none}}.nspp-block-toggle{vertical-align:middle;color:#59636e;cursor:pointer;background:0 0;border:0;border-radius:4px;min-width:0;margin-left:5px;padding:0 2px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-block-toggle[data-blocked=true]{color:#cf222e;border-color:#ff818280}.nspp-block-toggle:disabled{opacity:1;cursor:wait}.dark-layout .nspp-block-toggle{color:#9198a1;border-color:#3d444d}.nspp-user-badges[aria-busy=true]{color:#59636e;border-radius:4px;min-width:88px;min-height:16px}.nspp-trust-dialog{padding:16px}.nspp-trust-dialog p{white-space:pre-line;line-height:1.8}.nspp-trust-dialog button{align-self:flex-end}.nspp-post-preview{z-index:2147483644;border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(340px,100vw - 24px);height:auto;max-height:min(320px,100dvh - 24px);color:var(--text-color,CanvasText);text-align:left;border-radius:6px;flex-direction:column;margin:0;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;overflow:hidden;box-shadow:0 3px 12px #00000018}.nspp-post-preview[hidden]{display:none}.nspp-post-preview header{border-bottom:1px solid #929a9350;flex-shrink:0;align-items:center;gap:8px;padding:5px 8px;font-size:12px;line-height:18px;display:flex;position:static;box-shadow:none!important;text-shadow:none!important}.nspp-post-preview header a{white-space:normal;overflow-wrap:anywhere;min-width:0;color:inherit;flex:1;font-weight:500;text-decoration:none;text-shadow:none!important;box-shadow:none!important}.nspp-post-preview button{width:20px;height:20px;min-height:0;color:inherit;cursor:pointer;background:0 0;border:0;border-radius:3px;flex:none;padding:0;font:16px/18px Arial,sans-serif}.nspp-post-preview>p{margin:0;padding:5px 8px;font-size:11px}.nspp-post-preview>p:empty{display:none}.nspp-preview-content{overscroll-behavior:contain;overflow-wrap:anywhere;flex:0 auto;min-height:0;padding:7px 8px;font-size:12px;line-height:1.5;overflow:auto}.nspp-preview-meta{opacity:.65;margin-bottom:5px;font-size:11px}.nspp-preview-content img{object-fit:contain;width:auto;max-width:100%;height:auto;max-height:120px}.nspp-preview-content pre{background:#818b9814;border-radius:6px;padding:6px;overflow:auto}.nspp-preview-content blockquote{border-left:3px solid #818b9850;margin:6px 0;padding-left:8px}.nspp-preview-content table{max-width:100%;display:block;overflow:auto}.nspp-preview-content h3{margin:6px 0;font-size:12px}.nspp-preview-comment{border-top:1px solid #818b9830;padding:6px 0}.nspp-preview-comment>strong{font-size:12px}.nspp-post-preview footer{background:0 0;border-top:1px solid #818b9830;flex-shrink:0;padding:4px 8px;font-size:11px;line-height:16px}.nspp-post-preview footer a,.nspp-preview-content a{color:var(--link-color,#0969da)}.nspp-preview-content article>:first-child{margin-top:0}.nspp-preview-content article>:last-child{margin-bottom:0}.nspp-post-preview,.nspp-post-preview *{box-sizing:border-box}.nspp-preview-content p{font-size:inherit;line-height:inherit;margin:5px 0}.nspp-preview-content :is(ul,ol){margin:5px 0;padding-left:18px}.nspp-preview-content :is(h1,h2,h4){margin:6px 0;font-size:13px;line-height:1.5}.nspp-post-preview button:hover{background:#818b981a}.nspp-post-preview footer a{color:inherit;opacity:.7;text-decoration:none}.nspp-post-preview footer a:hover{opacity:1;text-decoration:underline}.nspp-meta-label{opacity:.6;font-size:10px}.nspp-user-badges :is(.nspp-level,.nspp-age,.nspp-trust){align-items:center;gap:3px;display:inline-flex}.nspp-user-badges .iconpark-icon{flex:none;width:11px;height:11px}.nspp-list-actions{white-space:nowrap;color:var(--text-color,#777);flex-wrap:nowrap;align-items:center;gap:12px;padding-top:5px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;overflow-x:auto}.nspp-list-actions button{color:inherit;font:inherit;cursor:pointer;opacity:.75;background:0 0;border:0;border-radius:0;align-items:center;gap:4px;margin:0;padding:0;display:inline-flex}.nspp-list-actions .iconpark-icon{width:13px;height:13px}.nspp-interaction{background:var(--bg-color,Canvas);color:var(--text-color,CanvasText);border:1px solid #818b9840;border-radius:6px;margin:4px 0 12px 52px;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;list-style:none}.nspp-interaction[hidden],.nspp-interaction form[hidden]{display:none!important}.nspp-interaction header{border-bottom:1px solid #818b9820;align-items:center;gap:8px;padding:6px 10px;display:flex}.nspp-interaction header a{white-space:nowrap;text-overflow:ellipsis;min-width:0;color:inherit;flex:1;overflow:hidden}.nspp-interaction button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0}.nspp-interaction header button{font-size:18px}.nspp-interaction p{margin:0;padding:6px 10px;font-size:11px}.nspp-interaction p:empty{display:none}.nspp-interaction form{padding:8px 10px}.nspp-interaction textarea{box-sizing:border-box;resize:vertical;width:100%;min-height:84px;max-height:240px;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:4px;padding:8px;display:block}.nspp-reply-actions{justify-content:space-between;align-items:center;gap:8px;margin-top:6px;display:flex}.nspp-reply-actions span{opacity:.6;font-size:10px}.nspp-reply-actions button{color:#fff;background:#238636;border-radius:4px;padding:3px 10px}.nspp-reply-actions button:disabled{opacity:.4;cursor:default}@media (width<=600px){.nspp-interaction{margin-left:0}.nspp-list-actions{gap:8px}}.nspp-list-actions [hidden]{display:none!important}.nspp-block-toggle{align-items:center;gap:3px;display:inline-flex}.nspp-block-toggle .iconpark-icon{width:11px;height:11px}.nspp-block-toggle[hidden],#nspp-tools button[hidden]{display:none!important}.nspp-action-category{color:inherit;opacity:.65;flex:none;margin-left:auto;text-decoration:none}.nspp-action-category:hover{text-underline-offset:3px;text-decoration:underline}.nspp-list-actions button{flex-shrink:0}.nspp-post-preview footer .nspp-list-actions{gap:10px;padding:2px 0 5px}.nspp-post-preview footer .nspp-list-actions button{width:auto;height:auto;font:inherit;line-height:18px}.nspp-post-preview footer .nspp-list-actions button:hover{text-underline-offset:3px;background:0 0;text-decoration:underline}.nspp-post-preview::backdrop{background:#0006}@media (width<=600px),(hover:none){.nspp-post-preview{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;inset:auto 0 0}.nspp-post-preview header{padding:10px 16px;font-size:14px}.nspp-post-preview header a{white-space:normal}.nspp-post-preview button{width:40px;height:40px;font-size:22px}.nspp-preview-content{padding:12px 16px;font-size:14px;line-height:1.7}.nspp-post-preview footer{padding:12px 16px;font-size:13px}.nspp-post-preview footer a{padding:8px 0;display:block}}.nspp-count-loading{flex:none;font-size:10px}.nspp-quick-replies{box-sizing:border-box;background:var(--bg-color,Canvas);width:min(440px,100vw - 24px);max-height:85dvh;color:var(--text-color,CanvasText);border:1px solid #818b9838;border-radius:12px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:hidden;box-shadow:0 16px 60px #0003}.nspp-quick-replies[open]{flex-direction:column;display:flex}.nspp-quick-replies::backdrop{background:#0005}.nspp-quick-replies [hidden]{display:none!important}.nspp-quick-head,.nspp-quick-pagination{color:inherit;background:0 0;flex:none;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;display:flex}.nspp-quick-head strong{font-size:14px}.nspp-quick-replies button{font:inherit;color:inherit;cursor:pointer;min-height:28px;box-shadow:none;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:4px 8px}.nspp-quick-replies button:hover:not(:disabled){background:#818b9814}.nspp-quick-replies :is(button,input,textarea):focus-visible{outline:2px solid var(--link-color,#0969da);outline-offset:2px}.nspp-quick-replies button:disabled{opacity:.4;cursor:default}.nspp-quick-head button{border:0;width:28px;padding:0;font-size:18px}.nspp-quick-replies p{margin:0}.nspp-quick-replies .nspp-quick-target{white-space:nowrap;text-overflow:ellipsis;opacity:.65;flex:none;padding:0 12px 6px;font-size:12px;overflow:hidden}.nspp-quick-toolbar{flex:none;gap:6px;padding:2px 12px 8px;display:flex}.nspp-quick-replies input,.nspp-quick-replies textarea{box-sizing:border-box;min-width:0;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:6px;padding:5px 8px}.nspp-quick-toolbar input{flex:1;width:0}.nspp-quick-replies .nspp-quick-primary{color:var(--link-color,#0969da);background:#0969da0c;border-color:#0969da40;flex:none}.nspp-quick-list{overscroll-behavior:contain;min-height:0;padding:0 12px;overflow-y:auto}.nspp-quick-item{border-bottom:1px solid #818b9820;align-items:center;gap:4px;padding:2px 0;display:flex}.nspp-quick-item:last-child{border-bottom:0}.nspp-quick-item .nspp-quick-send{text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;border:0;flex:1;min-width:0;min-height:30px;padding:4px 6px}.nspp-quick-item button:not(.nspp-quick-send){border-color:#0000;flex:none;padding:4px 6px;font-size:11px}.nspp-quick-item .nspp-quick-delete:hover:not(:disabled){color:#cf3434;background:#cf343410}.nspp-quick-list>p{text-align:center;opacity:.6;padding:16px 6px}.nspp-quick-replies form{border-top:1px solid #818b9830;flex:none;padding:8px 12px}.nspp-quick-replies form button+button{margin-left:8px}.nspp-quick-replies textarea{resize:vertical;width:100%;max-height:22dvh;margin-bottom:8px;display:block}.nspp-quick-pagination{border-top:1px solid #818b9830;padding-top:6px;padding-bottom:6px;font-size:11px}.nspp-quick-replies .nspp-quick-status{opacity:.65;flex:none;padding:0 12px 6px;font-size:11px}@media (width<=600px){.nspp-quick-replies{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;margin:auto 0 0}.nspp-quick-replies button{min-height:34px}}#nspp-tools .nspp-tool-icon{flex:none;justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}.nspp-user-badges .nspp-age,.nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#59636e)}.nspp-age[data-tone=new]{--nspp-age-color:#cf3434}.nspp-age[data-tone=recent]{--nspp-age-color:#a66b08}.nspp-age[data-tone=member]{--nspp-age-color:#0969da}.nspp-age[data-tone=longtime]{--nspp-age-color:#218044}.dark-layout .nspp-age[data-tone=new]{--nspp-age-color:#ff8585}.dark-layout .nspp-age[data-tone=recent]{--nspp-age-color:#dfb653}.dark-layout .nspp-age[data-tone=member]{--nspp-age-color:#79b8ff}.dark-layout .nspp-age[data-tone=longtime]{--nspp-age-color:#70cf91}.dark-layout .nspp-user-badges .nspp-age,.dark-layout .nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#9198a1)}.nspp-user-badges button.nspp-age{cursor:pointer}.nspp-user-badges button.nspp-age:hover{text-underline-offset:3px;text-decoration:underline}.nspp-profile-dialog{width:min(320px,100vw - 24px)}.nspp-profile-dialog header{justify-content:space-between;padding:10px 12px}.nspp-profile-summary{align-items:baseline;gap:8px;padding:4px 12px 10px;display:flex}.nspp-profile-summary strong{font-variant-numeric:tabular-nums;font-size:22px;line-height:1.3}.nspp-profile-summary span{font-size:11px}.nspp-profile-dialog dl{border-top:1px solid #818b9830;grid-template-columns:1fr auto;gap:6px 12px;margin:0;padding:10px 12px;display:grid}.nspp-profile-dialog dt{opacity:.65}.nspp-profile-dialog dd{font-variant-numeric:tabular-nums;margin:0}.nspp-profile-dialog>p{opacity:.75;margin:0;padding:0 12px 12px;font-size:11px}.post-title .nspp-readonly{vertical-align:middle;border-radius:3px;flex:none;align-items:center;color:#b52b32!important;box-shadow:none!important;background:#cf343410!important;border:0!important;margin-left:5px!important;padding:0 4px!important;font:500 10px/17px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif!important;display:inline-flex!important}.post-title .nspp-pinned{vertical-align:middle;flex:none;margin-left:4px;color:#768390!important;background:0 0!important;border:0!important;border-radius:0!important;width:13px!important;height:13px!important;padding:0!important}.post-title .nspp-pin-wrap{align-items:center;display:inline-flex;box-shadow:none!important;background:0 0!important;border:0!important;padding:0!important}.dark-layout .post-title .nspp-readonly{color:#ff8585!important;background:#ff858514!important}.dark-layout .post-title .nspp-pinned{color:#9198a1!important}.nspp-monitor{color:#1f2328;background:#fff;border:1px solid #818b9840;border-radius:10px;width:min(560px,100vw - 24px);max-height:80dvh;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}.nspp-monitor[open]{flex-direction:column;display:flex}.nspp-monitor *{box-sizing:border-box}.nspp-monitor header,.nspp-monitor footer{flex:none;align-items:center;gap:8px;padding:8px 12px;display:flex}.nspp-monitor header{border-bottom:1px solid #818b9828;justify-content:space-between}.nspp-monitor h3{margin:0;font-size:14px}.nspp-monitor button{min-height:28px;color:inherit;font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:1px solid #818b9838;border-radius:5px;padding:3px 8px}.nspp-monitor button:hover{background:#818b9814}.nspp-monitor button:disabled{opacity:1;cursor:wait}.nspp-monitor>p{opacity:.65;margin:0;padding:6px 12px;font-size:11px}.nspp-monitor-summary{flex-wrap:wrap;align-items:center;gap:2px 10px;display:flex}.nspp-monitor-results:empty{display:none}.nspp-monitor-results{overscroll-behavior:contain;min-height:0;padding:0 12px 8px;overflow:auto}.nspp-monitor-results section+section{border-top:1px solid #818b9828;margin-top:8px;padding-top:4px}.nspp-monitor h4{color:#768390;align-items:center;gap:6px;margin:5px 0;font-size:11px;display:flex}.nspp-monitor h4 small{background:#818b9814;border-radius:8px;padding:0 5px;font-size:10px}.nspp-monitor ul{margin:0;padding:0;list-style:none}.nspp-monitor li{margin:0;padding:4px 0}.nspp-monitor a{color:inherit;text-decoration:none}.nspp-monitor a:hover{color:#0969da;text-decoration:underline}.nspp-monitor section>p{opacity:.55;margin:6px 0;font-size:11px}.nspp-monitor footer{border-top:1px solid #818b9828;flex-wrap:wrap}.nspp-monitor footer span{opacity:.6;flex:1;font-size:10px}.nspp-monitor-tracked{flex-shrink:0;max-height:25dvh;padding:0 12px 8px;overflow:auto}.nspp-monitor-tracked[hidden]{display:none}.nspp-monitor-tracked>div{align-items:center;gap:8px;padding:3px 0;display:flex}.nspp-monitor-tracked a{flex:1;min-width:0}#nspp-tools button[data-unread=true]{color:#cf3434;background:#fff0f0;border-color:#cf3434}.dark-layout .nspp-monitor{color:#e6edf3;background:#161b22}@media (width<=600px){.nspp-monitor{width:100%;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:12px 12px 0 0;margin:auto 0 0}.nspp-monitor button{min-height:34px}}[data-nspp-monitor-match=\"0\"]{background-color:#fff2c9!important}[data-nspp-monitor-match=\"1\"]{background-color:#dff3e7!important}[data-nspp-monitor-match=\"2\"]{background-color:#e2efff!important}[data-nspp-monitor-match=\"3\"]{background-color:#ffe8dc!important}.dark-layout [data-nspp-monitor-match=\"0\"]{background-color:#3c3420!important}.dark-layout [data-nspp-monitor-match=\"1\"]{background-color:#203a2c!important}.dark-layout [data-nspp-monitor-match=\"2\"]{background-color:#23344c!important}.dark-layout [data-nspp-monitor-match=\"3\"]{background-color:#432f26!important}.nspp-monitor header,.nspp-monitor footer,.nspp-monitor-results section+section{border:0}.nspp-monitor-results section+section{margin-top:12px}.nspp-monitor footer{background:#818b980a}#nspp-tools button[data-monitor-state]{position:relative}.nspp-monitor-badge{box-sizing:border-box;border:1px solid var(--bg-color,Canvas);color:#fff;text-align:center;pointer-events:none;background:#cf3434;border-radius:999px;min-width:16px;padding:0 3px;font:600 9px/14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:absolute;top:-6px;right:-6px}.nspp-monitor-badge[hidden]{display:none}#nspp-tools button[data-monitor-state=running]{color:#218044;background:var(--bg-color,Canvas);border-color:#218044}.dark-layout #nspp-tools button[data-monitor-state=running]{color:#70cf91}.nspp-monitor-editor{flex-wrap:wrap;flex:none;align-items:flex-end;gap:6px;padding:4px 12px 8px;display:flex}.nspp-monitor-editor label{min-width:180px;color:inherit;flex:1;font-size:11px}.nspp-monitor-editor textarea{width:100%;color:inherit;font:inherit;resize:vertical;background:#818b9810;border:0;border-radius:6px;max-height:18dvh;margin-top:4px;padding:6px 8px;display:block}.nspp-monitor-editor>span{opacity:.65;flex-basis:100%;font-size:10px}.nspp-monitor-editor>span:empty{display:none}@media (prefers-reduced-motion:reduce){.nspp-monitor[data-checking=true]>p:before{animation:none}}.nspp-monitor-spinner{vertical-align:-2px;border:2px solid #0969da30;border-top-color:#0969da;border-radius:50%;width:10px;height:10px;margin-right:6px;display:inline-block}.nspp-monitor-spinner[hidden]{display:none}.nspp-regex-help{opacity:.65;border:1px solid;border-radius:50%;justify-content:center;align-items:center;width:16px;height:16px;margin-left:6px;font-size:10px;display:inline-flex;text-decoration:none!important}.nspp-regex-help:hover{opacity:1}.nspp-monitor button,.nspp-footprints-dialog button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-monitor button svg,.nspp-footprints-dialog button svg{flex:none;width:13px;height:13px}.nspp-monitor-editor>small{opacity:.65;flex-basis:100%;font-size:10px;line-height:1.6}.nspp-monitor-editor textarea{min-height:56px}.nspp-footprints-dialog{border-radius:10px;width:min(600px,100vw - 24px);padding:8px}.nspp-footprints-dialog header{padding:4px 4px 10px}.nspp-footprints-toolbar{flex-wrap:wrap;align-items:center;gap:6px;padding:4px;display:flex}.nspp-footprints-toolbar [role=status]{opacity:.6;margin-left:auto;font-size:11px}.nspp-footprints-dialog>div:last-child{padding:8px 4px}.nspp-footprints-dialog a{color:inherit;border-radius:4px;padding:4px 6px;text-decoration:none}.nspp-footprints-dialog a:hover{background:#818b9810}.nspp-footprints-list{gap:4px;max-height:min(55dvh,400px);display:grid;overflow:auto}.nspp-footprints-list>a{align-items:baseline;gap:12px;min-width:0;display:flex}.nspp-footprint-title{overflow-wrap:anywhere;flex:1;min-width:0}.nspp-footprints-list small{opacity:.6;white-space:nowrap;flex:none;font-size:11px}.nspp-monitor>header h3{margin-right:auto}.nspp-monitor-config{width:min(420px,100vw - 24px)}.nspp-monitor-config .nspp-monitor-editor{flex-direction:column;align-items:stretch;gap:8px;padding:8px 14px 14px;display:flex;overflow:auto}.nspp-monitor-config .nspp-monitor-editor label{flex:none;min-width:0}.nspp-monitor-config .nspp-monitor-editor textarea{min-height:88px}.nspp-monitor-config input{width:100%;font:inherit;color:inherit;background:#818b9810;border:0;border-radius:6px;margin-top:5px;padding:7px 8px;display:block}.nspp-monitor-config .nspp-monitor-editor>small,.nspp-monitor-config .nspp-monitor-editor>span{flex-basis:auto}.nspp-monitor-config .nspp-monitor-editor>button{align-self:flex-end;min-width:72px}@media (width<=600px){.nspp-monitor-config{border-radius:12px 12px 0 0;width:100%;margin:auto 0 0}}.md-editor .nspp-upload-status{background:0 0;border:0;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:0 6px;font-size:11px;line-height:24px;display:inline-flex}.nspp-upload-status [hidden]{display:none!important}.nspp-upload-status [role=status]{opacity:.7;overflow-wrap:anywhere;font-size:11px}.nspp-upload-status a{color:inherit;font-size:11px;text-decoration:none}.nspp-upload-status a:hover{text-decoration:underline}.nspp-upload-status button{color:inherit;cursor:pointer;background:0 0;border:0;justify-content:center;align-items:center;padding:4px;display:inline-flex}.nspp-upload-status button svg{width:16px;height:16px}.nspp-ai-compose{flex-wrap:wrap;align-items:start;gap:8px;padding:8px;display:flex}.nspp-ai-compose textarea{min-width:180px;color:inherit;background:0 0;border:1px solid #8885;border-radius:6px;flex:1;padding:6px}.nspp-ai-compose small{opacity:.7;width:100%}.nspp-original-notification{display:none!important}.nspp-ecg-shine{display:none}#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{stroke:#8ce9aa;stroke-dasharray:18 118;animation:1.8s linear infinite nspp-ecg-scan;display:block}@keyframes nspp-ecg-scan{0%{stroke-dashoffset:18px}to{stroke-dashoffset:-118px}}@media (prefers-reduced-motion:reduce){#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{animation:none;display:none}}.user-stat .stat-block:has(>.nspp-notification-row)>:has(>.nspp-original-notification:only-child){display:none}.nspp-list-actions[hidden]{display:none!important}.nspp-user-hover{z-index:10010;box-sizing:border-box;border:1px solid var(--border-color,#818b9840);background:var(--bg-color,Canvas);width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);color:var(--text-color,CanvasText);border-radius:8px;padding:12px;font:12px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;overflow:auto;box-shadow:0 6px 24px #0002}.nspp-user-hover[hidden]{display:none!important}.nspp-user-hover-name{color:inherit;font-weight:600;text-decoration:none}.nspp-user-hover dl{grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0;display:grid}.nspp-user-hover dt{opacity:.65}.nspp-user-hover dd{font-variant-numeric:tabular-nums;margin:0}.nspp-user-hover>.nspp-block-toggle{font:inherit;color:inherit;background:0 0;border:1px solid #818b9840;border-radius:4px;margin:8px 0 0;padding:4px 8px;display:flex}.nspp-user-hover{border-radius:12px;width:280px;padding:12px;box-shadow:0 12px 36px #0002,0 2px 6px #0001}.nspp-user-hover .nspp-user-hover-header{align-items:center;gap:8px;margin-bottom:10px;display:flex}.nspp-user-hover .nspp-user-hover-header>div{flex-wrap:wrap;align-items:center;gap:6px;min-width:0;display:flex}.nspp-user-hover-name{overflow-wrap:anywhere;font-size:13px}.nspp-user-hover-monogram{color:#0969da;background:#0969da10;border-radius:10px;flex:0 0 36px;place-items:center;height:36px;font-size:18px;font-weight:600;display:grid}.nspp-user-hover .nspp-user-hover-rich{background:#818b9808;border:1px solid #818b9824;border-radius:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:7px 6px;font-size:13px;line-height:22px;display:grid}.nspp-user-hover-rich>div{flex-direction:column;align-items:center;gap:4px;min-width:0;display:flex}.nspp-user-hover-rich small{opacity:.6;font-size:11px;line-height:16px}.nspp-user-hover-rich .iconpark-icon{width:13px;height:13px}.nspp-user-hover-rich .nspp-age{font-weight:600}.nspp-user-hover dl{gap:4px 10px;margin:0}.nspp-user-hover dd{text-align:right;font-weight:500}.nspp-user-hover>.nspp-block-toggle{border-radius:6px;justify-content:center;width:100%;margin-top:12px;padding:5px 8px}.nspp-user-hover>.nspp-block-toggle:hover{color:#cf3434;background:#cf343410;border-color:#cf343440}.dark-layout .nspp-user-hover{color:#e6edf3;background:#161b22}.dark-layout .nspp-user-hover-monogram{color:#79b8ff;background:#79b8ff18}.nspp-user-badges[hidden],.nspp-user-hover-tags[hidden]{display:none!important}.nspp-user-hover-tags{flex-wrap:wrap;gap:5px;width:100%;display:flex}.nspp-user-hover-avatar{object-fit:cover;border-radius:10px;flex:0 0 32px;width:32px;height:32px}.nspp-user-hover-avatar[hidden],.nspp-user-hover-monogram[hidden]{display:none!important}.nspp-user-hover-signature{color:inherit;opacity:.7;white-space:pre-wrap;overflow-wrap:anywhere;max-height:5.1em;margin:-2px 0 10px;font-size:11px;line-height:1.7;overflow:auto}.nspp-user-hover[data-trust=danger]{background:#fff3f3;border-color:#e9b9bf}.nspp-user-hover[data-trust=warning]{background:#fff9ed;border-color:#e7d5ae}.nspp-user-hover[data-trust=success]{background:#f0faf4;border-color:#b8ddc5}.nspp-user-hover[data-trust=perfect]{background:#fff8e3;border-color:#ddbc6a}.dark-layout .nspp-user-hover[data-trust=danger]{background:#2b1c22;border-color:#643740}.dark-layout .nspp-user-hover[data-trust=warning]{background:#29251b;border-color:#605234}.dark-layout .nspp-user-hover[data-trust=success]{background:#182820;border-color:#355c45}.dark-layout .nspp-user-hover[data-trust=perfect]{background:#2d2617;border-color:#756031}.nspp-user-hover .nspp-user-hover-header{width:auto;height:auto;min-height:0;box-shadow:none;background:0 0;border:0;padding:0;position:static}.nspp-copy-button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0;border-radius:4px;padding:2px 5px}.nspp-copy-button:hover{background:#818b9820}.nspp-user-hover .nspp-copy-button{opacity:.65;font-size:10px}.nspp-category-actions{white-space:nowrap;flex:none;align-items:center;gap:5px;width:max-content;max-width:none;display:inline-flex}.nspp-category-reply{cursor:pointer;white-space:nowrap;flex:none;margin:0;font-family:inherit;position:static}.nspp-copy-button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-copy-button[data-copied=true]{color:#218044;opacity:1}.nspp-user-hover{width:260px;padding:9px;line-height:1.45}.nspp-user-hover .nspp-user-hover-header{gap:7px;margin-bottom:5px}.nspp-user-hover .nspp-user-hover-header>div{flex:1}.nspp-user-hover .nspp-user-hover-score{color:#768390;cursor:pointer;background:0 0;border:0;flex-direction:column;flex:none;align-items:center;gap:0;margin:0 0 0 auto;padding:0;display:flex}.nspp-user-hover-score strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font:700 26px/1 -apple-system,BlinkMacSystemFont,sans-serif}.nspp-user-hover-score small{opacity:.75;font-size:9px;line-height:16px}.nspp-user-hover[data-trust=danger] .nspp-user-hover-score{color:#c63849}.nspp-user-hover[data-trust=warning] .nspp-user-hover-score{color:#a66b08}.nspp-user-hover[data-trust=success] .nspp-user-hover-score{color:#218044}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#a56b00}.dark-layout .nspp-user-hover .nspp-user-hover-score{filter:brightness(1.5)}.nspp-user-hover dl{border-block:1px solid #818b9824;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 10px;padding:6px 0}.nspp-user-hover dl>div{justify-content:space-between;align-items:baseline;gap:6px;min-width:0;display:flex}.nspp-user-hover dt{opacity:.7;flex:none;align-items:center;gap:4px;font-size:11px;display:inline-flex}.nspp-user-hover dt .iconpark-icon{width:13px;height:13px}.nspp-user-hover dd{overflow-wrap:anywhere;min-width:0;font-size:12px}.nspp-user-hover .nspp-user-hover-rich{background:0 0;border:0;border-radius:0;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px 6px;margin:0;padding:5px 0 0;font-size:10px;line-height:18px;display:flex}.nspp-user-hover .nspp-user-hover-rich .nspp-age{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;gap:3px;padding:1px 4px;font-size:10px;font-weight:400}.nspp-user-hover .nspp-user-hover-rich .nspp-age strong{font-weight:700}.nspp-user-hover dd.nspp-user-badges{margin:0}.nspp-user-hover dd .nspp-level{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;padding:0 4px;font-size:11px;line-height:17px}.nspp-user-hover .nspp-user-hover-rich .iconpark-icon{width:11px;height:11px;display:inline-block}.nspp-user-hover-rich>span{opacity:.65}.nspp-user-hover>.nspp-block-toggle{margin-top:8px;padding:3px 6px}.nspp-user-hover-signature{color:#8d7832;opacity:1;max-height:3em;margin:0 0 5px;line-height:1.5}.dark-layout .nspp-user-hover-signature,.nspp-user-hover[data-trust=perfect] .nspp-user-hover-signature{color:#cdbb87}.nspp-user-hover-actions{gap:4px;margin-top:6px;display:flex}.nspp-user-hover-actions[hidden]{display:none!important}.nspp-user-hover-actions>:is(a,button){box-sizing:border-box;min-width:0;color:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:6px;flex:1;justify-content:center;align-items:center;gap:3px;margin:0;padding:3px;font-family:inherit;font-size:11px;line-height:18px;text-decoration:none;display:inline-flex}.nspp-user-hover-actions .iconpark-icon{width:12px;height:12px}.nspp-user-hover-actions>[data-action=transfer]{color:#fff;background:#218044}.nspp-user-hover-actions>[data-action=follow]{color:#fff;background:#0969da}.nspp-user-hover-actions>[data-action=message]{color:#fff;background:#8250df}.nspp-user-hover-actions>.nspp-block-toggle{color:#fff;background:#cf3434}.nspp-user-hover-actions>:hover{filter:brightness(.9)}.nspp-user-hover-actions>:disabled{opacity:.5;cursor:wait}.nspp-user-transfer{width:min(340px,100vw - 32px)}.nspp-user-transfer form{gap:12px;display:grid}.nspp-user-transfer label{gap:6px;display:grid}.nspp-user-transfer input{box-sizing:border-box;width:100%;color:inherit;font:inherit;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:8px}.nspp-user-transfer [role=status]{overflow-wrap:anywhere;margin:0;font-size:12px}.nspp-user-transfer [role=status]:empty{display:none}.nspp-transfer-actions{justify-content:flex-end;gap:8px;display:flex}.nspp-user-hover[data-trust=perfect],.dark-layout .nspp-user-hover[data-trust=perfect]{color:#eee9df;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:radial-gradient(at 100% 0,#c8a5651c,#0000 65%),linear-gradient(145deg,#26272b,#191a1e);border-color:#ac8e555c;border-radius:10px;padding:9px;box-shadow:inset 0 1px #e8ce9133,0 16px 40px #0004,0 3px 10px #0002}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-header{margin-bottom:5px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-name{color:#f5efe2;font-weight:600}.nspp-user-hover[data-trust=perfect] :is(.nspp-user-hover-avatar,.nspp-user-hover-monogram){outline-offset:2px;border-radius:9px;outline:1px solid #d3b57566}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-monogram{color:#e8ce96;background:#d3b57514}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#ebce91;filter:none}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score strong{letter-spacing:-1px;text-shadow:0 2px 14px #d6b46c20;font-size:26px;font-weight:600}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score small{color:#c6b899;opacity:1;font-size:9px}.nspp-user-hover[data-trust=perfect] dl{border-color:#d3b57526}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich small{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-user-badges :is(.nspp-age,.nspp-level){--nspp-badge-color:#e5ce9c;--nspp-age-color:#b9d0be}.nspp-user-hover[data-trust=perfect] .nspp-user-badges .nspp-level[data-level=\"6\"]{background:#d3b57518;box-shadow:inset 0 0 0 1px #d3b57538}.nspp-user-hover[data-trust=perfect] dt{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] dd{color:#eee6d6}.nspp-user-hover[data-trust=perfect] .nspp-copy-button{color:#cabb9c;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-copy-button[data-copied=true]{color:#9cd3ac}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle{color:#c7bcaa;background:0 0;border-color:#d3b57530}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle:hover{color:#ffb4b4;background:#c9787810;border-color:#c978785c}.nspp-user-hover[data-trust=perfect] :focus-visible{outline-offset:2px;outline:2px solid #e8ce96}.nspp-ai-dialog{box-sizing:border-box;width:min(600px,100vw - 32px);max-height:85dvh;color:var(--text-color,#24292f);background:var(--bg-color,#fff);border:1px solid #8884;border-radius:10px;padding:20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 16px 48px #0002}.nspp-ai-dialog.nspp-ai-config{width:min(460px,100vw - 32px)}.nspp-ai-dialog::backdrop{background:#0005}.nspp-ai-dialog .nspp-ai-header{align-items:center;gap:8px;margin-bottom:8px;display:flex}.nspp-ai-dialog h2{margin:0;font-size:16px;font-weight:600;line-height:24px}.nspp-ai-dialog .nspp-ai-hint{opacity:.65;margin:0 0 18px;font-size:12px}.nspp-ai-dialog label{gap:6px;margin-bottom:14px;font-size:12px;font-weight:500;display:grid}.nspp-ai-dialog :is(input,textarea,select){box-sizing:border-box;color:inherit;font:inherit;background:0 0;border:1px solid #8885;border-radius:6px;padding:7px 10px;line-height:20px}.nspp-ai-dialog :is(input,textarea){width:100%}.nspp-ai-dialog textarea{resize:vertical}.nspp-ai-dialog input::placeholder,.nspp-ai-dialog textarea::placeholder{color:inherit;opacity:.4}.nspp-ai-dialog button{appearance:none;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:#8881;border:1px solid #8885;border-radius:6px;padding:5px 12px}.nspp-ai-dialog button:hover{background:#8882}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#fff;background:#24292f;border-color:#24292f}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]):hover{background:#39414a}.nspp-ai-dialog :focus-visible{outline-offset:2px;outline:2px solid #5989ba}.nspp-ai-dialog .nspp-ai-actions{border-top:1px solid #8883;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;display:flex}.nspp-ai-dialog .nspp-ai-compose{gap:8px;padding:12px 0 0}.dark-layout .nspp-ai-dialog{color:#dce1e7;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#202428}.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#24292f;background:#e0e5eb;border-color:#e0e5eb}@media (width<=480px){.nspp-ai-dialog{padding:16px}.nspp-ai-dialog .nspp-ai-compose textarea{min-width:100%}}.nspp-history .nspp-history-day{color:#768390;justify-content:space-between;margin-top:8px;font-size:11px}.nspp-history button[aria-pressed=true]{color:#0969da;border-color:currentColor}.nspp-history-avatar{vertical-align:middle;border-radius:50%;width:20px;height:20px;margin-right:6px}.nspp-confirm-dialog{box-sizing:border-box;background:var(--bg-color,#fff);width:min(360px,100vw - 32px);max-width:none;max-height:calc(100dvh - 32px);color:var(--text-color,#24292f);border:1px solid #818b9840;border-radius:12px;margin:auto;padding:18px;font:13px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 18px 48px #0003}.nspp-confirm-dialog::backdrop{background:#0006}.nspp-confirm-dialog h2{overflow-wrap:anywhere;margin:0;font-size:15px}.nspp-confirm-dialog p{opacity:.7;margin:8px 0 18px}.nspp-confirm-dialog form{justify-content:flex-end;gap:8px;display:flex}.nspp-confirm-dialog :is(button,a){box-sizing:border-box;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:0 0;border:1px solid #818b9840;border-radius:6px;justify-content:center;align-items:center;padding:5px 14px;text-decoration:none;display:inline-flex}.nspp-confirm-dialog .nspp-confirm-primary{color:#fff;background:#0969da;border-color:#0969da}.nspp-confirm-dialog .nspp-confirm-danger{color:#fff;background:#cf3434;border-color:#cf3434}.nspp-confirm-dialog :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-confirm-dialog{color:#e6edf3;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#161b22}@media (width<=480px){.nspp-confirm-dialog{width:100%;max-height:85dvh;padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:14px 14px 0 0;margin:0;inset:auto 0 0}.nspp-confirm-dialog form>:is(button,a){flex:1;min-height:38px}}");
 	function main() {
 		if (document.getElementById("nspp-settings")) return;
 		const loadingStyle = document.createElement("style");
@@ -19786,7 +23325,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			codeHighlight,
 			postPreview,
 			listInteractions,
-			discussionStatsFeature
+			discussionStatsFeature,
+			messagesFeature
 		];
 		if (new Set(features.map((feature) => feature.id)).size !== features.length) throw new Error("重复功能 ID");
 		const ui = mountSettings(features);

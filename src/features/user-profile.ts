@@ -1,4 +1,4 @@
-export interface UserProfile { signature?: string; bio?: string; introduction?: string; signature_text?: string; coin?: number; stardust?: number; fans?: number; rank?: number; created_at?: string | number; nPost?: number; nComment?: number; }
+export interface UserProfile { member_name?: string; isAdmin?: boolean | number; roles?: (string | { name?: string; title?: string })[]; signature?: string; bio?: string; introduction?: string; signature_text?: string; coin?: number; stardust?: number; fans?: number; rank?: number; created_at?: string | number; nPost?: number; nComment?: number; }
 // User-provided forum age: 1388 days on 2026-09-12 (UTC+8).
 export function forumAge(now = Date.now()) {
   const baseline = Date.parse('2026-09-12T00:00:00+08:00');

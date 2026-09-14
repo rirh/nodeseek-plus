@@ -1,7 +1,7 @@
 import { parseMonitorRSS } from './monitor-rss';
 import { requestMonitorRSS } from './monitor-rss-request';
 import { gsap } from 'gsap';
-import { GM_getValue } from '../lib/userscript';
+import { GM_getValue, systemNotify, hasSystemNotifications } from '../lib/userscript';
 import { compileMonitorRules } from './monitor-rules';
 import { toolIcon } from '../lib/tool-icon';
 import { withTabLock } from '../lib/tab-lock';
@@ -31,9 +31,10 @@ function control(label: string, fn: () => void, ctx: Context) {
 }
 const monitor: Feature = {
   id: 'monitor', title: '帖子监控与抽奖追踪', description: '使用 NodeSeek RSS 监控新帖，正则匹配标题，后台标签页可运行。开奖提示仅为线索，需人工核实中奖。', group: '监控',
-  defaults: { enabled: true, interval: 300 },
+  defaults: { enabled: true, interval: 300, 'desktop-notifications': true },
   fields: {
     interval: { label: '刷新间隔（秒，60–3600）', type: 'number' },
+    'desktop-notifications': { label: '发现新帖时使用系统通知', type: 'text' },
   },
   mount(ctx) {
     if (location.hostname !== 'www.nodeseek.com') return;
@@ -156,7 +157,7 @@ const monitor: Feature = {
         // Only the title is authoritative enough for a change signal. Never claim a winner from a full-page username match.
         const signal = /已开奖|开奖结果|中奖名单|已结束/.test(doc.title) ? doc.title : '';
         const updated = readTracked().map(x => x.id === entry.id ? { ...x, checked: Date.now(), signal } : x);
-        if (signal && updated.some(x => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, '抽奖状态更新', 'lottery');
+        if (signal && updated.some(x => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, '抽奖状态更新', `lottery:${entry.id}`, entry.url);
         ctx.set(trackKey, updated); renderTracks();
       }
     }
@@ -290,7 +291,7 @@ const monitor: Feature = {
             const message = `发现 ${fresh.length} 条新帖：${fresh.slice(0, 2).map(post => post.title).join('；')}`;
             ctx.set(unreadKey, [...new Map([...fresh.map(post => ({ id: post.id, title: post.title, url: post.url, found: Date.now() })), ...readUnread()].map(post => [post.id, post])).values()].slice(0, 200));
             renderUnread();
-            notify(message, '发现匹配新帖', 'posts');
+            notify(message, '发现匹配新帖', `posts:${fresh[0].id}`, fresh[0].url);
           }
           await checkTracked();
           if (force && !ctx.signal.aborted) ctx.notify(`检查完成，匹配 ${matches.length} 条帖子`);
@@ -310,16 +311,25 @@ const monitor: Feature = {
         if (statusText.textContent === '正在检查匹配帖子…') { const snapshot = ctx.get<Snapshot>(snapshotKey); statusText.textContent = snapshot ? `更新于 ${new Date(snapshot.at).toLocaleTimeString()}` : '检查结束'; }
         apply.disabled = false; clear.disabled = false; delete panel.dataset.checking; status.removeAttribute('aria-busy'); renderState(); refreshButton.disabled = false; refreshButton.removeAttribute('aria-busy'); }
     }
-    function notify(message: string, title: string, category: string) {
+    function notify(message: string, title: string, category: string, url: string) {
       ctx.notify(message);
-      if (ctx.get<boolean>('desktop-notifications') && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try { new Notification(`NodeSeek++ · ${title}`, { body: message, tag: `nspp-monitor:${category}` }); } catch { /* In-page notification remains available. */ }
+      if (!ctx.get<boolean>('desktop-notifications')) return;
+      const tag = `nspp-monitor:${location.hostname}:${user || 'guest'}:${category}`;
+      if (systemNotify(message, url, tag, title)) return;
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          const notification = new Notification(`NodeSeek++ · ${title}`, { body: message, tag });
+          notification.onclick = () => { window.open(url, '_blank', 'noopener,noreferrer'); notification.close(); };
+          return;
+        } catch { /* Explain the unavailable system notification below. */ }
       }
+      ctx.notify(`${message}\n系统通知未能发出，请检查油猴及系统通知权限。`);
     }
     const footer = document.createElement('footer');
     const permission = control('开启系统通知', () => { void (async () => {
-      if (typeof Notification === 'undefined') { ctx.notify('当前浏览器不支持系统通知，仍会显示页面提示'); return; }
       if (ctx.get<boolean>('desktop-notifications')) { ctx.set('desktop-notifications', false); permission.textContent = '开启系统通知'; return; }
+      if (hasSystemNotifications()) { ctx.set('desktop-notifications', true); permission.textContent = '关闭系统通知'; ctx.notify('系统通知已开启，发现匹配新帖时自动通知'); return; }
+      if (typeof Notification === 'undefined') { ctx.notify('当前环境不支持系统通知，请确认油猴脚本已正常安装'); return; }
       try {
         const result = await Notification.requestPermission();
         ctx.set('desktop-notifications', result === 'granted');
@@ -327,7 +337,7 @@ const monitor: Feature = {
         ctx.notify(result === 'granted' ? '系统通知已开启' : '系统通知未授权，仍会显示页面提示；可在浏览器站点设置中调整');
       } catch { ctx.notify('无法申请系统通知权限，仍会显示页面提示'); }
     })(); }, ctx);
-    if (ctx.get<boolean>('desktop-notifications') && typeof Notification !== 'undefined' && Notification.permission === 'granted') permission.textContent = '关闭系统通知';
+    if (ctx.get<boolean>('desktop-notifications')) permission.textContent = '关闭系统通知';
     const refreshButton = control('刷新', () => { void refresh(true); }, ctx);
     refreshButton.title = '立即检查一次（不等待自动刷新周期）';
     const hint = document.createElement('span');

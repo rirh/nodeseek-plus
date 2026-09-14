@@ -20,6 +20,10 @@ export function GM_registerMenuCommand(label: string, callback: () => void): voi
   if (typeof register === 'function') register(label, callback);
 }
 
+export function hasSystemNotifications(): boolean {
+  return typeof importedNotification === 'function' || typeof monkeyWindow.GM_notification === 'function';
+}
+
 export function systemNotify(text: string, url: string, tag: string, title = '新消息'): boolean {
   const notify = typeof importedNotification === 'function' ? importedNotification : monkeyWindow.GM_notification;
   if (typeof notify !== 'function') return false;
