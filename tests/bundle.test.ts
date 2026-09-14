@@ -994,7 +994,8 @@ test('NodeImage upload uses the official privileged endpoint and inserts the ret
   try {
     const doc = f.window.document;
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.match(doc.querySelector('.nspp-compose [role="status"]')!.textContent!, /已连接/);
+    assert.equal(doc.querySelector('.nspp-compose [role="status"]')!.textContent, '');
+    assert.equal(doc.querySelector<HTMLAnchorElement>('.nspp-compose a[href="https://www.nodeimage.com/"]')!.hidden, true);
     const input = doc.querySelector<HTMLInputElement>('.nspp-compose input[type="file"]')!;
     Object.defineProperty(input, 'files', { value: [new f.window.File(['image'], 'test.png', { type: 'image/png' })] });
     input.dispatchEvent(new f.window.Event('change'));
