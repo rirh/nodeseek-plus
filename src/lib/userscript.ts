@@ -20,11 +20,11 @@ export function GM_registerMenuCommand(label: string, callback: () => void): voi
   if (typeof register === 'function') register(label, callback);
 }
 
-export function systemNotify(text: string, url: string, tag: string): boolean {
+export function systemNotify(text: string, url: string, tag: string, title = '新消息'): boolean {
   const notify = typeof importedNotification === 'function' ? importedNotification : monkeyWindow.GM_notification;
   if (typeof notify !== 'function') return false;
   try {
-    notify({ title: 'NodeSeek++ 新消息', text, url, tag, timeout: 10000 });
+    notify({ title: `NodeSeek++ · ${title}`, text, url, tag, timeout: 10000 });
     return true;
   } catch { return false; }
 }

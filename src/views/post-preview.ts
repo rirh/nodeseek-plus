@@ -1,4 +1,5 @@
 import type { Context } from '../core/types';
+import { openImagePreview } from './image-preview';
 
 export type PreviewAction = 'preview' | 'interact' | 'quote' | 'reply';
 // Copy only reading content; remote markup never supplies executable attributes or UI.
@@ -19,7 +20,7 @@ function readingContent(source: Element, base: string): DocumentFragment {
       if (!['http:', 'https:'].includes(url.protocol)) return;
       el.setAttribute(attribute, url.href);
       if (el instanceof HTMLAnchorElement) { el.target = '_blank'; el.rel = 'noopener noreferrer'; }
-      if (el instanceof HTMLImageElement) { el.alt = node.getAttribute('alt') || ''; el.loading = 'lazy'; }
+      if (el instanceof HTMLImageElement) { el.alt = node.getAttribute('alt') || ''; el.loading = 'lazy'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', el.alt ? `查看大图：${el.alt}` : '查看大图'); }
     }
     node.childNodes.forEach(child => copy(child, el));
     parent.appendChild(el);
@@ -60,14 +61,26 @@ export function createPostPreview(ctx: Context) {
   let request: AbortController | undefined;
   const mobile = () => matchMedia('(max-width: 600px), (hover: none)').matches;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  let closeImage: (() => void) | undefined;
   const keepOpen = () => clearTimeout(closeTimer);
-  const hide = () => { request?.abort(); keepOpen(); view.close(); view.hidden = true; };
+  const hide = () => { closeImage?.(); request?.abort(); keepOpen(); view.close(); view.hidden = true; };
   const scheduleClose = () => {
-    if (mobile()) return;
+    if (mobile() || closeImage) return;
     keepOpen(); closeTimer = setTimeout(hide, 220);
   };
   view.addEventListener('mouseenter', keepOpen, { signal: ctx.signal });
   view.addEventListener('mouseleave', scheduleClose, { signal: ctx.signal });
+  content.addEventListener('click', event => {
+    if (!(event.target instanceof HTMLImageElement) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); event.stopPropagation();
+    if (closeImage) return;
+    keepOpen();
+    closeImage = openImagePreview(content, event.target, () => { closeImage = undefined; });
+  }, { capture: true, signal: ctx.signal });
+  content.addEventListener('keydown', event => {
+    if (!(event.target instanceof HTMLImageElement) || !['Enter', ' '].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation(); event.target.click();
+  }, { capture: true, signal: ctx.signal });
   const position = () => {
     if (view.hidden || !source) return;
     if (mobile()) { view.style.removeProperty('left'); view.style.removeProperty('top'); return; }
@@ -126,6 +139,7 @@ export function createPostPreview(ctx: Context) {
       const url = new URL(link.href, location.origin);
       if (url.origin !== location.origin || !/^\/post-\d+(?:-\d+)?(?:\.html)?\/?$/.test(url.pathname)) return;
       if (action !== 'preview') { window.open(url.href, '_blank', 'noopener,noreferrer'); return; }
+      if (closeImage) return;
       keepOpen();
       if (!view.hidden && source === link) return;
       source = link; title.textContent = link.textContent?.trim() || '打开原帖'; title.href = original.href = url.href;
@@ -140,6 +154,6 @@ export function createPostPreview(ctx: Context) {
     },
     keepOpen,
     scheduleClose,
-    destroy() { keepOpen(); view.close(); actionsObserver?.disconnect(); resize?.disconnect(); request?.abort(); view.remove(); },
+    destroy() { closeImage?.(); keepOpen(); view.close(); actionsObserver?.disconnect(); resize?.disconnect(); request?.abort(); view.remove(); },
   };
 }

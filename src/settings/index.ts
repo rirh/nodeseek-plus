@@ -3,7 +3,7 @@ import { hasStorage } from "../lib/userscript";
 import css from "./style.css?inline";
 import loadingCss from "../loading.css?inline";
 import { parseSettings, normalizeSettings, exportSettings } from "../core/config";
-import { loadSettings, saveSettings } from "../core/runtime";
+import { clearCaches, loadSettings, saveSettings } from "../core/runtime";
 import type { Feature, Settings } from "../core/types";
 
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
@@ -33,6 +33,7 @@ export function mountSettings(features: Feature[]) {
   heading.append(title, element("small", `v${__APP_VERSION__}`));
   const close = element("button", "关闭");
   close.type = "button";
+  close.className = "settings-close";
   header.append(heading);
   const search = element("input");
   search.type = "search";
@@ -41,6 +42,7 @@ export function mountSettings(features: Feature[]) {
   const searchBar = element("div");
   searchBar.className = "search-bar";
   searchBar.append(search);
+  header.append(searchBar);
   const content = element("div");
   content.className = "content";
   const navigation = element("nav");
@@ -60,19 +62,20 @@ export function mountSettings(features: Feature[]) {
   save.type = "submit";
   save.className = "primary";
   const reset = element("button", "恢复默认");
+  const clearCache = element("button", "清空缓存");
+  clearCache.title = "清除当前站点的插件用户资料、通知计数和回帖足迹缓存并刷新页面；保留配置、阅读历史和监控记录，未保存的设置不会保存。";
   const exportButton = element("button", "导出配置");
   const importButton = element("button", "导入配置");
-  [reset, exportButton, importButton].forEach(button => button.type = "button");
+  [reset, clearCache, exportButton, importButton].forEach(button => button.type = "button");
   const file = element("input");
   file.type = "file";
   file.accept = ".json,application/json";
   file.hidden = true;
-  actions.append(exportButton, importButton, reset, close, save, file);
-  header.append(close);
+  actions.append(exportButton, importButton, clearCache, reset, close, save, file);
   const footer = element("footer");
   footer.className = "settings-footer";
   footer.append(actions);
-  form.append(header, searchBar, status, workspace, footer);
+  form.append(header, status, workspace, footer);
   dialog.append(form);
   const toast = element("div");
   toast.className = "toast";
@@ -174,13 +177,8 @@ export function mountSettings(features: Feature[]) {
       }
       const options = Object.keys(feature.defaults).filter(key => key !== "enabled");
       if (options.length) {
-        const details = element("details");
+        const details = element("div");
         details.className = "feature-options";
-        details.open = !!query || feature.id === 'request-settings';
-        row.classList.add("has-options");
-        const summary = element("summary", "设置");
-        summary.setAttribute("aria-label", `${feature.title}的详细设置`);
-        details.append(summary);
         for (const key of options) {
           const metadata = feature.fields?.[key];
           const value = draft[feature.id][key];
@@ -203,7 +201,7 @@ export function mountSettings(features: Feature[]) {
             control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
           }
           if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
-          else if (feature.id === 'request-settings' && control instanceof HTMLInputElement) { control.min = '0'; control.max = '5000'; control.step = '1'; control.value = String(value); }
+          else if (feature.id === 'request-settings' && control instanceof HTMLInputElement) { control.min = key === 'maxConcurrent' ? '1' : '0'; control.max = key === 'maxConcurrent' ? '10' : '5000'; control.step = '1'; control.value = String(value); }
           else control.value = String(value);
           control.addEventListener("input", () => {
             draft[feature.id][key] = typeof value === "boolean" ? (control as HTMLInputElement).checked
@@ -225,6 +223,7 @@ export function mountSettings(features: Feature[]) {
     draft = loadSettings(features);
     status.textContent = hasStorage() ? "" : "油猴存储未就绪，请重新安装脚本后刷新。";
     save.disabled = !hasStorage();
+    clearCache.disabled = !hasStorage();
     render();
     if (!dialog.open) dialog.showModal();
     close.focus();
@@ -249,6 +248,18 @@ export function mountSettings(features: Feature[]) {
     draft = normalizeSettings(features, {});
     render();
     notify("已恢复默认，保存后生效。", "success");
+  });
+  clearCache.addEventListener("click", () => {
+    clearCache.disabled = true;
+    clearCache.setAttribute("aria-busy", "true");
+    clearCache.textContent = "正在清空…";
+    try { clearCaches(); location.reload(); }
+    catch {
+      clearCache.disabled = false;
+      clearCache.removeAttribute("aria-busy");
+      clearCache.textContent = "清空缓存";
+      notify("清空缓存失败，请检查油猴存储权限后重试。", "error");
+    }
   });
   exportButton.addEventListener("click", () => {
     const blob = new Blob([exportSettings(draft)], { type: "application/json" });

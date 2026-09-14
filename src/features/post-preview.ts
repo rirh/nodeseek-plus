@@ -3,7 +3,7 @@ import { createPostPreview } from '../views/post-preview';
 
 export const postPreview: Feature = {
   id: 'post-preview', title: '帖子卡片预览', group: '阅读',
-  description: '桌面悬停打开卡片，移出后自动收起，移动端点击标题打开弹窗，可从卡片进入原帖。',
+  description: '桌面悬停打开卡片，移动端点击标题打开弹窗；点击图片放大，支持缩放和切换，可从卡片进入原帖。',
   defaults: { enabled: true },
   mount(ctx) {
     const preview = createPostPreview(ctx);

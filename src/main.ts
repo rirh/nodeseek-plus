@@ -12,6 +12,7 @@ import { relationshipFeatures } from "./features/relationships";
 import { codeHighlight } from "./features/code-highlight";
 import { postPreview } from "./features/post-preview";
 import { listInteractions } from "./features/list-interactions";
+import { discussionStatsFeature } from "./features/discussion-stats";
 import "./style.css";
 import loadingCss from "./loading.css?inline";
 
@@ -39,6 +40,7 @@ function main() {
     codeHighlight,
     postPreview,
     listInteractions,
+    discussionStatsFeature,
   ];
   if (new Set(features.map((feature) => feature.id)).size !== features.length)
     throw new Error("重复功能 ID");

@@ -1,12 +1,12 @@
 import type { Feature } from '../core/types';
 
 export const requestSettings: Feature = {
-  id: 'request-settings', title: '接口请求频率', group: '网络',
-  description: '请求完成后的等待时间，越小加载越快。用户资料默认 100 毫秒，其他站内接口默认不额外等待；0 表示不额外等待，范围 0–5000 毫秒。仍按顺序请求，并遵守站点限流冷却。用户资料缓存一天，缓存命中不请求；RSS 频率在监控设置中调整。关闭后使用默认间隔。',
-  defaults: { enabled: true, profileInterval: 100, requestInterval: 0 },
+  id: 'request-settings', title: '接口请求并发与延迟', group: '网络',
+  description: '用户资料缓存 24 小时，刷新和翻页优先复用，过期后按需更新。同页站内请求默认最多并发 4 个，相邻请求启动间隔 200ms，首个请求立即执行；排队时优先处理用户操作。保留站点限流冷却，各标签页独立调度，RSS 仍按监控周期检查。关闭后使用默认值。',
+  defaults: { enabled: true, maxConcurrent: 4, requestInterval: 200 },
   fields: {
-    profileInterval: { label: '用户资料请求间隔（毫秒，0–5000）', type: 'number' },
-    requestInterval: { label: '其他站内接口间隔（毫秒，0–5000）', type: 'number' },
+    maxConcurrent: { label: '最大并发请求数（1–10）', type: 'number' },
+    requestInterval: { label: '请求间隔（毫秒，0–5000，默认 200）', type: 'number' },
   },
   mount() {},
 };

@@ -1,4 +1,11 @@
 #nspp-tools { position: fixed; right: calc(1rem - 8px); bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; padding: 8px 8px 0 0; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
+.discussion-wrapper .discussion-item.nspp-discussion-row > a:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.discussion-wrapper .discussion-item.nspp-discussion-row > :not(a:first-child) { flex: none; margin-right: 0; }
+.discussion-wrapper .nspp-discussion-row > .nspp-discussion-stats { display: inline-flex; flex: none; gap: 10px; margin: 0 0 0 auto; padding-left: 12px; color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nspp-discussion-stats[hidden], .nspp-discussion-stats > span[hidden] { display: none !important; }
+.nspp-discussion-stats > span { display: inline-flex; align-items: center; gap: 4px; }
+.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon { width: 14px; height: 14px; color: currentColor; flex: none; }
+.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon:hover { transform: none; }
 #nspp-tools button, [data-nspp-resolve], .nspp-action { font: inherit; font-size: .8rem; padding: .35rem .6rem; border: 1px solid var(--border-color, #929a9380); border-radius: .4rem; color: var(--text-color, inherit); background: var(--bg-color, Canvas); cursor: pointer; }
 #nspp-tools a, [data-nspp-footprints] a { text-underline-offset: .2em; }
 #nspp-tools a:hover, [data-nspp-footprints] a:hover { text-decoration: underline; }
@@ -288,13 +295,17 @@
 .nspp-monitor button svg, .nspp-footprints-dialog button svg { width: 13px; height: 13px; flex: none; }
 .nspp-monitor-editor > small { flex-basis: 100%; font-size: 10px; line-height: 1.6; opacity: .65; }
 .nspp-monitor-editor textarea { min-height: 56px; }
-.nspp-footprints-dialog { width: min(480px, calc(100vw - 24px)); padding: 8px; border-radius: 10px; }
+.nspp-footprints-dialog { width: min(600px, calc(100vw - 24px)); padding: 8px; border-radius: 10px; }
 .nspp-footprints-dialog header { padding: 4px 4px 10px; }
 .nspp-footprints-toolbar { display: flex; align-items: center; gap: 6px; padding: 4px; flex-wrap: wrap; }
 .nspp-footprints-toolbar [role="status"] { margin-left: auto; font-size: 11px; opacity: .6; }
 .nspp-footprints-dialog > div:last-child { padding: 8px 4px; }
 .nspp-footprints-dialog a { color: inherit; text-decoration: none; padding: 4px 6px; border-radius: 4px; }
 .nspp-footprints-dialog a:hover { background: #818b9810; }
+.nspp-footprints-list { max-height: min(55dvh, 400px); overflow: auto; display: grid; gap: 4px; }
+.nspp-footprints-list > a { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.nspp-footprint-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.nspp-footprints-list small { flex: none; font-size: 11px; opacity: .6; white-space: nowrap; }
 .nspp-monitor > header h3 { margin-right: auto; }
 .nspp-monitor-config { width: min(420px, calc(100vw - 24px)); }
 .nspp-monitor-config .nspp-monitor-editor { display: flex; flex-direction: column; align-items: stretch; padding: 8px 14px 14px; gap: 8px; overflow: auto; }
@@ -312,9 +323,6 @@
 .nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
 .nspp-upload-status button svg { width: 16px; height: 16px; }
 
-.nspp-notifications { display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 100%; min-width: 0; flex: 0 0 100%; padding: 10px 0; font: inherit; }
-.nspp-notifications > span { display: flex; flex: 1; min-width: 0; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-.nspp-notifications :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .nspp-ai-compose { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; align-items: start; }
 .nspp-ai-compose textarea { flex: 1; min-width: 180px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; padding: 6px; }
 .nspp-ai-compose small { width: 100%; opacity: .7; }
@@ -329,7 +337,6 @@
 
 .user-stat .stat-block:has(> .nspp-notification-row) > :has(> .nspp-original-notification:only-child) { display: none; }
 
-.nspp-notifications .nspp-notification-icon { width: 1em; height: 1em; }
 
 
 
@@ -346,7 +353,7 @@
 .nspp-user-hover { width: 280px; padding: 12px; border-radius: 12px; box-shadow: 0 12px 36px #0002, 0 2px 6px #0001; }
 .nspp-user-hover .nspp-user-hover-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .nspp-user-hover .nspp-user-hover-header > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
-.nspp-user-hover-name { font-size: 14px; overflow-wrap: anywhere; }
+.nspp-user-hover-name { font-size: 13px; overflow-wrap: anywhere; }
 .nspp-user-hover-monogram { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 10px; background: #0969da10; color: #0969da; font-size: 18px; font-weight: 600; }
 .nspp-user-hover .nspp-user-hover-rich { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; padding: 7px 6px; border: 1px solid #818b9824; border-radius: 8px; background: #818b9808; font-size: 13px; line-height: 22px; }
 .nspp-user-hover-rich > div { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
@@ -355,18 +362,15 @@
 .nspp-user-hover-rich .nspp-age { font-weight: 600; }
 .nspp-user-hover dl { margin: 0; gap: 4px 10px; }
 .nspp-user-hover dd { text-align: right; font-weight: 500; }
-.nspp-user-hover-note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid #818b9824; font-size: 10px; line-height: 1.6; color: #768390; }
-.nspp-user-hover-note[data-tone="danger"], .nspp-user-hover-note[data-tone="new"] { color: #cf3434; }
 .nspp-user-hover > .nspp-block-toggle { justify-content: center; width: 100%; margin-top: 12px; padding: 5px 8px; border-radius: 6px; }
 .nspp-user-hover > .nspp-block-toggle:hover { background: #cf343410; color: #cf3434; border-color: #cf343440; }
 .dark-layout .nspp-user-hover { background: #161b22; color: #e6edf3; }
 .dark-layout .nspp-user-hover-monogram { color: #79b8ff; background: #79b8ff18; }
-.dark-layout .nspp-user-hover-note[data-tone="danger"], .dark-layout .nspp-user-hover-note[data-tone="new"] { color: #ff8585; }
 
 .nspp-user-badges[hidden], .nspp-user-hover-tags[hidden] { display: none !important; }
 .nspp-user-hover-tags { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; }
 
-.nspp-user-hover-avatar { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; object-fit: cover; }
+.nspp-user-hover-avatar { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 10px; object-fit: cover; }
 .nspp-user-hover-avatar[hidden], .nspp-user-hover-monogram[hidden] { display: none !important; }
 .nspp-user-hover-signature { margin: -2px 0 10px; color: inherit; opacity: .7; font-size: 11px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 5.1em; overflow: auto; }
 .nspp-user-hover[data-trust="danger"] { background: #fff3f3; border-color: #e9b9bf; }
@@ -387,23 +391,50 @@
 
 .nspp-copy-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .nspp-copy-button[data-copied="true"] { color: #218044; opacity: 1; }
-.nspp-user-hover { width: 270px; padding: 10px; }
-.nspp-user-hover .nspp-user-hover-header { gap: 8px; margin-bottom: 8px; }
+.nspp-user-hover { width: 260px; padding: 9px; line-height: 1.45; }
+.nspp-user-hover .nspp-user-hover-header { gap: 7px; margin-bottom: 5px; }
 .nspp-user-hover .nspp-user-hover-header > div { flex: 1; }
 .nspp-user-hover .nspp-user-hover-score { display: flex; flex: none; flex-direction: column; align-items: center; gap: 0; padding: 0; margin: 0 0 0 auto; border: 0; background: transparent; color: #768390; cursor: pointer; }
-.nspp-user-hover-score strong { font: 700 30px/1 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.nspp-user-hover-score strong { font: 700 26px/1 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
 .nspp-user-hover-score small { font-size: 9px; line-height: 16px; opacity: .75; }
 .nspp-user-hover[data-trust="danger"] .nspp-user-hover-score { color: #c63849; }
 .nspp-user-hover[data-trust="warning"] .nspp-user-hover-score { color: #a66b08; }
 .nspp-user-hover[data-trust="success"] .nspp-user-hover-score { color: #218044; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score { color: #a56b00; }
 .dark-layout .nspp-user-hover .nspp-user-hover-score { filter: brightness(1.5); }
-.nspp-user-hover .nspp-user-hover-rich { margin-bottom: 8px; padding: 5px 4px; gap: 4px; }
-.nspp-user-hover-rich > div { gap: 2px; }
-.nspp-participation { font-weight: 600; font-variant-numeric: tabular-nums; }
-.nspp-user-hover-note { margin-top: 8px; padding-top: 6px; }
+.nspp-user-hover dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; padding: 6px 0; border-block: 1px solid #818b9824; }
+.nspp-user-hover dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
+.nspp-user-hover dt { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; opacity: .7; }
+.nspp-user-hover dt .iconpark-icon { width: 13px; height: 13px; }
+.nspp-user-hover dd { min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.nspp-user-hover .nspp-user-hover-rich { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 3px 6px; margin: 0; padding: 5px 0 0; border: 0; border-radius: 0; background: transparent; font-size: 10px; line-height: 18px; }
+.nspp-user-hover .nspp-user-hover-rich .nspp-age { gap: 3px; padding: 1px 4px; border-radius: 4px; background: color-mix(in srgb, currentColor 10%, transparent); font-size: 10px; font-weight: 400; }
+.nspp-user-hover .nspp-user-hover-rich .nspp-age strong { font-weight: 700; }
+.nspp-user-hover dd.nspp-user-badges { margin: 0; }
+.nspp-user-hover dd .nspp-level { padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, currentColor 10%, transparent); font-size: 11px; line-height: 17px; }
+.nspp-user-hover .nspp-user-hover-rich .iconpark-icon { display: inline-block; width: 11px; height: 11px; }
+.nspp-user-hover-rich > span { opacity: .65; }
 .nspp-user-hover > .nspp-block-toggle { margin-top: 8px; padding: 3px 6px; }
-.nspp-user-hover-signature { margin: 0 0 8px; }
+.nspp-user-hover-signature { margin: 0 0 5px; max-height: 3em; line-height: 1.5; color: #8d7832; opacity: 1; }
+.dark-layout .nspp-user-hover-signature, .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-signature { color: #cdbb87; }
+.nspp-user-hover-actions { display: flex; gap: 4px; margin-top: 6px; }
+.nspp-user-hover-actions[hidden] { display: none !important; }
+.nspp-user-hover-actions > :is(a, button) { display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 3px; box-sizing: border-box; min-width: 0; margin: 0; padding: 3px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; font-family: inherit; font-size: 11px; line-height: 18px; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.nspp-user-hover-actions .iconpark-icon { width: 12px; height: 12px; }
+.nspp-user-hover-actions > [data-action="transfer"] { color: #fff; background: #218044; }
+.nspp-user-hover-actions > [data-action="follow"] { color: #fff; background: #0969da; }
+.nspp-user-hover-actions > [data-action="message"] { color: #fff; background: #8250df; }
+.nspp-user-hover-actions > .nspp-block-toggle { color: #fff; background: #cf3434; }
+.nspp-user-hover-actions > :hover { filter: brightness(.9); }
+.nspp-user-hover-actions > :disabled { opacity: .5; cursor: wait; }
+
+.nspp-user-transfer { width: min(340px, calc(100vw - 32px)); }
+.nspp-user-transfer form { display: grid; gap: 12px; }
+.nspp-user-transfer label { display: grid; gap: 6px; }
+.nspp-user-transfer input { box-sizing: border-box; width: 100%; padding: 8px; border: 1px solid #818b9840; border-radius: 6px; background: transparent; color: inherit; font: inherit; }
+.nspp-user-transfer [role="status"] { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.nspp-user-transfer [role="status"]:empty { display: none; }
+.nspp-transfer-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* A dedicated graphite-and-champagne finish for the 100-point card. */
 .nspp-user-hover[data-trust="perfect"],
@@ -412,25 +443,23 @@
   background: radial-gradient(ellipse at 100% 0, #c8a5651c, transparent 65%), linear-gradient(145deg, #26272b, #191a1e);
   border-color: #ac8e555c;
   box-shadow: inset 0 1px 0 #e8ce9133, 0 16px 40px #0004, 0 3px 10px #0002;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 9px;
+  border-radius: 10px;
   color-scheme: dark;
 }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-header { margin-bottom: 12px; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-header { margin-bottom: 5px; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-name { color: #f5efe2; font-weight: 600; }
 .nspp-user-hover[data-trust="perfect"] :is(.nspp-user-hover-avatar, .nspp-user-hover-monogram) { border-radius: 9px; outline: 1px solid #d3b57566; outline-offset: 2px; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-monogram { background: #d3b57514; color: #e8ce96; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score { color: #ebce91; filter: none; }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score strong { font-size: 36px; font-weight: 600; letter-spacing: -1.8px; text-shadow: 0 2px 14px #d6b46c20; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score strong { font-size: 26px; font-weight: 600; letter-spacing: -1px; text-shadow: 0 2px 14px #d6b46c20; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-score small { color: #c6b899; font-size: 9px; opacity: 1; }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich { padding: 8px 4px; margin-bottom: 10px; background: #d3b57508; border-color: #d3b57526; border-radius: 7px; }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich > div + div { border-left: 1px solid #d3b57520; }
+.nspp-user-hover[data-trust="perfect"] dl { border-color: #d3b57526; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-hover-rich small { color: #b9b3a7; opacity: 1; }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-badges :is(.nspp-age, .nspp-level, .nspp-participation) { --nspp-badge-color: #e5ce9c; --nspp-age-color: #b9d0be; }
+.nspp-user-hover[data-trust="perfect"] .nspp-user-badges :is(.nspp-age, .nspp-level) { --nspp-badge-color: #e5ce9c; --nspp-age-color: #b9d0be; }
 .nspp-user-hover[data-trust="perfect"] .nspp-user-badges .nspp-level[data-level="6"] { background: #d3b57518; box-shadow: inset 0 0 0 1px #d3b57538; }
 .nspp-user-hover[data-trust="perfect"] dt { color: #b9b3a7; opacity: 1; }
 .nspp-user-hover[data-trust="perfect"] dd { color: #eee6d6; }
-.nspp-user-hover[data-trust="perfect"] .nspp-user-hover-note { color: #aaa69b; border-color: #d3b57524; }
 .nspp-user-hover[data-trust="perfect"] .nspp-copy-button { color: #cabb9c; opacity: 1; }
 .nspp-user-hover[data-trust="perfect"] .nspp-copy-button[data-copied="true"] { color: #9cd3ac; }
 .nspp-user-hover[data-trust="perfect"] > .nspp-block-toggle { color: #c7bcaa; border-color: #d3b57530; background: transparent; }
@@ -458,3 +487,21 @@
 .dark-layout .nspp-ai-dialog { color: #dce1e7; background: #202428; color-scheme: dark; }
 .dark-layout .nspp-ai-dialog :is(.nspp-ai-primary, [data-nspp-ai]) { background: #e0e5eb; border-color: #e0e5eb; color: #24292f; }
 @media (max-width: 480px) { .nspp-ai-dialog { padding: 16px; } .nspp-ai-dialog .nspp-ai-compose textarea { min-width: 100%; } }
+
+.nspp-history .nspp-history-day { justify-content: space-between; margin-top: 8px; color: #768390; font-size: 11px; }
+.nspp-history button[aria-pressed="true"] { color: #0969da; border-color: currentColor; }
+.nspp-history-avatar { width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+
+.nspp-confirm-dialog { box-sizing: border-box; width: min(360px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 18px; overflow: auto; border: 1px solid #818b9840; border-radius: 12px; background: var(--bg-color, #fff); color: var(--text-color, #24292f); box-shadow: 0 18px 48px #0003; font: 13px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.nspp-confirm-dialog::backdrop { background: #0006; }
+.nspp-confirm-dialog h2 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.nspp-confirm-dialog p { margin: 8px 0 18px; opacity: .7; }
+.nspp-confirm-dialog form { display: flex; justify-content: flex-end; gap: 8px; }
+.nspp-confirm-dialog button { min-height: 32px; padding: 5px 14px; border: 1px solid #818b9840; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.nspp-confirm-dialog .nspp-confirm-danger { border-color: #cf3434; background: #cf3434; color: #fff; }
+.nspp-confirm-dialog :focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.dark-layout .nspp-confirm-dialog { background: #161b22; color: #e6edf3; color-scheme: dark; }
+@media (max-width: 480px) {
+  .nspp-confirm-dialog { inset: auto 0 0; width: 100%; max-height: 85dvh; margin: 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 14px 14px 0 0; }
+  .nspp-confirm-dialog form > button { flex: 1; min-height: 38px; }
+}

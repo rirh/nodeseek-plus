@@ -12,6 +12,21 @@ export function saveSettings(features: Feature[], settings: Settings): void {
   GM_setValue(SETTINGS_KEY, normalizeSettings(features, settings));
 }
 
+export function clearCaches(): void {
+  if (!hasStorage()) throw new Error("油猴存储未就绪，请重新安装脚本后刷新");
+  for (const [id, matches] of [
+    ["user-level", (key: string) => key === "profiles"],
+    ["notification-categories", (key: string) => key.startsWith("counts:")],
+    ["footprints", (key: string) => key.startsWith("records:")],
+  ] as const) {
+    const key = `nspp:state:${location.hostname}:${id}`;
+    const state = GM_getValue<Record<string, unknown>>(key, {});
+    if (state && typeof state === "object" && !Array.isArray(state)) {
+      GM_setValue(key, Object.fromEntries(Object.entries(state).filter(([name]) => !matches(name))));
+    }
+  }
+}
+
 export function startFeatures(features: Feature[], settings: Settings, notify: (text: string) => void): () => void {
   const callbacks = new Set<() => void>();
   const cleanups: (() => void)[] = [];

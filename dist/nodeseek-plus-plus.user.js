@@ -64,6 +64,32 @@ License: BSD 3-Clause.
 The full license is preserved in references/highlight.js.LICENSE and appended
 to this notice in the generated userscript banner by vite.config.ts.
 
+## Viewer.js 1.14.0
+
+Source: https://github.com/fengyuanchen/viewerjs
+
+The MIT License (MIT)
+
+Copyright 2015-present Chen Fengyuan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 
 BSD 3-Clause License
 
@@ -155,12 +181,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const register = typeof _GM_registerMenuCommand === "function" ? _GM_registerMenuCommand : _monkeyWindow.GM_registerMenuCommand;
 		if (typeof register === "function") register(label, callback);
 	}
-	function systemNotify(text, url, tag) {
+	function systemNotify(text, url, tag, title = "新消息") {
 		const notify = typeof _GM_notification === "function" ? _GM_notification : _monkeyWindow.GM_notification;
 		if (typeof notify !== "function") return false;
 		try {
 			notify({
-				title: "NodeSeek++ 新消息",
+				title: `NodeSeek++ · ${title}`,
 				text,
 				url,
 				tag,
@@ -171,30 +197,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			return false;
 		}
 	}
-	var requestSettings = {
+	var requestSettings$1 = {
 		id: "request-settings",
-		title: "接口请求频率",
+		title: "接口请求并发与延迟",
 		group: "网络",
-		description: "请求完成后的等待时间，越小加载越快。用户资料默认 100 毫秒，其他站内接口默认不额外等待；0 表示不额外等待，范围 0–5000 毫秒。仍按顺序请求，并遵守站点限流冷却。用户资料缓存一天，缓存命中不请求；RSS 频率在监控设置中调整。关闭后使用默认间隔。",
+		description: "用户资料缓存 24 小时，刷新和翻页优先复用，过期后按需更新。同页站内请求默认最多并发 4 个，相邻请求启动间隔 200ms，首个请求立即执行；排队时优先处理用户操作。保留站点限流冷却，各标签页独立调度，RSS 仍按监控周期检查。关闭后使用默认值。",
 		defaults: {
 			enabled: true,
-			profileInterval: 100,
-			requestInterval: 0
+			maxConcurrent: 4,
+			requestInterval: 200
 		},
 		fields: {
-			profileInterval: {
-				label: "用户资料请求间隔（毫秒，0–5000）",
+			maxConcurrent: {
+				label: "最大并发请求数（1–10）",
 				type: "number"
 			},
 			requestInterval: {
-				label: "其他站内接口间隔（毫秒，0–5000）",
+				label: "请求间隔（毫秒，0–5000，默认 200）",
 				type: "number"
 			}
 		},
 		mount() {}
 	};
-	function requestInterval(value, fallback) {
-		return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(5e3, Math.round(value))) : fallback;
+	function requestConcurrency(value) {
+		return typeof value === "number" && Number.isFinite(value) ? Math.max(1, Math.min(10, Math.floor(value))) : 4;
+	}
+	function requestInterval(value) {
+		return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(5e3, Math.floor(value))) : 200;
 	}
 	function retryDelay(value, now = Date.now()) {
 		if (!value) return 6e4;
@@ -202,17 +231,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const delay = Number.isFinite(seconds) ? seconds * 1e3 : Date.parse(value) - now;
 		return Number.isFinite(delay) ? Math.max(6e4, delay) : 6e4;
 	}
-	function createRequestQueue() {
+	function createRequestQueue(limit = () => 1, interval = () => 0) {
 		const pending = [];
-		let active = false;
-		const drain = async () => {
-			if (active) return;
-			active = true;
-			while (pending.length) {
+		let active = 0;
+		let lastStarted = -Infinity;
+		let timer;
+		const drain = () => {
+			clearTimeout(timer);
+			while (pending.length && active < requestConcurrency(limit())) {
+				const delay = lastStarted + requestInterval(interval()) - Date.now();
+				if (delay > 0) {
+					timer = setTimeout(drain, delay);
+					return;
+				}
 				pending.sort((a, b) => a.priority - b.priority);
-				await pending.shift().run();
+				active++;
+				lastStarted = Date.now();
+				pending.shift().run().finally(() => {
+					active--;
+					drain();
+				});
 			}
-			active = false;
 		};
 		return (task, priority = 0) => new Promise((resolve, reject) => {
 			pending.push({
@@ -228,7 +267,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			drain();
 		});
 	}
-	var enqueue = createRequestQueue();
+	var requestSettings = () => {
+		const settings = GM_getValue$1(`nspp:settings:${location.hostname}`, {})?.["request-settings"];
+		return settings?.enabled === false ? void 0 : settings;
+	};
+	var enqueue = createRequestQueue(() => requestConcurrency(requestSettings()?.maxConcurrent), () => requestInterval(requestSettings()?.requestInterval));
 	async function request(url, options = {}) {
 		const target = new URL(url, location.origin);
 		if (!/^https?:$/.test(target.protocol)) throw new Error("不支持的请求地址");
@@ -258,35 +301,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		};
 		if (target.origin !== location.origin) return execute();
 		return enqueue(async () => {
-			const scheduled = async () => {
-				const cooldownKey = `nspp:request-cooldown:${location.host}`;
-				const lastKey = `nspp:${profile ? "profile" : "request"}-completed:${location.host}`;
-				init.signal?.throwIfAborted();
-				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
-				const settings = GM_getValue$1(`nspp:settings:${location.hostname}`, {})?.["request-settings"];
-				const fallback = profile ? 100 : 0;
-				const interval = settings?.enabled === false ? fallback : requestInterval(settings?.[profile ? "profileInterval" : "requestInterval"], fallback);
-				const delay = GM_getValue$1(lastKey, 0) + interval - Date.now();
-				if (delay > 0) await new Promise((resolve, reject) => {
-					const abort = () => {
-						clearTimeout(timer);
-						reject(init.signal?.reason);
-					};
-					const timer = setTimeout(() => {
-						init.signal?.removeEventListener("abort", abort);
-						resolve();
-					}, delay);
-					init.signal?.addEventListener("abort", abort, { once: true });
-				});
-				init.signal?.throwIfAborted();
-				if (GM_getValue$1(cooldownKey, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
-				try {
-					return await execute();
-				} finally {
-					GM_setValue$1(lastKey, Date.now());
-				}
-			};
-			return navigator.locks?.request ? navigator.locks.request("nspp:forum-requests", { signal: init.signal ?? void 0 }, scheduled) : scheduled();
+			init.signal?.throwIfAborted();
+			if (GM_getValue$1(`nspp:request-cooldown:${location.host}`, 0) > Date.now()) throw new Error("站点请求冷却中，请稍后手动重试");
+			return execute();
 		}, profile ? 1 : 0);
 	}
 	var validObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -667,8 +684,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						}
 						if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
 						else if (feature.id === "request-settings" && control instanceof HTMLInputElement) {
-							control.min = "0";
-							control.max = "5000";
+							control.min = key === "maxConcurrent" ? "1" : "0";
+							control.max = key === "maxConcurrent" ? "10" : "5000";
 							control.step = "1";
 							control.value = String(value);
 						} else control.value = String(value);
@@ -832,19 +849,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function toDate(argument, context) {
 		return constructFrom(context || argument, argument);
 	}
-	function addMonths(date, amount, options) {
-		const _date = toDate(date, options?.in);
-		if (isNaN(amount)) return constructFrom(options?.in || date, NaN);
-		if (!amount) return _date;
-		const dayOfMonth = _date.getDate();
-		const endOfDesiredMonth = constructFrom(options?.in || date, _date.getTime());
-		endOfDesiredMonth.setMonth(_date.getMonth() + amount + 1, 0);
-		if (dayOfMonth >= endOfDesiredMonth.getDate()) return endOfDesiredMonth;
-		else {
-			_date.setFullYear(endOfDesiredMonth.getFullYear(), endOfDesiredMonth.getMonth(), dayOfMonth);
-			return _date;
-		}
-	}
 	var defaultOptions = {};
 	function getDefaultOptions() {
 		return defaultOptions;
@@ -922,12 +926,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function isValid(date) {
 		return !(!isDate(date) && typeof date !== "number" || isNaN(+toDate(date)));
 	}
-	function differenceInCalendarMonths(laterDate, earlierDate, options) {
-		const [laterDate_, earlierDate_] = normalizeDates(options?.in, laterDate, earlierDate);
-		const yearsDiff = laterDate_.getFullYear() - earlierDate_.getFullYear();
-		const monthsDiff = laterDate_.getMonth() - earlierDate_.getMonth();
-		return yearsDiff * 12 + monthsDiff;
-	}
 	function getRoundingMethod(method) {
 		return (number) => {
 			const result = (method ? Math[method] : Math.trunc)(number);
@@ -936,38 +934,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	}
 	function differenceInMilliseconds(laterDate, earlierDate) {
 		return +toDate(laterDate) - +toDate(earlierDate);
-	}
-	function endOfDay(date, options) {
-		const _date = toDate(date, options?.in);
-		_date.setHours(23, 59, 59, 999);
-		return _date;
-	}
-	function endOfMonth(date, options) {
-		const _date = toDate(date, options?.in);
-		const month = _date.getMonth();
-		_date.setFullYear(_date.getFullYear(), month + 1, 0);
-		_date.setHours(23, 59, 59, 999);
-		return _date;
-	}
-	function isLastDayOfMonth(date, options) {
-		const _date = toDate(date, options?.in);
-		return +endOfDay(_date, options) === +endOfMonth(_date, options);
-	}
-	function differenceInMonths(laterDate, earlierDate, options) {
-		const [laterDate_, workingLaterDate, earlierDate_] = normalizeDates(options?.in, laterDate, laterDate, earlierDate);
-		const sign = compareAsc(workingLaterDate, earlierDate_);
-		const difference = Math.abs(differenceInCalendarMonths(workingLaterDate, earlierDate_));
-		if (difference < 1) return 0;
-		if (workingLaterDate.getMonth() === 1 && workingLaterDate.getDate() > 27) workingLaterDate.setDate(30);
-		workingLaterDate.setMonth(workingLaterDate.getMonth() - sign * difference);
-		let isLastMonthNotFull = compareAsc(workingLaterDate, earlierDate_) === -sign;
-		if (isLastDayOfMonth(laterDate_) && difference === 1 && compareAsc(laterDate_, earlierDate_) === 1) isLastMonthNotFull = false;
-		const result = sign * (difference - +isLastMonthNotFull);
-		return result === 0 ? 0 : result;
-	}
-	function differenceInSeconds(laterDate, earlierDate, options) {
-		const diff = differenceInMilliseconds(laterDate, earlierDate) / 1e3;
-		return getRoundingMethod(options?.roundingMethod)(diff);
 	}
 	function startOfYear(date, options) {
 		const date_ = toDate(date, options?.in);
@@ -1038,7 +1004,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			other: "almost {{count}} years"
 		}
 	};
-	var formatDistance$2 = (token, count, options) => {
+	var formatDistance$1 = (token, count, options) => {
 		let result;
 		const tokenValue = formatDistanceLocale$1[token];
 		if (typeof tokenValue === "string") result = tokenValue;
@@ -1361,7 +1327,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	}
 	var enUS = {
 		code: "en-US",
-		formatDistance: formatDistance$2,
+		formatDistance: formatDistance$1,
 		formatLong: formatLong$1,
 		formatRelative: formatRelative$1,
 		localize: localize$1,
@@ -2103,56 +2069,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (!matched) return input;
 		return matched[1].replace(doubleQuoteRegExp, "'");
 	}
-	function formatDistance$1(laterDate, earlierDate, options) {
-		const defaultOptions = getDefaultOptions();
-		const locale = options?.locale ?? defaultOptions.locale ?? enUS;
-		const minutesInAlmostTwoDays = 2520;
-		const comparison = compareAsc(laterDate, earlierDate);
-		if (isNaN(comparison)) throw new RangeError("Invalid time value");
-		const localizeOptions = Object.assign({}, options, {
-			addSuffix: options?.addSuffix,
-			comparison
-		});
-		const [laterDate_, earlierDate_] = normalizeDates(options?.in, ...comparison > 0 ? [earlierDate, laterDate] : [laterDate, earlierDate]);
-		const seconds = differenceInSeconds(earlierDate_, laterDate_);
-		const offsetInSeconds = (getTimezoneOffsetInMilliseconds(earlierDate_) - getTimezoneOffsetInMilliseconds(laterDate_)) / 1e3;
-		const minutes = Math.round((seconds - offsetInSeconds) / 60);
-		let months;
-		if (minutes < 2) {
-			if (options?.includeSeconds) {
-				if (seconds < 5) return locale.formatDistance("lessThanXSeconds", 5, localizeOptions);
-				else if (seconds < 10) return locale.formatDistance("lessThanXSeconds", 10, localizeOptions);
-				else if (seconds < 20) return locale.formatDistance("lessThanXSeconds", 20, localizeOptions);
-				else if (seconds < 40) return locale.formatDistance("halfAMinute", 0, localizeOptions);
-				else if (seconds < 60) return locale.formatDistance("lessThanXMinutes", 1, localizeOptions);
-				else return locale.formatDistance("xMinutes", 1, localizeOptions);
-			} else if (minutes === 0) return locale.formatDistance("lessThanXMinutes", 1, localizeOptions);
-			else return locale.formatDistance("xMinutes", minutes, localizeOptions);
-		} else if (minutes < 45) return locale.formatDistance("xMinutes", minutes, localizeOptions);
-		else if (minutes < 90) return locale.formatDistance("aboutXHours", 1, localizeOptions);
-		else if (minutes < 1440) {
-			const hours = Math.round(minutes / 60);
-			return locale.formatDistance("aboutXHours", hours, localizeOptions);
-		} else if (minutes < minutesInAlmostTwoDays) return locale.formatDistance("xDays", 1, localizeOptions);
-		else if (minutes < 43200) {
-			const days = Math.round(minutes / minutesInDay);
-			return locale.formatDistance("xDays", days, localizeOptions);
-		} else if (minutes < 86400) {
-			months = Math.round(minutes / minutesInMonth);
-			return locale.formatDistance("aboutXMonths", months, localizeOptions);
-		}
-		months = differenceInMonths(earlierDate_, laterDate_);
-		if (months < 12) {
-			const nearestMonth = Math.round(minutes / minutesInMonth);
-			return locale.formatDistance("xMonths", nearestMonth, localizeOptions);
-		} else {
-			const monthsSinceStartOfYear = months % 12;
-			const years = Math.trunc(months / 12);
-			if (monthsSinceStartOfYear < 3) return locale.formatDistance("aboutXYears", years, localizeOptions);
-			else if (monthsSinceStartOfYear < 9) return locale.formatDistance("overXYears", years, localizeOptions);
-			else return locale.formatDistance("almostXYears", years + 1, localizeOptions);
-		}
-	}
 	function formatDistanceStrict(laterDate, earlierDate, options) {
 		const defaultOptions = getDefaultOptions();
 		const locale = options?.locale ?? defaultOptions.locale ?? enUS;
@@ -2360,9 +2276,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	}
 	function validateTimezone(_hours, minutes) {
 		return minutes >= 0 && minutes <= 59;
-	}
-	function subMonths(date, amount, options) {
-		return addMonths(date, -amount, options);
 	}
 	var formatDistanceLocale = {
 		lessThanXSeconds: {
@@ -2923,12 +2836,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						el.removeAttribute(attr.name);
 					}
 				});
-				const marker = document.createElement("li");
-				const link = document.createElement("a");
-				link.href = url.href;
-				link.textContent = "查看本页原始内容与回复操作";
-				marker.append(link);
-				list.append(marker);
 				for (const child of Array.from(source.children)) {
 					const id = child.id;
 					if (id && document.getElementById(id)) continue;
@@ -3001,43 +2908,68 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		{
 			id: "reading-history",
 			title: "阅读历史与已读标记",
-			description: "本地记录最近 500 个帖子，标题显示已读颜色；不上传记录。",
+			description: "本地保存实际浏览与最近关闭的帖子，默认 100 条、7 天，按天分组；不上传记录。",
 			group: "阅读",
-			defaults: { enabled: true },
+			defaults: {
+				enabled: true,
+				limit: 100,
+				days: 7
+			},
+			fields: {
+				limit: {
+					label: "保存上限",
+					type: "number"
+				},
+				days: {
+					label: "保存天数",
+					type: "number"
+				}
+			},
 			mount(ctx) {
-				const stored = ctx.get("entries");
-				let entries = Array.isArray(stored) ? stored.flatMap((entry) => {
-					const path = entry && typeof entry.path === "string" ? postPath(entry.path, location.href) : void 0;
-					return path ? [{
-						...entry,
-						path
-					}] : [];
-				}) : [];
-				const record = (path, title) => {
-					entries = [{
-						path,
-						title,
-						time: Date.now()
-					}, ...entries.filter((e) => e.path !== path)].slice(0, 500);
-					ctx.set("entries", entries);
-				};
+				const limit = Math.max(1, Math.floor(Number(ctx.get("limit")) || 100));
+				const maxAge = Math.max(1, Number(ctx.get("days")) || 7) * 864e5;
 				const key = (href) => postPath(href, location.href);
-				const current = key(location.href);
-				if (current) record(current, document.title);
-				const stop = ctx.watch(() => document.querySelectorAll(".post-title a").forEach((a) => {
-					const path = key(a.href);
-					a.classList.toggle("nspp-read", !!path && entries.some((e) => e.path === path));
-				}));
-				document.addEventListener("click", (e) => {
-					const a = e.target.closest(".post-title a");
-					if (a) {
-						const path = key(a.href);
-						if (path) {
-							record(path, a.textContent || "");
-							a.classList.add("nspp-read");
-						}
-					}
-				}, { signal: ctx.signal });
+				const load = (name) => {
+					const stored = ctx.get(name);
+					const clean = (Array.isArray(stored) ? stored : []).flatMap((entry) => {
+						const path = entry && typeof entry.path === "string" ? key(entry.path) : void 0;
+						return path && typeof entry.title === "string" && Number.isFinite(entry.time) && Date.now() - entry.time < maxAge ? [{
+							...entry,
+							path
+						}] : [];
+					}).sort((a, b) => b.time - a.time);
+					const seen = new Set();
+					const entries = clean.filter((entry) => {
+						if (seen.has(entry.path)) return false;
+						seen.add(entry.path);
+						return true;
+					}).slice(0, limit);
+					ctx.set(name, entries);
+					return entries;
+				};
+				const record = (name) => {
+					const pd = unsafeWindow$1.__config__?.postData;
+					const path = pd?.postId ? key(`/post-${pd.postId}-1`) : key(location.href);
+					if (!path) return;
+					ctx.set(name, [{
+						path,
+						title: pd?.title || document.title,
+						time: Date.now(),
+						uid: pd?.op?.uid,
+						author: pd?.op?.name
+					}, ...load(name).filter((entry) => entry.path !== path)].slice(0, limit));
+				};
+				record("entries");
+				load("recent");
+				const markRead = () => {
+					const entries = load("entries");
+					document.querySelectorAll(".post-title a").forEach((a) => a.classList.toggle("nspp-read", entries.some((entry) => entry.path === key(a.href))));
+				};
+				const stop = ctx.watch(markRead);
+				window.addEventListener("beforeunload", () => record("recent"), {
+					capture: true,
+					signal: ctx.signal
+				});
 				const historyButton = document.createElement("button");
 				historyButton.type = "button";
 				historyButton.className = "nspp-tool-icon";
@@ -3069,45 +3001,95 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					undoButton.textContent = "撤销删除";
 					undoButton.hidden = true;
 					let previous;
+					let tab = "entries";
+					let entries = load(tab);
+					const tabs = document.createElement("div");
+					tabs.className = "nspp-history-toolbar";
+					for (const [name, label] of [["entries", "全部"], ["recent", "最近关闭"]]) {
+						const button = document.createElement("button");
+						button.type = "button";
+						button.textContent = label;
+						button.dataset.tab = name;
+						button.addEventListener("click", () => {
+							tab = name;
+							previous = void 0;
+							undoButton.hidden = true;
+							render();
+						});
+						tabs.append(button);
+					}
 					const list = document.createElement("ol");
 					const save = () => {
-						ctx.set("entries", entries);
-						document.querySelectorAll(".post-title a").forEach((a) => {
-							a.classList.toggle("nspp-read", entries.some((entry) => entry.path === key(a.href)));
-						});
+						ctx.set(tab, entries);
+						markRead();
 					};
 					const render = () => {
 						list.replaceChildren();
-						const now = new Date();
-						const monthAgo = subMonths(now, 1);
+						entries = load(tab);
+						tabs.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.tab === tab)));
+						let lastDay = "";
 						const query = search.value.trim().toLowerCase();
 						const matches = entries.filter((entry) => entry.title.toLowerCase().includes(query));
 						for (const entry of matches) {
 							if (!/^\/post-\d+-1$/.test(entry.path)) continue;
+							const day = format(new Date(entry.time), "yyyy-MM-dd");
+							if (day !== lastDay) {
+								lastDay = day;
+								const group = document.createElement("li");
+								group.className = "nspp-history-day";
+								const label = document.createElement("span");
+								label.textContent = `${day === format(new Date(), "yyyy-MM-dd") ? "今天 - " : ""}${format(new Date(entry.time), "yyyy年M月d日 EEEE", { locale: zhCN })}`;
+								const clearDay = document.createElement("button");
+								clearDay.type = "button";
+								clearDay.textContent = "清除当天";
+								clearDay.addEventListener("click", () => {
+									previous = load(tab);
+									entries = previous.filter((item) => format(new Date(item.time), "yyyy-MM-dd") !== day);
+									undoButton.hidden = false;
+									save();
+									render();
+								});
+								group.append(label, clearDay);
+								list.append(group);
+							}
 							const li = document.createElement("li");
 							const link = document.createElement("a");
 							link.href = entry.path;
 							link.textContent = entry.title;
+							if (entry.uid && /^\d+$/.test(String(entry.uid))) {
+								const avatar = document.createElement("img");
+								avatar.className = "nspp-history-avatar";
+								avatar.src = `/avatar/${entry.uid}.png`;
+								avatar.alt = "";
+								avatar.title = entry.author ? `@${entry.author}` : "";
+								avatar.addEventListener("error", () => avatar.remove(), { once: true });
+								link.prepend(avatar);
+							}
 							const remove = document.createElement("button");
 							remove.type = "button";
 							remove.textContent = "删除";
 							remove.setAttribute("aria-label", `删除历史：${entry.title}`);
 							remove.addEventListener("click", () => {
-								previous = [...entries];
-								entries = entries.filter((item) => item.path !== entry.path);
+								previous = load(tab);
+								entries = previous.filter((item) => item.path !== entry.path);
 								undoButton.hidden = false;
 								save();
 								render();
 							}, { signal: ctx.signal });
 							const date = document.createElement("time");
 							const visitedAt = new Date(entry.time);
-							date.textContent = visitedAt < monthAgo ? format(visitedAt, "yyyy-MM-dd") : formatDistance$1(visitedAt, now, {
-								addSuffix: true,
-								locale: zhCN
-							});
+							date.textContent = format(visitedAt, "HH:mm");
 							date.title = format(visitedAt, "yyyy-MM-dd HH:mm:ss");
 							link.title = entry.title;
-							li.append(link, date, remove);
+							li.append(link, date);
+							if (tab === "recent") {
+								const restore = document.createElement("button");
+								restore.type = "button";
+								restore.textContent = "恢复";
+								restore.addEventListener("click", () => window.open(entry.path, "_blank", "noopener"));
+								li.append(restore);
+							}
+							li.append(remove);
 							list.append(li);
 						}
 						if (!matches.length) {
@@ -3117,7 +3099,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						}
 					};
 					clear.addEventListener("click", () => {
-						previous = [...entries];
+						previous = load(tab);
 						entries = [];
 						undoButton.hidden = false;
 						save();
@@ -3136,7 +3118,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const toolbar = document.createElement("div");
 					toolbar.className = "nspp-history-toolbar";
 					toolbar.append(search, clear, undoButton);
-					historyDialog.append(header, toolbar, list);
+					historyDialog.append(header, toolbar, tabs, list);
 					render();
 					document.body.append(historyDialog);
 					historyDialog.showModal();
@@ -3501,6 +3483,226 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			};
 		}
 	});
+	var controls = new Set();
+	var followed = new Set();
+	var viewer;
+	var checked = 0;
+	var loading;
+	var pending = new Set();
+	var ownId = () => unsafeWindow$1.__config__?.user?.member_id;
+	var render = () => controls.forEach(({ id, button }) => {
+		button.disabled = !!loading || pending.has(id);
+		button.textContent = followed.has(id) ? "取消关注" : "关注";
+		button.setAttribute("aria-label", checked ? button.textContent : "查询关注状态");
+		if (button.disabled) button.setAttribute("aria-busy", "true");
+		else button.removeAttribute("aria-busy");
+	});
+	async function refreshFollowing() {
+		const account = ownId();
+		if (!account) throw new Error("请先登录");
+		if (viewer !== account) {
+			viewer = account;
+			checked = 0;
+			followed.clear();
+		}
+		if (loading) return loading;
+		loading = request("/api/fans/follow").then((result) => {
+			if (result?.success !== true || !Array.isArray(result.memberList) || result.memberList.some((row) => !Number.isSafeInteger(row.member_id) || row.member_id <= 0)) throw new Error("关注状态读取失败");
+			if (ownId() !== account) throw new Error("登录状态已变化");
+			followed = new Set(result.memberList.map((row) => String(row.member_id)));
+			checked = Date.now();
+		}).finally(() => {
+			loading = void 0;
+			render();
+		});
+		render();
+		return loading;
+	}
+	function userCardActions(id, name, notify, signal) {
+		const element = document.createElement("div");
+		element.className = "nspp-user-hover-actions";
+		const transfer = document.createElement("button");
+		transfer.type = "button";
+		transfer.dataset.action = "transfer";
+		transfer.textContent = "转账";
+		const follow = document.createElement("button");
+		follow.type = "button";
+		follow.dataset.action = "follow";
+		follow.textContent = "关注";
+		const message = document.createElement("a");
+		message.dataset.action = "message";
+		message.textContent = "私信";
+		message.href = `/notification#/message?mode=talk&to=${id}`;
+		element.append(transfer, follow, message);
+		const control = {
+			id,
+			button: follow
+		};
+		controls.add(control);
+		let dialog;
+		signal.addEventListener("abort", () => {
+			controls.delete(control);
+			dialog?.remove();
+		}, { once: true });
+		const refresh = () => {
+			element.hidden = String(ownId()) === id;
+			if (ownId() && !element.hidden && (viewer !== ownId() || Date.now() - checked > 6e4)) refreshFollowing().catch(() => {});
+		};
+		render();
+		element.hidden = String(ownId()) === id;
+		follow.addEventListener("click", async () => {
+			if (pending.has(id)) return;
+			const account = ownId();
+			try {
+				if (!account) throw new Error("请先登录");
+				const remove = viewer === account && !!checked && followed.has(id);
+				pending.add(id);
+				render();
+				if (viewer !== account || Date.now() - checked > 3e4) {
+					await refreshFollowing();
+					if (followed.has(id) !== remove) {
+						notify(followed.has(id) ? "已关注" : "已取消关注");
+						return;
+					}
+				}
+				const result = await request(`/api/fans/${remove ? "del" : "add"}`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ followed_member_id: Number(id) }),
+					signal
+				});
+				if (result?.success !== true) throw new Error(result?.message || "操作未确认，请重试查询");
+				if (ownId() !== account) {
+					checked = 0;
+					return;
+				}
+				if (remove) followed.delete(id);
+				else followed.add(id);
+				checked = Date.now();
+				notify(remove ? "已取消关注" : "已关注");
+			} catch (error) {
+				checked = 0;
+				notify(error instanceof Error ? error.message : "关注操作失败");
+			} finally {
+				pending.delete(id);
+				render();
+			}
+		}, { signal });
+		transfer.addEventListener("click", async () => {
+			const account = ownId();
+			if (!account) {
+				notify("请先登录");
+				return;
+			}
+			dialog?.remove();
+			const panel = document.createElement("dialog");
+			dialog = panel;
+			panel.className = "nspp-history nspp-user-transfer";
+			panel.setAttribute("aria-label", "星辰转账");
+			const title = document.createElement("h2");
+			title.textContent = "星辰转账";
+			const recipient = document.createElement("p");
+			recipient.textContent = `${name()} · UID ${id}`;
+			const form = document.createElement("form");
+			const label = document.createElement("label");
+			label.textContent = "星辰数量";
+			const amount = document.createElement("input");
+			amount.type = "number";
+			amount.min = "1";
+			amount.step = "1";
+			amount.required = true;
+			amount.inputMode = "numeric";
+			label.append(amount);
+			const status = document.createElement("p");
+			status.setAttribute("role", "status");
+			status.textContent = "正在确认收款人…";
+			const actions = document.createElement("div");
+			actions.className = "nspp-transfer-actions";
+			const cancel = document.createElement("button");
+			cancel.type = "button";
+			cancel.textContent = "取消";
+			cancel.addEventListener("click", () => panel.close(), { signal });
+			const submit = document.createElement("button");
+			submit.type = "submit";
+			submit.textContent = "确认转账";
+			submit.disabled = true;
+			actions.append(cancel, submit);
+			form.append(label, status, actions);
+			panel.append(title, recipient, form);
+			document.body.append(panel);
+			panel.showModal();
+			const ref = 100 + Math.floor(Math.random() * 1e8);
+			let ready = false, sending = false;
+			form.addEventListener("submit", async (event) => {
+				event.preventDefault();
+				const value = Number(amount.value);
+				if (!ready || sending || !Number.isSafeInteger(value) || value <= 0 || !form.reportValidity()) return;
+				if (ownId() !== account) {
+					status.textContent = "登录状态已变化，请重新打开转账";
+					submit.disabled = true;
+					return;
+				}
+				sending = true;
+				submit.disabled = true;
+				amount.disabled = true;
+				status.textContent = "转账中…";
+				try {
+					const result = await request("/api/stardust/send", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							member_id: Number(id),
+							diff: value,
+							ref_id: ref,
+							onetime: true
+						}),
+						signal
+					});
+					if (result?.success === true) {
+						panel.close();
+						notify(`已转账 ${value} 星辰`);
+					} else if (result?.success === false) {
+						status.textContent = result.message || "转账未成功";
+						sending = false;
+						submit.disabled = false;
+						amount.disabled = false;
+					} else throw new Error("结果未确认");
+				} catch {
+					status.textContent = "结果未确认，请先核对星辰明细，勿重复转账。";
+					const ledger = document.createElement("a");
+					ledger.href = `/stardust/list?member_id=${account}`;
+					ledger.textContent = "查看明细";
+					ledger.target = "_blank";
+					ledger.rel = "noopener";
+					status.append(" ", ledger);
+				}
+			}, { signal });
+			try {
+				const result = await request("/api/stardust/payment-prepare", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						receiver_id: Number(id),
+						origin: location.origin
+					}),
+					signal
+				});
+				if (result?.success !== true || !result.receiver_name) throw new Error(result?.message || "无法确认收款人");
+				if (!panel.open || signal.aborted) return;
+				recipient.textContent = `${result.receiver_name} · UID ${id}`;
+				status.textContent = "";
+				ready = true;
+				submit.disabled = false;
+				amount.focus();
+			} catch (error) {
+				status.textContent = error instanceof Error ? error.message : "无法确认收款人";
+			}
+		}, { signal });
+		return {
+			element,
+			refresh
+		};
+	}
 	function forumAge(now = Date.now()) {
 		return Math.max(1, 1388 + Math.floor((now - Date.parse("2026-09-12T00:00:00+08:00")) / 864e5));
 	}
@@ -3541,21 +3743,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	function trustScore(user, now = Date.now()) {
 		const days = registration(user, now).days;
 		const validCount = (value) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
-		if (days === null || !validCount(user.nPost) || !validCount(user.nComment)) return null;
+		if (days === null || !validCount(user.nPost) || !validCount(user.nComment) || !validCount(user.fans) || !Number.isSafeInteger(user.coin) || !Number.isSafeInteger(user.stardust)) return null;
 		const points = (value, cap, weight) => weight * Math.log1p(Math.min(value, cap)) / Math.log1p(cap);
-		const age = points(days, forumAge(now), 60);
-		const posts = points(user.nPost, 100, 20);
-		const comments = points(user.nComment, 500, 20);
+		const age = 35 * Math.sqrt(Math.min(days, 730) / 730);
+		const posts = points(user.nPost, 300, 20);
+		const comments = points(user.nComment, 2e3, 20);
+		const coin = points(Math.max(0, user.coin), 6e3, 10);
+		const stardust = points(Math.max(0, user.stardust), 500, 10);
+		const fans = points(user.fans, 50, 5);
 		return {
-			score: Math.round(age + posts + comments),
+			score: Math.round(age + posts + comments + coin + stardust + fans),
 			age,
 			posts,
-			comments
+			comments,
+			coin,
+			stardust,
+			fans
 		};
 	}
 	var userHoverSelector = "a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*=\"/space/\"], a[href*=\"/space/\"]:has(img), a[data-uid]";
 	var cards = new WeakMap();
 	function isUserHoverAnchor(anchor) {
+		if (anchor.closest(".hover-user-card")) return false;
 		const url = new URL(anchor.href, location.href);
 		return url.origin === location.origin && /^\/space\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash;
 	}
@@ -3567,16 +3776,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const element = document.createElement("section");
 			element.className = "nspp-user-hover";
 			element.hidden = true;
-			element.setAttribute("aria-label", `${anchor.textContent?.trim()} 的用户详情`);
 			const heading = document.createElement("a");
 			heading.href = anchor.href;
 			heading.textContent = anchor.textContent?.trim() || anchor.querySelector("img")?.alt || "用户资料";
 			heading.className = "nspp-user-hover-name";
+			element.setAttribute("aria-label", `${heading.textContent} 的用户详情`);
 			const header = document.createElement("div");
 			header.className = "nspp-user-hover-header";
 			const mark = document.createElement("span");
 			mark.className = "nspp-user-hover-monogram";
-			mark.textContent = (anchor.textContent?.trim() || "?").slice(0, 1);
+			mark.textContent = heading.textContent.slice(0, 1);
 			const identity = document.createElement("div");
 			identity.append(heading);
 			const controller = new AbortController();
@@ -3605,6 +3814,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			avatar.alt = "";
 			avatar.hidden = true;
 			const id = authorId(anchor, location.origin);
+			const actions = id ? userCardActions(id, () => heading.textContent || "", ctx.notify, controller.signal) : void 0;
 			avatar.addEventListener("load", () => {
 				avatar.hidden = false;
 				mark.hidden = true;
@@ -3615,6 +3825,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			});
 			header.append(avatar, mark, identity);
 			element.append(header);
+			if (actions) element.append(actions.element);
 			document.body.append(element);
 			let timer;
 			const close = () => {
@@ -3626,6 +3837,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				if (!anchor.isConnected) return;
 				syncTags();
 				element.hidden = false;
+				actions?.refresh();
 				if (id && !avatar.getAttribute("src")) avatar.src = `/avatar/${id}.png`;
 				const rect = anchor.getBoundingClientRect();
 				element.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - element.offsetWidth - 8))}px`;
@@ -3787,26 +3999,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}
 			let scoreDialog;
 			const roles = new Map();
+			const fresh = (entry) => !!entry && entry.withSignature === true && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 864e5;
 			const cache = new Map();
 			const inflight = new Map();
 			const nodes = new Map();
 			const getProfile = (id) => {
-				if (cache.has(id)) return Promise.resolve(cache.get(id));
+				const cached = cache.get(id);
+				if (fresh(cached)) return Promise.resolve(cached.user);
+				cache.delete(id);
 				if (inflight.has(id)) return inflight.get(id);
 				const stored = ctx.get("profiles") || {};
-				if (stored[id] && Date.now() - stored[id].time < 864e5) {
-					cache.set(id, stored[id].user);
+				if (fresh(stored[id])) {
+					cache.set(id, stored[id]);
 					return Promise.resolve(stored[id].user);
 				}
-				const request = ctx.request(`/api/account/getInfo/${id}`).then((result) => {
+				const request = ctx.request(`/api/account/getInfo/${id}?signature=1`).then((result) => {
 					if (!result?.success || !result.detail || typeof result.detail !== "object") throw new Error("资料不可用");
-					cache.set(id, result.detail);
-					const latest = ctx.get("profiles") || {};
-					latest[id] = {
+					const entry = {
 						time: Date.now(),
-						user: result.detail
+						user: result.detail,
+						withSignature: true
 					};
-					ctx.set("profiles", Object.fromEntries(Object.entries(latest).sort((a, b) => b[1].time - a[1].time).slice(0, 200)));
+					cache.set(id, entry);
+					const latest = ctx.get("profiles") || {};
+					latest[id] = entry;
+					ctx.set("profiles", Object.fromEntries(Object.entries(latest).filter(([, value]) => fresh(value))));
 					return result.detail;
 				});
 				inflight.set(id, request);
@@ -3822,16 +4039,54 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const info = registration(user);
 					const profileDetails = nodes.get(author).details;
 					profileDetails.replaceChildren();
-					for (const [label, value] of [
-						["注册日期", info.days === null ? "未知" : format(new Date(info.timestamp), "yyyy-MM-dd")],
-						["主题帖", String(user.nPost ?? "—")],
-						["评论", String(user.nComment ?? "—")]
+					for (const [label, value, icon] of [
+						[
+							"等级",
+							info.level === null ? "—" : `Lv ${info.level}`,
+							"level"
+						],
+						[
+							"主题帖",
+							String(user.nPost ?? "—"),
+							"write-6ncdp62p"
+						],
+						[
+							"鸡腿",
+							String(user.coin ?? "—"),
+							"chicken-leg"
+						],
+						[
+							"评论数",
+							String(user.nComment ?? "—"),
+							"comments-6ncdh3ka"
+						],
+						[
+							"星辰",
+							String(user.stardust ?? "—"),
+							"wallet"
+						],
+						[
+							"粉丝",
+							String(user.fans ?? "—"),
+							"concern"
+						]
 					]) {
+						const cell = document.createElement("div");
 						const term = document.createElement("dt");
 						term.textContent = label;
+						term.prepend(siteIcon(icon));
 						const valueNode = document.createElement("dd");
 						valueNode.textContent = value;
-						profileDetails.append(term, valueNode);
+						if (label === "等级") {
+							valueNode.className = "nspp-user-badges";
+							const badgeValue = document.createElement("span");
+							badgeValue.className = "nspp-level";
+							badgeValue.dataset.level = String(info.level ?? "unknown");
+							badgeValue.textContent = value;
+							valueNode.replaceChildren(badgeValue);
+						}
+						cell.append(term, valueNode);
+						profileDetails.append(cell);
 					}
 					badge.replaceChildren();
 					const level = document.createElement("span");
@@ -3900,14 +4155,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					score.type = "button";
 					score.className = "nspp-trust";
 					score.textContent = trust ? String(trust.score) : "—";
-					score.dataset.tier = info.level === 1 ? "danger" : !trust ? "unknown" : trust.score === 100 ? "perfect" : trust.score >= 70 ? "success" : trust.score >= 40 ? "warning" : "danger";
+					score.dataset.tier = !trust ? "unknown" : trust.score === 100 ? "perfect" : trust.score >= 70 ? "success" : trust.score >= 40 ? "warning" : "danger";
 					score.prepend(siteIcon("crown-two"));
-					const explanation = trust ? `信任参考分 ${trust.score}/100\n注册时长 ${trust.age.toFixed(1)}/60 · 发帖 ${trust.posts.toFixed(1)}/20 · 评论 ${trust.comments.toFixed(1)}/20` : "资料不足，暂不评分：需要有效的注册时间、发帖数和评论数。";
-					const risk = info.level === 1 ? "风险提示：该用户等级为 1 级，请谨慎核实身份与交易信息，等级和分数均不代表交易信用。" : trust && trust.score < 40 ? "风险提示：该用户信任参考分较低，公开参与记录有限，请谨慎核实身份与交易信息；低分不代表存在不良行为。" : "";
-					if (info.level === 1) level.title = risk;
-					const details = `${risk ? `${risk}\n\n` : ""}${explanation}\n规则 v2：各项按 ln(1 + 数量) / ln(1 + 上限) × 权重计算，总和四舍五入。注册时长上限为论坛存续天数（当前 ${forumAge()} 天，随日期增长）、发帖 100、评论 500。\n仅根据公开资料在本地计算社区参与参考分，非站点官方评分，不代表交易信用；低分可能只是新用户，发帖与评论数量不代表内容质量。`;
+					const details = `${trust ? `信任分 ${trust.score}/100\n注册时长 ${trust.age.toFixed(1)}/35 · 主题帖 ${trust.posts.toFixed(1)}/20 · 评论 ${trust.comments.toFixed(1)}/20\n鸡腿 ${trust.coin.toFixed(1)}/10 · 星辰 ${trust.stardust.toFixed(1)}/10 · 粉丝 ${trust.fans.toFixed(1)}/5` : "资料不足：需要注册日期、主题帖、评论、鸡腿、星辰和粉丝数据。"}\n\n规则 v4：注册时长按 √(天数 / 730) × 35 计算，最多 35 分；其余指标按 ln(1 + 数量) / ln(1 + 上限) × 权重计算。上限：主题帖 300、评论 2000、鸡腿 6000、星辰 500、粉丝 50。负余额按 0 计算；等级不重复加分；缺少数据不评分。\n\n这是社区资料参考分，余额可转移，粉丝和发言数量不等于交易信用。`;
 					score.title = details;
-					score.setAttribute("aria-label", `信任参考分 ${trust?.score ?? "未知"}，${risk ? `${risk} ` : ""}查看评分依据`);
+					score.setAttribute("aria-label", `信任分 ${trust?.score ?? "未知"}，查看评分依据`);
 					score.addEventListener("click", () => {
 						scoreDialog?.remove();
 						scoreDialog = document.createElement("dialog");
@@ -3929,54 +4181,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const card = profileDetails.parentElement;
 					card.dataset.trust = !trust ? "unknown" : trust.score === 100 ? "perfect" : trust.score >= 70 ? "success" : trust.score >= 40 ? "warning" : "danger";
 					card.querySelector(".nspp-user-hover-signature")?.remove();
-					if (typeof user.signature === "string" && user.signature.trim()) {
+					const signatureText = [
+						user.bio,
+						user.introduction,
+						user.signature_text,
+						user.signature
+					].find((value) => typeof value === "string" && value.trim());
+					if (signatureText) {
 						const signature = document.createElement("p");
 						signature.className = "nspp-user-hover-signature";
-						signature.textContent = user.signature.trim();
+						signature.textContent = signatureText.trim();
 						card.querySelector(".nspp-user-hover-header").after(signature);
 					}
 					card.querySelector(".nspp-user-hover-score")?.remove();
 					const headline = document.createElement("button");
 					headline.type = "button";
 					headline.className = "nspp-user-hover-score";
-					headline.setAttribute("aria-label", `信任参考分 ${trust?.score ?? "未知"}，查看评分依据`);
+					headline.setAttribute("aria-label", `信任分 ${trust?.score ?? "未知"}，查看评分依据`);
 					const number = document.createElement("strong");
 					number.textContent = trust ? String(trust.score) : "—";
 					const scoreLabel = document.createElement("small");
-					scoreLabel.textContent = "信任参考分";
+					scoreLabel.textContent = "信任分";
 					headline.append(number, scoreLabel);
 					headline.addEventListener("click", () => score.click(), { signal: ctx.signal });
 					card.querySelector(".nspp-user-hover-header").append(headline);
-					const participation = document.createElement("span");
-					participation.className = "nspp-participation";
-					participation.textContent = Number.isSafeInteger(user.nPost) && Number.isSafeInteger(user.nComment) && user.nPost >= 0 && user.nComment >= 0 ? String(user.nPost + user.nComment) : "—";
-					participation.title = "主题帖数 + 评论数";
 					card.querySelector(".nspp-user-hover-rich")?.remove();
 					const rich = document.createElement("div");
 					rich.className = "nspp-user-hover-rich nspp-user-badges";
-					for (const [label, source] of [
-						["加入天数", age],
-						["参与次数", participation],
-						["用户等级", level]
-					]) {
-						const cell = document.createElement("div");
-						const caption = document.createElement("small");
-						caption.textContent = label;
-						const value = source.cloneNode(true);
-						value.removeAttribute("title");
-						if (source instanceof HTMLButtonElement) value.addEventListener("click", () => {
-							source.click();
-						}, { signal: ctx.signal });
-						cell.append(caption, value);
-						rich.append(cell);
-					}
-					card.insertBefore(rich, profileDetails);
-					card.querySelector(".nspp-user-hover-note")?.remove();
-					const note = document.createElement("p");
-					note.className = "nspp-user-hover-note";
-					note.dataset.tone = info.level === 1 || trust && trust.score < 40 ? "danger" : info.tone;
-					note.textContent = risk || `${info.label} · 本地参与度参考分，非官方信用评分`;
-					profileDetails.after(note);
+					const duration = age.cloneNode(true);
+					duration.removeAttribute("title");
+					const dayCount = document.createElement("strong");
+					dayCount.textContent = info.days === null ? "未知" : String(info.days);
+					duration.replaceChildren(siteIcon("calendar-thirty"), document.createTextNode("加入 "), dayCount, document.createTextNode(info.days === null ? "" : " 天"));
+					duration.addEventListener("click", () => age.click(), { signal: ctx.signal });
+					const joined = document.createElement("span");
+					joined.textContent = `注册 ${info.days === null ? "未知" : format(new Date(info.timestamp), "yyyy-MM-dd")}`;
+					rich.append(duration, joined);
+					profileDetails.after(rich);
 				} catch {
 					if (ctx.signal.aborted || !badge.isConnected) return;
 					const details = nodes.get(author)?.details;
@@ -4039,7 +4280,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const hover = userHover(author, ctx);
 					const details = document.createElement("dl");
 					details.textContent = "正在读取用户资料…";
-					hover.element.insertBefore(details, hover.element.querySelector(":scope > .nspp-block-toggle"));
+					hover.element.insertBefore(details, hover.element.querySelector(".nspp-user-hover-actions, :scope > .nspp-block-toggle"));
 					author.after(badge);
 					nodes.set(author, {
 						id,
@@ -4047,6 +4288,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						details,
 						release: hover.release
 					});
+					if (badge.hidden) {
+						let started = false;
+						const start = () => {
+							if (!started) {
+								started = true;
+								load(author, id, badge);
+							}
+						};
+						author.addEventListener("mouseenter", start, { signal: ctx.signal });
+						author.addEventListener("focus", start, { signal: ctx.signal });
+						author.addEventListener("click", start, { signal: ctx.signal });
+						return;
+					}
 					const rect = author.getBoundingClientRect();
 					if (!observer || rect.bottom >= 0 && rect.top <= innerHeight + 200) load(author, id, badge);
 					else observer.observe(author);
@@ -8557,7 +8811,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		{
 			id: "attendance",
 			title: "签到",
-			description: "手动签到，可选每天自动签到；仅成功后缓存，按账户隔离。",
+			description: "每天尝试一次，成功或失败均缓存当天记录并隐藏按钮，次日再试；按账户隔离。",
 			group: "操作辅助",
 			defaults: {
 				enabled: true,
@@ -8608,14 +8862,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						if (!animation?.isActive()) control.hidden = signed;
 					};
 					sync();
-					let attemptedDay = "", attemptedAt = 0;
 					const tick = () => {
 						sync();
-						if (ctx.get("automatic") && !known() && !document.hidden && (attemptedDay !== day() || Date.now() - attemptedAt >= 6e5)) {
-							attemptedDay = day();
-							attemptedAt = Date.now();
-							run();
-						}
+						if (ctx.get("automatic") && !known() && !document.hidden && !control.disabled) run();
 					};
 					window.addEventListener("focus", tick, { signal: ctx.signal });
 					document.addEventListener("visibilitychange", tick, { signal: ctx.signal });
@@ -8662,8 +8911,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						control.disabled = true;
 						renderControl("签到中…");
 						control.setAttribute("aria-busy", "true");
+						const requestDay = day();
 						try {
-							if (!await withTabLock(`attendance:${user.member_id}`, 1e4, async () => {
+							await withTabLock(`attendance:${user.member_id}`, 1e4, async () => {
 								if (ctx.signal.aborted) return;
 								if (known()) {
 									complete(false);
@@ -8671,14 +8921,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								}
 								const result = await ctx.request(`/api/attendance?random=${ctx.get("mode") === "random"}`, { method: "POST" });
 								if (ctx.signal.aborted) return;
-								if (result.success || /已完成|已签到/.test(result.message || "")) {
-									ctx.set(key, day());
-									complete(!!result.success);
-								}
-								ctx.notify(result.message || (result.success ? `签到成功，获得 ${result.gain ?? ""} 鸡腿` : "签到失败"));
-							})) ctx.notify("其他标签页正在签到或刚刚尝试，请稍后查看");
+								ctx.set(key, requestDay);
+								if (known()) complete(!!result?.success);
+								else sync();
+								if (result?.success) ctx.notify(result.message || `签到成功，获得 ${result.gain ?? ""} 鸡腿`);
+							});
 						} catch {
-							if (!ctx.signal.aborted) ctx.notify("签到失败，请稍后重试");
+							if (!ctx.signal.aborted) {
+								ctx.set(key, requestDay);
+								if (known()) complete(false);
+								else sync();
+							}
 						} finally {
 							control.disabled = false;
 							renderControl(known() ? "已签到" : "签到");
@@ -8866,6 +9119,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		el.textContent = label;
 		const icon = label === "关闭" ? "close" : label === "刷新" || label === "更新" ? "refresh" : label === "停止" ? "stop" : void 0;
 		if (icon) el.prepend(toolIcon(icon));
+		if (label === "关闭") {
+			el.replaceChildren(toolIcon("close"));
+			el.title = label;
+			el.setAttribute("aria-label", label);
+		}
 		el.addEventListener("click", fn, { signal: ctx.signal });
 		return el;
 	}
@@ -9007,7 +9265,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				const matched = snapshot?.matched ?? (snapshot ? [...new Map([...snapshot.home, ...snapshot.trades].map((post) => [post.id, post])).values()].filter((post) => match(post)).length : 0);
 				badge.textContent = String(matched);
 				badge.hidden = matched === 0;
-				launch.title = `帖子监控 · ${label}\n累计匹配 ${matched} 条 · ${count} 条未读\n红色徽章表示本轮监控规则下累计匹配的帖子数，打开面板不会清零；修改规则后重新统计。\n每 ${interval / 1e3} 秒检查 NodeSeek RSS，结果列表保留最近 200 条。\n点击查看匹配帖子并清除未读标记。`;
+				launch.title = `帖子监控 · ${label}\n累计匹配 ${matched} 条 · ${count} 条未读\n红色徽章表示本轮监控规则下累计匹配的帖子数，打开面板不会清零；清空记录或修改规则后重新统计。\n每 ${interval / 1e3} 秒检查 NodeSeek RSS，结果列表保留最近 200 条。\n点击查看匹配帖子并清除未读标记。`;
 				launch.setAttribute("aria-label", launch.title);
 			}
 			const wait = () => new Promise((resolve) => {
@@ -9088,7 +9346,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						checked: Date.now(),
 						signal
 					} : x);
-					if (signal && updated.some((x) => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`);
+					if (signal && updated.some((x) => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, "抽奖状态更新", "lottery");
 					ctx.set(trackKey, updated);
 					renderTracks();
 				}
@@ -9153,6 +9411,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}, ctx);
 			configure.prepend(toolIcon("settings"));
 			header.insertBefore(configure, header.lastElementChild);
+			const clear = control("清空记录", () => {
+				if (busy) {
+					ctx.notify("正在检查，请完成后再清空记录");
+					return;
+				}
+				const snapshot = ctx.get(snapshotKey);
+				if (snapshot) {
+					const cursor = snapshot.cursor ?? [...snapshot.home, ...snapshot.trades].reduce((id, post) => BigInt(post.id) > BigInt(id) ? post.id : id, "0");
+					const cleared = {
+						...snapshot,
+						cursor,
+						rounds: 0,
+						checked: 0,
+						matched: 0,
+						results: []
+					};
+					ctx.set(snapshotKey, cleared);
+					display(cleared);
+				}
+				ctx.set(unreadKey, []);
+				output.replaceChildren();
+				renderUnread();
+				statusText.textContent = "记录已清空，后续从上次检查位置继续监控";
+				ctx.notify("已清空监控记录、未读标记和累计计数");
+			}, ctx);
+			clear.title = "清空帖子结果、未读标记和累计计数，保留监控规则与检查位置";
+			header.insertBefore(clear, configure);
 			configDialog.addEventListener("close", () => configure.focus(), { signal: ctx.signal });
 			editor.addEventListener("submit", (event) => {
 				event.preventDefault();
@@ -9263,6 +9548,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				syncAnimation();
 				renderCountdown();
 				apply.disabled = true;
+				clear.disabled = true;
 				panel.dataset.checking = "true";
 				status.setAttribute("aria-busy", "true");
 				last = Date.now();
@@ -9310,7 +9596,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								found: Date.now()
 							})), ...readUnread()].map((post) => [post.id, post])).values()].slice(0, 200));
 							renderUnread();
-							notify(message);
+							notify(message, "发现匹配新帖", "posts");
 						}
 						await checkTracked();
 						if (force && !ctx.signal.aborted) ctx.notify(`检查完成，匹配 ${matches.length} 条帖子`);
@@ -9337,6 +9623,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						statusText.textContent = snapshot ? `更新于 ${new Date(snapshot.at).toLocaleTimeString()}` : "检查结束";
 					}
 					apply.disabled = false;
+					clear.disabled = false;
 					delete panel.dataset.checking;
 					status.removeAttribute("aria-busy");
 					renderState();
@@ -9344,12 +9631,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					refreshButton.removeAttribute("aria-busy");
 				}
 			}
-			function notify(message) {
+			function notify(message, title, category) {
 				ctx.notify(message);
 				if (ctx.get("desktop-notifications") && typeof Notification !== "undefined" && Notification.permission === "granted") try {
-					new Notification("NodeSeek++ 帖子监控", {
+					new Notification(`NodeSeek++ · ${title}`, {
 						body: message,
-						tag: "nspp-monitor"
+						tag: `nspp-monitor:${category}`
 					});
 				} catch {}
 			}
@@ -9793,11 +10080,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const uid = unsafeWindow$1.__config__?.user?.member_id;
 					if (!uid) return;
 					const cacheKey = `counts:${uid}`;
-					const host = document.createElement("span");
-					host.setAttribute("role", "status");
-					host.className = "nspp-notifications";
-					const counters = document.createElement("span");
-					host.append(counters);
 					const originals = new Map();
 					const rows = [
 						"reply",
@@ -9810,19 +10092,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const place = () => {
 						const card = document.querySelector(".user-card .user-stat, .user-stat");
 						const columns = card?.querySelectorAll(".stat-block");
-						if (columns && columns.length >= 2) {
-							rows.forEach((row, index) => {
-								const target = columns[index === 1 ? 1 : 0];
-								if (row.parentElement !== target) target.append(row);
-							});
-							host.remove();
-						} else {
-							const target = document.getElementById("nspp-tools") || document.body;
-							if (host.parentElement !== target) target.append(host);
-							rows.forEach((row) => {
-								if (row.parentElement !== counters) counters.append(row);
-							});
-						}
+						if (columns && columns.length >= 2) rows.forEach((row, index) => {
+							const target = columns[index === 1 ? 1 : 0];
+							if (row.parentElement !== target) target.append(row);
+						});
+						else rows.forEach((row) => row.remove());
 						card?.querySelectorAll("a[href^=\"/notification\"]").forEach((anchor) => {
 							if (anchor.classList.contains("nspp-notification-link")) return;
 							if (!originals.has(anchor)) originals.set(anchor, anchor.hidden);
@@ -9943,28 +10217,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								render(result.unreadCount);
 								ctx.set(cacheKey, result.unreadCount);
 								failed = false;
-								if (previous && !ctx.signal.aborted) for (const [key, label, path] of [
+								if (previous && !ctx.signal.aborted) for (const [key, label, title, path] of [
 									[
 										"reply",
-										"新回复",
+										"评论/回复",
+										"收到了评论/回复",
 										"reply"
 									],
 									[
 										"atMe",
-										"新的 @我",
+										"@提醒",
+										"有人 @你",
 										"atMe"
 									],
 									[
 										"message",
-										"新私信",
+										"私信",
+										"收到了私信",
 										"message?mode=list"
 									]
 								]) {
 									const before = previous[key];
 									const count = result.unreadCount[key];
-									if (!Number.isFinite(before) || before < 0 || count <= before) continue;
-									const message = `${label} ${count - before} 条，当前未读 ${count} 条`;
-									if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`)) ctx.notify(message);
+									if (!Number.isFinite(before) || before < 0 || !Number.isFinite(count) || count <= before) continue;
+									const message = `收到 ${count - before} 条新${label}，当前有 ${count} 条${label}未读`;
+									if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`, title)) ctx.notify(message);
 								}
 							});
 							render(ctx.get(cacheKey));
@@ -9994,7 +10271,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					return () => {
 						clearInterval(timer);
 						stopPlacement();
-						host.remove();
 						rows.forEach((row) => row.remove());
 						originals.forEach((hidden, el) => {
 							el.hidden = hidden;
@@ -10351,6 +10627,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}
 		}
 	];
+	function confirmDialog(title, description, confirmLabel, signal) {
+		if (signal.aborted) return Promise.resolve(false);
+		return new Promise((resolve) => {
+			const dialog = document.createElement("dialog");
+			dialog.className = "nspp-confirm-dialog";
+			dialog.setAttribute("aria-label", title);
+			const heading = document.createElement("h2");
+			heading.textContent = title;
+			const body = document.createElement("p");
+			body.textContent = description;
+			const actions = document.createElement("form");
+			actions.method = "dialog";
+			const cancel = document.createElement("button");
+			cancel.type = "submit";
+			cancel.value = "cancel";
+			cancel.textContent = "取消";
+			cancel.autofocus = true;
+			const confirm = document.createElement("button");
+			confirm.type = "submit";
+			confirm.value = "confirm";
+			confirm.textContent = confirmLabel;
+			confirm.className = "nspp-confirm-danger";
+			actions.append(cancel, confirm);
+			dialog.append(heading, body, actions);
+			const abort = () => {
+				dialog.close("cancel");
+			};
+			dialog.addEventListener("close", () => {
+				signal.removeEventListener("abort", abort);
+				dialog.remove();
+				resolve(!signal.aborted && dialog.returnValue === "confirm");
+			}, { once: true });
+			dialog.addEventListener("click", (event) => {
+				const rect = dialog.getBoundingClientRect();
+				if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close("cancel");
+			});
+			document.body.append(dialog);
+			dialog.showModal();
+			signal.addEventListener("abort", abort, { once: true });
+		});
+	}
 	function parseBlocklist(value) {
 		const result = value;
 		if (result?.success !== true || !Array.isArray(result.data)) throw new Error("黑名单查询失败");
@@ -10420,7 +10737,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					button.type = "button";
 					button.className = "nspp-block-toggle";
 					const hover = userHover(anchor, ctx);
-					hover.element.append(button);
+					(hover.element.querySelector(".nspp-user-hover-actions") || hover.element).append(button);
 					buttons.set(anchor, {
 						id,
 						name,
@@ -10442,6 +10759,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						try {
 							if (Date.now() - checked > 3e4) await refresh();
 							const remove = blocked.has(id);
+							const action = remove ? "解除屏蔽" : "屏蔽";
+							if (!await confirmDialog(`${action} ${name}？`, remove ? "解除后将恢复显示该用户的内容。" : "屏蔽后将按站点规则隐藏该用户的内容，可随时解除。", `确认${action}`, ctx.signal)) return;
+							if (Date.now() - checked > 3e4) await refresh();
+							if (blocked.has(id) !== remove || unsafeWindow$1.__config__?.user?.member_id !== ownId) {
+								ctx.notify("状态已变化，请重新操作");
+								return;
+							}
 							const result = await ctx.request(`/api/block-list/${remove ? "del" : "add"}`, {
 								method: "POST",
 								headers: { "Content-Type": "application/json" },
@@ -15415,6 +15739,2479 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			};
 		}
 	};
+	var import_viewer = __toESM(__commonJSMin(((exports, module) => {
+		(function(global, factory) {
+			typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory() : typeof define === "function" && define.amd ? define(factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, global.Viewer = factory());
+		})(exports, (function() {
+			"use strict";
+			function _classCallCheck(a, n) {
+				if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function");
+			}
+			function _defineProperties(e, r) {
+				for (var t = 0; t < r.length; t++) {
+					var o = r[t];
+					o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o);
+				}
+			}
+			function _createClass(e, r, t) {
+				return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e;
+			}
+			function _defineProperty(e, r, t) {
+				return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
+					value: t,
+					enumerable: !0,
+					configurable: !0,
+					writable: !0
+				}) : e[r] = t, e;
+			}
+			function ownKeys(e, r) {
+				var t = Object.keys(e);
+				if (Object.getOwnPropertySymbols) {
+					var o = Object.getOwnPropertySymbols(e);
+					r && (o = o.filter(function(r) {
+						return Object.getOwnPropertyDescriptor(e, r).enumerable;
+					})), t.push.apply(t, o);
+				}
+				return t;
+			}
+			function _objectSpread2(e) {
+				for (var r = 1; r < arguments.length; r++) {
+					var t = null != arguments[r] ? arguments[r] : {};
+					r % 2 ? ownKeys(Object(t), !0).forEach(function(r) {
+						_defineProperty(e, r, t[r]);
+					}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function(r) {
+						Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+					});
+				}
+				return e;
+			}
+			function _toPrimitive(t, r) {
+				if ("object" != typeof t || !t) return t;
+				var e = t[Symbol.toPrimitive];
+				if (void 0 !== e) {
+					var i = e.call(t, r || "default");
+					if ("object" != typeof i) return i;
+					throw new TypeError("@@toPrimitive must return a primitive value.");
+				}
+				return ("string" === r ? String : Number)(t);
+			}
+			function _toPropertyKey(t) {
+				var i = _toPrimitive(t, "string");
+				return "symbol" == typeof i ? i : i + "";
+			}
+			function _typeof(o) {
+				"@babel/helpers - typeof";
+				return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(o) {
+					return typeof o;
+				} : function(o) {
+					return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
+				}, _typeof(o);
+			}
+			var DEFAULTS = {
+				backdrop: true,
+				button: true,
+				navbar: true,
+				navigation: false,
+				title: true,
+				toolbar: true,
+				className: "",
+				container: "body",
+				filter: null,
+				fullscreen: true,
+				inheritedAttributes: [
+					"crossOrigin",
+					"decoding",
+					"isMap",
+					"loading",
+					"referrerPolicy",
+					"sizes",
+					"srcset",
+					"useMap"
+				],
+				initialCoverage: .9,
+				initialViewIndex: 0,
+				inline: false,
+				autoplay: true,
+				interval: 5e3,
+				keyboard: true,
+				focus: true,
+				loading: true,
+				loop: true,
+				preload: true,
+				minWidth: 200,
+				minHeight: 100,
+				movable: true,
+				magnifier: false,
+				rotatable: true,
+				rotateOnGesture: true,
+				rotateOnTouch: true,
+				scalable: true,
+				zoomable: true,
+				zoomOnTouch: true,
+				zoomOnGesture: true,
+				zoomOnWheel: true,
+				slideOnTouch: true,
+				slideOnWheel: true,
+				toggleOnDblclick: true,
+				tooltip: true,
+				transition: true,
+				zIndex: 2015,
+				zIndexInline: 0,
+				zoomRatio: .1,
+				minZoomRatio: .01,
+				maxZoomRatio: 100,
+				url: "src",
+				ready: null,
+				show: null,
+				shown: null,
+				hide: null,
+				hidden: null,
+				view: null,
+				viewed: null,
+				move: null,
+				moved: null,
+				rotate: null,
+				rotated: null,
+				scale: null,
+				scaled: null,
+				zoom: null,
+				zoomed: null,
+				play: null,
+				playing: null,
+				stop: null
+			};
+			var TEMPLATE = "<div class=\"viewer-container\" tabindex=\"-1\" touch-action=\"none\"><div class=\"viewer-canvas\"></div><div class=\"viewer-magnifier\" aria-hidden=\"true\"><img class=\"viewer-magnifier-image\" alt=\"\"></div><div class=\"viewer-navigation\" aria-hidden=\"true\"><div class=\"viewer-prev\" data-viewer-action=\"prev\" role=\"button\" aria-label=\"Previous\"></div><div class=\"viewer-next\" data-viewer-action=\"next\" role=\"button\" aria-label=\"Next\"></div></div><div class=\"viewer-footer\" aria-hidden=\"true\"><div class=\"viewer-title\" aria-hidden=\"true\"></div><div class=\"viewer-toolbar\" aria-hidden=\"true\"></div><div class=\"viewer-navbar\" aria-hidden=\"true\"><ul class=\"viewer-list\" role=\"navigation\"></ul></div></div><div class=\"viewer-tooltip\" role=\"alert\" aria-hidden=\"true\"></div><div class=\"viewer-button\" data-viewer-action=\"mix\" role=\"button\" aria-hidden=\"true\"></div><div class=\"viewer-player\" aria-hidden=\"true\"></div></div>";
+			var IS_BROWSER = typeof window !== "undefined" && typeof window.document !== "undefined";
+			var WINDOW = IS_BROWSER ? window : {};
+			var IS_TOUCH_DEVICE = IS_BROWSER && WINDOW.document.documentElement ? "ontouchstart" in WINDOW.document.documentElement : false;
+			var HAS_POINTER_EVENT = IS_BROWSER ? "PointerEvent" in WINDOW : false;
+			var NAMESPACE = "viewer";
+			var ACTION_MOVE = "move";
+			var ACTION_ROTATE = "rotate";
+			var ACTION_SWITCH = "switch";
+			var ACTION_TRANSFORM = "transform";
+			var ACTION_ZOOM = "zoom";
+			var CLASS_ACTIVE = "".concat(NAMESPACE, "-active");
+			var CLASS_CLOSE = "".concat(NAMESPACE, "-close");
+			var CLASS_FADE = "".concat(NAMESPACE, "-fade");
+			var CLASS_FIXED = "".concat(NAMESPACE, "-fixed");
+			var CLASS_FULLSCREEN = "".concat(NAMESPACE, "-fullscreen");
+			var CLASS_FULLSCREEN_EXIT = "".concat(NAMESPACE, "-fullscreen-exit");
+			var CLASS_HIDE = "".concat(NAMESPACE, "-hide");
+			var CLASS_HIDE_MD_DOWN = "".concat(NAMESPACE, "-hide-md-down");
+			var CLASS_HIDE_SM_DOWN = "".concat(NAMESPACE, "-hide-sm-down");
+			var CLASS_HIDE_XS_DOWN = "".concat(NAMESPACE, "-hide-xs-down");
+			var CLASS_IN = "".concat(NAMESPACE, "-in");
+			var CLASS_INVISIBLE = "".concat(NAMESPACE, "-invisible");
+			var CLASS_LOADING = "".concat(NAMESPACE, "-loading");
+			var CLASS_MOVE = "".concat(NAMESPACE, "-move");
+			var CLASS_OPEN = "".concat(NAMESPACE, "-open");
+			var CLASS_SHOW = "".concat(NAMESPACE, "-show");
+			var CLASS_TRANSITION = "".concat(NAMESPACE, "-transition");
+			var EVENT_CLICK = "click";
+			var EVENT_DBLCLICK = "dblclick";
+			var EVENT_DRAG_START = "dragstart";
+			var EVENT_FOCUSIN = "focusin";
+			var EVENT_KEY_DOWN = "keydown";
+			var EVENT_LOAD = "load";
+			var EVENT_ERROR = "error";
+			var EVENT_TOUCH_END = IS_TOUCH_DEVICE ? "touchend touchcancel" : "mouseup";
+			var EVENT_TOUCH_MOVE = IS_TOUCH_DEVICE ? "touchmove" : "mousemove";
+			var EVENT_POINTER_DOWN = HAS_POINTER_EVENT ? "pointerdown" : IS_TOUCH_DEVICE ? "touchstart" : "mousedown";
+			var EVENT_POINTER_ENTER = HAS_POINTER_EVENT ? "pointerenter" : "mouseenter";
+			var EVENT_POINTER_LEAVE = HAS_POINTER_EVENT ? "pointerleave" : "mouseleave";
+			var EVENT_POINTER_MOVE = HAS_POINTER_EVENT ? "pointermove" : EVENT_TOUCH_MOVE;
+			var EVENT_POINTER_UP = HAS_POINTER_EVENT ? "pointerup pointercancel" : EVENT_TOUCH_END;
+			var EVENT_RESIZE = "resize";
+			var EVENT_TRANSITION_END = "transitionend";
+			var EVENT_WHEEL = "wheel";
+			var EVENT_GESTURE = "gesturestart gesturechange gestureend";
+			var EVENT_READY = "ready";
+			var EVENT_SHOW = "show";
+			var EVENT_SHOWN = "shown";
+			var EVENT_HIDE = "hide";
+			var EVENT_HIDDEN = "hidden";
+			var EVENT_VIEW = "view";
+			var EVENT_VIEWED = "viewed";
+			var EVENT_MOVE = "move";
+			var EVENT_MOVED = "moved";
+			var EVENT_ROTATE = "rotate";
+			var EVENT_ROTATED = "rotated";
+			var EVENT_SCALE = "scale";
+			var EVENT_SCALED = "scaled";
+			var EVENT_ZOOM = "zoom";
+			var EVENT_ZOOMED = "zoomed";
+			var EVENT_PLAY = "play";
+			var EVENT_PLAYING = "playing";
+			var EVENT_STOP = "stop";
+			var DATA_ACTION = "".concat(NAMESPACE, "Action");
+			var REGEXP_SPACES = /\s+/;
+			var BUTTONS = [
+				"zoom-in",
+				"zoom-out",
+				"one-to-one",
+				"reset",
+				"prev",
+				"play",
+				"next",
+				"rotate-left",
+				"rotate-right",
+				"flip-horizontal",
+				"flip-vertical"
+			];
+			function isString(value) {
+				return typeof value === "string";
+			}
+			var MODIFIER_KEY_PROPERTIES = {
+				ctrl: "ctrlKey",
+				shift: "shiftKey",
+				alt: "altKey",
+				meta: "metaKey"
+			};
+			function isWheelActionEnabled(option, event) {
+				if (!option) return false;
+				if (option === true) return true;
+				return isString(option) && option.split("+").every(function(key) {
+					return event[MODIFIER_KEY_PROPERTIES[key.trim().toLowerCase()]];
+				});
+			}
+			var isNaN = Number.isNaN || WINDOW.isNaN;
+			function isNumber(value) {
+				return typeof value === "number" && !isNaN(value);
+			}
+			function isUndefined(value) {
+				return typeof value === "undefined";
+			}
+			function isObject(value) {
+				return _typeof(value) === "object" && value !== null;
+			}
+			var hasOwnProperty = Object.prototype.hasOwnProperty;
+			function isPlainObject(value) {
+				if (!isObject(value)) return false;
+				try {
+					var constructor = value.constructor;
+					var prototype = constructor.prototype;
+					return constructor && prototype && hasOwnProperty.call(prototype, "isPrototypeOf");
+				} catch (error) {
+					return false;
+				}
+			}
+			function isFunction(value) {
+				return typeof value === "function";
+			}
+			function forEach(data, callback) {
+				if (data && isFunction(callback)) {
+					if (Array.isArray(data) || isNumber(data.length)) {
+						var length = data.length;
+						var i = 0;
+						for (; i < length; i += 1) if (callback.call(data, data[i], i, data) === false) break;
+					} else if (isObject(data)) Object.keys(data).forEach(function(key) {
+						callback.call(data, data[key], key, data);
+					});
+				}
+				return data;
+			}
+			function inheritAttributes(image, originalImage, inheritedAttributes) {
+				forEach(inheritedAttributes, function(name) {
+					var value = originalImage.getAttribute(name);
+					if (value !== null) image.setAttribute(name, value);
+				});
+			}
+			function isTransitionEnabled(options, action) {
+				var transition = options.transition;
+				return transition && transition[action] !== false;
+			}
+			var assign = Object.assign || function assign(obj) {
+				for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) args[_key - 1] = arguments[_key];
+				if (isObject(obj) && args.length > 0) args.forEach(function(arg) {
+					if (isObject(arg)) Object.keys(arg).forEach(function(key) {
+						obj[key] = arg[key];
+					});
+				});
+				return obj;
+			};
+			var REGEXP_SUFFIX = /^(?:width|height|left|top|marginLeft|marginTop)$/;
+			function setStyle(element, styles) {
+				var style = element.style;
+				forEach(styles, function(value, property) {
+					if (REGEXP_SUFFIX.test(property) && isNumber(value)) value += "px";
+					style[property] = value;
+				});
+			}
+			function escapeHTMLEntities(value) {
+				return isString(value) ? value.replace(/&(?!amp;|quot;|#39;|lt;|gt;)/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : value;
+			}
+			function hasClass(element, value) {
+				if (!element || !value) return false;
+				return element.classList ? element.classList.contains(value) : element.className.split(REGEXP_SPACES).indexOf(value) > -1;
+			}
+			function addClass(element, value) {
+				if (!element || !value) return;
+				if (isNumber(element.length)) {
+					forEach(element, function(elem) {
+						addClass(elem, value);
+					});
+					return;
+				}
+				if (element.classList) {
+					element.classList.add(value);
+					return;
+				}
+				var className = element.className.trim();
+				if (!className) element.className = value;
+				else if (className.indexOf(value) < 0) element.className = "".concat(className, " ").concat(value);
+			}
+			function removeClass(element, value) {
+				if (!element || !value) return;
+				if (isNumber(element.length)) {
+					forEach(element, function(elem) {
+						removeClass(elem, value);
+					});
+					return;
+				}
+				if (element.classList) {
+					element.classList.remove(value);
+					return;
+				}
+				var className = element.className;
+				if (className && className.indexOf(value) >= 0) element.className = className.split(REGEXP_SPACES).filter(function(item) {
+					return item && item !== value;
+				}).join(" ");
+			}
+			function toggleClass(element, value, added) {
+				if (!value) return;
+				if (isNumber(element.length)) {
+					forEach(element, function(elem) {
+						toggleClass(elem, value, added);
+					});
+					return;
+				}
+				if (added) addClass(element, value);
+				else removeClass(element, value);
+			}
+			var REGEXP_HYPHENATE = /([a-z\d])([A-Z])/g;
+			function hyphenate(value) {
+				return value.replace(REGEXP_HYPHENATE, "$1-$2").toLowerCase();
+			}
+			function getData(element, name) {
+				if (isObject(element[name])) return element[name];
+				if (element.dataset) return element.dataset[name];
+				return element.getAttribute("data-".concat(hyphenate(name)));
+			}
+			function setData(element, name, data) {
+				if (isObject(data)) element[name] = data;
+				else if (element.dataset) element.dataset[name] = data;
+				else element.setAttribute("data-".concat(hyphenate(name)), data);
+			}
+			var onceSupported = function() {
+				var supported = false;
+				if (IS_BROWSER) {
+					var once = false;
+					var listener = function listener() {};
+					var options = Object.defineProperty({}, "once", {
+						get: function get() {
+							supported = true;
+							return once;
+						},
+						set: function set(value) {
+							once = value;
+						}
+					});
+					WINDOW.addEventListener("test", listener, options);
+					WINDOW.removeEventListener("test", listener, options);
+				}
+				return supported;
+			}();
+			function removeListener(element, type, listener) {
+				var options = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : {};
+				var handler = listener;
+				type.trim().split(REGEXP_SPACES).forEach(function(event) {
+					if (!onceSupported) {
+						var listeners = element.listeners;
+						if (listeners && listeners[event] && listeners[event][listener]) {
+							handler = listeners[event][listener];
+							delete listeners[event][listener];
+							if (Object.keys(listeners[event]).length === 0) delete listeners[event];
+							if (Object.keys(listeners).length === 0) delete element.listeners;
+						}
+					}
+					element.removeEventListener(event, handler, options);
+				});
+			}
+			function addListener(element, type, listener) {
+				var options = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : {};
+				var _handler = listener;
+				type.trim().split(REGEXP_SPACES).forEach(function(event) {
+					if (options.once && !onceSupported) {
+						var _element$listeners = element.listeners, listeners = _element$listeners === void 0 ? {} : _element$listeners;
+						_handler = function handler() {
+							delete listeners[event][listener];
+							element.removeEventListener(event, _handler, options);
+							for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) args[_key2] = arguments[_key2];
+							listener.apply(element, args);
+						};
+						if (!listeners[event]) listeners[event] = {};
+						if (listeners[event][listener]) element.removeEventListener(event, listeners[event][listener], options);
+						listeners[event][listener] = _handler;
+						element.listeners = listeners;
+					}
+					element.addEventListener(event, _handler, options);
+				});
+			}
+			function dispatchEvent(element, type, data, options) {
+				var event;
+				if (isFunction(Event) && isFunction(CustomEvent)) event = new CustomEvent(type, _objectSpread2({
+					bubbles: true,
+					cancelable: true,
+					detail: data
+				}, options));
+				else {
+					event = document.createEvent("CustomEvent");
+					event.initCustomEvent(type, true, true, data);
+				}
+				return element.dispatchEvent(event);
+			}
+			function getOffset(element) {
+				var box = element.getBoundingClientRect();
+				return {
+					left: box.left + (window.pageXOffset - document.documentElement.clientLeft),
+					top: box.top + (window.pageYOffset - document.documentElement.clientTop)
+				};
+			}
+			function getTransforms(_ref) {
+				var rotate = _ref.rotate, scaleX = _ref.scaleX, scaleY = _ref.scaleY, translateX = _ref.translateX, translateY = _ref.translateY;
+				var values = [];
+				if (isNumber(translateX) && translateX !== 0) values.push("translateX(".concat(translateX, "px)"));
+				if (isNumber(translateY) && translateY !== 0) values.push("translateY(".concat(translateY, "px)"));
+				if (isNumber(rotate) && rotate !== 0) values.push("rotate(".concat(rotate, "deg)"));
+				if (isNumber(scaleX) && isNumber(scaleY) && (scaleX !== 1 || scaleY !== 1)) {
+					values.push("scaleX(".concat(scaleX, ")"));
+					values.push("scaleY(".concat(scaleY, ")"));
+				}
+				var transform = values.length ? values.join(" ") : "none";
+				return {
+					WebkitTransform: transform,
+					msTransform: transform,
+					transform
+				};
+			}
+			function getImageNameFromURL(url) {
+				return isString(url) ? decodeURIComponent(url.replace(/^.*\//, "").replace(/[?&#].*$/, "")) : "";
+			}
+			var IS_SAFARI = WINDOW.navigator && /Version\/\d+(\.\d+)+?\s+Safari/i.test(WINDOW.navigator.userAgent);
+			function getImageNaturalSizes(image, options, callback) {
+				var newImage = document.createElement("img");
+				if (image.naturalWidth && !IS_SAFARI) {
+					callback(image.naturalWidth, image.naturalHeight);
+					return newImage;
+				}
+				var body = document.body || document.documentElement;
+				newImage.onload = function() {
+					callback(newImage.width, newImage.height);
+					if (!IS_SAFARI) body.removeChild(newImage);
+				};
+				inheritAttributes(newImage, image, options.inheritedAttributes);
+				newImage.src = image.src;
+				if (!IS_SAFARI) {
+					newImage.style.cssText = "left:0;max-height:none!important;max-width:none!important;min-height:0!important;min-width:0!important;opacity:0;position:absolute;top:0;z-index:-1;";
+					body.appendChild(newImage);
+				}
+				return newImage;
+			}
+			function getResponsiveClass(type) {
+				switch (type) {
+					case 2: return CLASS_HIDE_XS_DOWN;
+					case 3: return CLASS_HIDE_SM_DOWN;
+					case 4: return CLASS_HIDE_MD_DOWN;
+					default: return "";
+				}
+			}
+			function getMaxZoomRatio(pointers) {
+				var pointers2 = _objectSpread2({}, pointers);
+				var ratios = [];
+				forEach(pointers, function(pointer, pointerId) {
+					delete pointers2[pointerId];
+					forEach(pointers2, function(pointer2) {
+						var x1 = Math.abs(pointer.startX - pointer2.startX);
+						var y1 = Math.abs(pointer.startY - pointer2.startY);
+						var x2 = Math.abs(pointer.endX - pointer2.endX);
+						var y2 = Math.abs(pointer.endY - pointer2.endY);
+						var z1 = Math.sqrt(x1 * x1 + y1 * y1);
+						var ratio = (Math.sqrt(x2 * x2 + y2 * y2) - z1) / z1;
+						ratios.push(ratio);
+					});
+				});
+				ratios.sort(function(a, b) {
+					return Math.abs(a) < Math.abs(b);
+				});
+				return ratios[0];
+			}
+			function getMaxRotateDegree(pointers) {
+				var pointers2 = _objectSpread2({}, pointers);
+				var degrees = [];
+				forEach(pointers, function(pointer, pointerId) {
+					delete pointers2[pointerId];
+					forEach(pointers2, function(pointer2) {
+						var start = Math.atan2(pointer2.startY - pointer.startY, pointer2.startX - pointer.startX);
+						var radians = Math.atan2(pointer2.endY - pointer.endY, pointer2.endX - pointer.endX) - start;
+						if (radians > Math.PI) radians -= Math.PI * 2;
+						else if (radians < -Math.PI) radians += Math.PI * 2;
+						degrees.push(radians * 180 / Math.PI);
+					});
+				});
+				degrees.sort(function(a, b) {
+					return Math.abs(b) - Math.abs(a);
+				});
+				return degrees[0] || 0;
+			}
+			function getPointer(_ref2, endOnly) {
+				var pageX = _ref2.pageX, pageY = _ref2.pageY;
+				var end = {
+					endX: pageX,
+					endY: pageY
+				};
+				return endOnly ? end : _objectSpread2({
+					timeStamp: Date.now(),
+					startX: pageX,
+					startY: pageY
+				}, end);
+			}
+			function getPointersCenter(pointers) {
+				var pageX = 0;
+				var pageY = 0;
+				var count = 0;
+				forEach(pointers, function(_ref3) {
+					var startX = _ref3.startX, startY = _ref3.startY;
+					pageX += startX;
+					pageY += startY;
+					count += 1;
+				});
+				pageX /= count;
+				pageY /= count;
+				return {
+					pageX,
+					pageY
+				};
+			}
+			var render = {
+				render: function render() {
+					this.initContainer();
+					this.initViewer();
+					this.initList();
+					this.renderViewer();
+				},
+				initBody: function initBody() {
+					var ownerDocument = this.ownerDocument;
+					var body = ownerDocument.body || ownerDocument.documentElement;
+					this.body = body;
+					this.scrollbarWidth = window.innerWidth - ownerDocument.documentElement.clientWidth;
+					this.initialBodyPaddingRight = body.style.paddingRight;
+					this.initialBodyComputedPaddingRight = window.getComputedStyle(body).paddingRight;
+				},
+				initContainer: function initContainer() {
+					this.containerData = {
+						width: window.innerWidth,
+						height: window.innerHeight
+					};
+				},
+				initViewer: function initViewer() {
+					var options = this.options, parent = this.parent;
+					var viewerData;
+					if (options.inline) {
+						viewerData = {
+							width: Math.max(parent.offsetWidth, options.minWidth),
+							height: Math.max(parent.offsetHeight, options.minHeight)
+						};
+						this.parentData = viewerData;
+					}
+					if (this.fulled || !viewerData) viewerData = this.containerData;
+					this.viewerData = assign({}, viewerData);
+				},
+				renderViewer: function renderViewer() {
+					if (this.options.inline && !this.fulled) setStyle(this.viewer, this.viewerData);
+				},
+				initList: function initList() {
+					var _this = this;
+					var viewIndex = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : this.index;
+					var element = this.element, options = this.options, list = this.list;
+					var items = [];
+					var navbarOptions = isPlainObject(options.navbar) ? options.navbar : {};
+					var probe = document.createElement("li");
+					if (!this.containerData) this.initContainer();
+					list.appendChild(probe);
+					var itemWidth = probe.offsetWidth + parseInt(window.getComputedStyle(probe).marginLeft, 10);
+					list.removeChild(probe);
+					var visibleItemCount = isNumber(navbarOptions.visibleItemCount) ? Math.floor(navbarOptions.visibleItemCount) : Math.floor(this.containerData.width / itemWidth);
+					visibleItemCount = Math.min(visibleItemCount, this.length);
+					var start = visibleItemCount > 0 ? Math.min(Math.max(0, viewIndex - Math.floor(visibleItemCount / 2)), Math.max(0, this.length - visibleItemCount)) : 0;
+					var end = visibleItemCount > 0 ? Math.min(this.length, start + visibleItemCount) : this.length;
+					list.innerHTML = "";
+					forEach(this.images, function(image, index) {
+						if (visibleItemCount > 0 && (index < start || index >= end)) return;
+						var src = image.src;
+						var alt = image.alt || getImageNameFromURL(src);
+						var url = _this.getImageURL(image);
+						if (src || url) {
+							var item = document.createElement("li");
+							var img = document.createElement("img");
+							inheritAttributes(img, image, options.inheritedAttributes);
+							if (options.navbar) img.src = src || url;
+							img.alt = alt;
+							img.setAttribute("data-original-url", url || src);
+							item.setAttribute("data-index", index);
+							item.setAttribute("data-viewer-action", "view");
+							item.setAttribute("role", "button");
+							if (options.keyboard) item.setAttribute("tabindex", 0);
+							item.appendChild(img);
+							list.appendChild(item);
+							items.push(item);
+						}
+					});
+					this.items = items;
+					if (this.viewed) {
+						var activeItem = this.getItem(this.index);
+						if (activeItem) {
+							addClass(activeItem, CLASS_ACTIVE);
+							activeItem.setAttribute("aria-selected", true);
+						}
+					}
+					forEach(items, function(item) {
+						var image = item.firstElementChild;
+						var onLoad;
+						var onError;
+						setData(image, "filled", true);
+						if (options.loading) addClass(item, CLASS_LOADING);
+						addListener(image, EVENT_LOAD, onLoad = function onLoad(event) {
+							removeListener(image, EVENT_ERROR, onError);
+							if (options.loading) removeClass(item, CLASS_LOADING);
+							_this.loadImage(event);
+						}, { once: true });
+						addListener(image, EVENT_ERROR, onError = function onError() {
+							removeListener(image, EVENT_LOAD, onLoad);
+							if (options.loading) removeClass(item, CLASS_LOADING);
+						}, { once: true });
+					});
+					if (isTransitionEnabled(options, "view")) addListener(element, EVENT_VIEWED, function() {
+						addClass(list, CLASS_TRANSITION);
+					}, { once: true });
+				},
+				getItem: function getItem(index) {
+					var item;
+					forEach(this.items, function(candidate) {
+						if (Number(getData(candidate, "index")) === index) {
+							item = candidate;
+							return false;
+						}
+						return true;
+					});
+					return item;
+				},
+				renderList: function renderList() {
+					var index = this.index;
+					var item = this.getItem(index);
+					if (!item) return;
+					var next = item.nextElementSibling;
+					var gutter = parseInt(window.getComputedStyle(next || item).marginLeft, 10);
+					var offsetWidth = item.offsetWidth;
+					var outerWidth = offsetWidth + gutter;
+					setStyle(this.list, assign({ width: outerWidth * this.items.length - gutter }, getTransforms({ translateX: (this.viewerData.width - offsetWidth) / 2 - item.offsetLeft })));
+				},
+				resetList: function resetList() {
+					var list = this.list;
+					list.innerHTML = "";
+					removeClass(list, CLASS_TRANSITION);
+					setStyle(list, assign({ width: 0 }, getTransforms({ translateX: 0 })));
+				},
+				initImage: function initImage(done) {
+					var _this2 = this;
+					var options = this.options, image = this.image, viewerData = this.viewerData;
+					var footerHeight = this.footer.offsetHeight;
+					var viewerWidth = viewerData.width;
+					var viewerHeight = Math.max(viewerData.height - footerHeight, footerHeight);
+					var oldImageData = this.imageData || {};
+					var sizingImage;
+					this.imageInitializing = { abort: function abort() {
+						sizingImage.onload = null;
+					} };
+					sizingImage = getImageNaturalSizes(image, options, function(naturalWidth, naturalHeight) {
+						var aspectRatio = naturalWidth / naturalHeight;
+						var initialCoverage = Math.max(0, Math.min(1, options.initialCoverage));
+						var width = viewerWidth;
+						var height = viewerHeight;
+						_this2.imageInitializing = false;
+						if (viewerHeight * aspectRatio > viewerWidth) height = viewerWidth / aspectRatio;
+						else width = viewerHeight * aspectRatio;
+						initialCoverage = isNumber(initialCoverage) ? initialCoverage : .9;
+						width = Math.min(width * initialCoverage, naturalWidth);
+						height = Math.min(height * initialCoverage, naturalHeight);
+						var left = (viewerWidth - width) / 2;
+						var top = (viewerHeight - height) / 2;
+						var imageData = {
+							left,
+							top,
+							x: left,
+							y: top,
+							width,
+							height,
+							oldRatio: 1,
+							ratio: width / naturalWidth,
+							aspectRatio,
+							naturalWidth,
+							naturalHeight
+						};
+						var initialImageData = assign({}, imageData);
+						if (options.rotatable) {
+							imageData.rotate = oldImageData.rotate || 0;
+							initialImageData.rotate = 0;
+						}
+						if (options.scalable) {
+							imageData.scaleX = oldImageData.scaleX || 1;
+							imageData.scaleY = oldImageData.scaleY || 1;
+							initialImageData.scaleX = 1;
+							initialImageData.scaleY = 1;
+						}
+						_this2.imageData = imageData;
+						_this2.initialImageData = initialImageData;
+						if (done) done();
+					});
+				},
+				renderImage: function renderImage(done) {
+					var _this3 = this;
+					var image = this.image, imageData = this.imageData;
+					setStyle(image, assign({
+						width: imageData.width,
+						height: imageData.height,
+						marginLeft: imageData.x,
+						marginTop: imageData.y
+					}, getTransforms(imageData)));
+					if (this.magnifierPoint) this.renderMagnifier();
+					if (done) {
+						var action = false;
+						if (this.viewing) action = "view";
+						else if (this.moving) action = "move";
+						else if (this.rotating) action = "rotate";
+						else if (this.scaling) action = "scale";
+						else if (this.zooming) action = "zoom";
+						if (action && isTransitionEnabled(this.options, action) && hasClass(image, CLASS_TRANSITION)) {
+							var onTransitionEnd = function onTransitionEnd() {
+								_this3.imageRendering = false;
+								done();
+							};
+							this.imageRendering = { abort: function abort() {
+								removeListener(image, EVENT_TRANSITION_END, onTransitionEnd);
+							} };
+							addListener(image, EVENT_TRANSITION_END, onTransitionEnd, { once: true });
+						} else done();
+					}
+				},
+				resetImage: function resetImage() {
+					var image = this.image;
+					if (image) {
+						if (this.viewing) this.viewing.abort();
+						image.parentNode.removeChild(image);
+						this.image = null;
+						this.title.innerHTML = "";
+					}
+				}
+			};
+			var events = {
+				bind: function bind() {
+					var options = this.options, viewer = this.viewer, canvas = this.canvas;
+					var document = this.ownerDocument;
+					addListener(viewer, EVENT_CLICK, this.onClick = this.click.bind(this));
+					addListener(viewer, EVENT_DRAG_START, this.onDragStart = this.dragstart.bind(this));
+					addListener(viewer, EVENT_POINTER_ENTER, this.onMagnifyEnter = this.magnify.bind(this));
+					addListener(viewer, EVENT_POINTER_MOVE, this.onMagnify = this.magnify.bind(this));
+					addListener(viewer, EVENT_POINTER_LEAVE, this.onMagnifierLeave = this.hideMagnifier.bind(this));
+					addListener(canvas, EVENT_POINTER_DOWN, this.onPointerDown = this.pointerdown.bind(this));
+					addListener(document, EVENT_POINTER_MOVE, this.onPointerMove = this.pointermove.bind(this));
+					addListener(document, EVENT_POINTER_UP, this.onPointerUp = this.pointerup.bind(this));
+					addListener(document, EVENT_KEY_DOWN, this.onKeyDown = this.keydown.bind(this));
+					addListener(window, EVENT_RESIZE, this.onResize = this.resize.bind(this));
+					if (options.zoomable && options.zoomOnWheel || options.slideOnWheel) addListener(viewer, EVENT_WHEEL, this.onWheel = this.wheel.bind(this), {
+						passive: false,
+						capture: true
+					});
+					if (options.zoomable && options.zoomOnGesture || options.rotatable && options.rotateOnGesture) addListener(viewer, EVENT_GESTURE, this.onGesture = this.gesture.bind(this), { passive: false });
+					if (options.toggleOnDblclick) addListener(canvas, EVENT_DBLCLICK, this.onDblclick = this.dblclick.bind(this));
+				},
+				unbind: function unbind() {
+					var options = this.options, viewer = this.viewer, canvas = this.canvas;
+					var document = this.ownerDocument;
+					removeListener(viewer, EVENT_CLICK, this.onClick);
+					removeListener(viewer, EVENT_DRAG_START, this.onDragStart);
+					removeListener(viewer, EVENT_POINTER_ENTER, this.onMagnifyEnter);
+					removeListener(viewer, EVENT_POINTER_MOVE, this.onMagnify);
+					removeListener(viewer, EVENT_POINTER_LEAVE, this.onMagnifierLeave);
+					removeListener(canvas, EVENT_POINTER_DOWN, this.onPointerDown);
+					removeListener(document, EVENT_POINTER_MOVE, this.onPointerMove);
+					removeListener(document, EVENT_POINTER_UP, this.onPointerUp);
+					removeListener(document, EVENT_KEY_DOWN, this.onKeyDown);
+					removeListener(window, EVENT_RESIZE, this.onResize);
+					if (options.zoomable && options.zoomOnWheel || options.slideOnWheel) removeListener(viewer, EVENT_WHEEL, this.onWheel, {
+						passive: false,
+						capture: true
+					});
+					if (options.zoomable && options.zoomOnGesture || options.rotatable && options.rotateOnGesture) removeListener(viewer, EVENT_GESTURE, this.onGesture, { passive: false });
+					if (options.toggleOnDblclick) removeListener(canvas, EVENT_DBLCLICK, this.onDblclick);
+				}
+			};
+			var handlers = {
+				click: function click(event) {
+					var options = this.options, imageData = this.imageData;
+					var target = event.target;
+					var action = getData(target, DATA_ACTION);
+					if (!action && target.localName === "img" && target.parentElement.localName === "li") {
+						target = target.parentElement;
+						action = getData(target, DATA_ACTION);
+					}
+					if (IS_TOUCH_DEVICE && event.isTrusted && target === this.canvas) clearTimeout(this.clickCanvasTimeout);
+					this.actionEvent = event;
+					switch (action) {
+						case "mix":
+							if (this.played) this.stop();
+							else if (options.inline) {
+								if (this.fulled) this.exit();
+								else this.full();
+							} else this.hide();
+							break;
+						case "hide":
+							if (!this.pointerMoved) this.hide();
+							break;
+						case "view":
+							this.view(getData(target, "index"));
+							break;
+						case "zoom-in":
+							this.zoom(.1, true);
+							break;
+						case "zoom-out":
+							this.zoom(-.1, true);
+							break;
+						case "one-to-one":
+							this.toggle();
+							break;
+						case "reset":
+							this.reset();
+							break;
+						case "prev":
+							this.prev(options.loop);
+							break;
+						case "play":
+							this.play(options.fullscreen);
+							break;
+						case "next":
+							this.next(options.loop);
+							break;
+						case "rotate-left":
+							this.rotate(-90);
+							break;
+						case "rotate-right":
+							this.rotate(90);
+							break;
+						case "flip-horizontal":
+							this.scaleX(-imageData.scaleX || -1);
+							break;
+						case "flip-vertical":
+							this.scaleY(-imageData.scaleY || -1);
+							break;
+						default: if (this.played) this.stop();
+					}
+				},
+				dblclick: function dblclick(event) {
+					event.preventDefault();
+					if (this.viewed && event.target === this.image) {
+						if (IS_TOUCH_DEVICE && event.isTrusted) clearTimeout(this.doubleClickImageTimeout);
+						this.actionEvent = event.isTrusted ? event : event.detail && event.detail.originalEvent;
+						this.toggle();
+					}
+				},
+				load: function load() {
+					var _this = this;
+					if (this.timeout) {
+						clearTimeout(this.timeout);
+						this.timeout = false;
+					}
+					var element = this.element, options = this.options, image = this.image, index = this.index, viewerData = this.viewerData;
+					removeClass(image, CLASS_INVISIBLE);
+					if (options.loading) removeClass(this.canvas, CLASS_LOADING);
+					image.style.cssText = "height:0;" + "margin-left:".concat(viewerData.width / 2, "px;") + "margin-top:".concat(viewerData.height / 2, "px;") + "max-width:none!important;position:relative;width:0;";
+					this.initImage(function() {
+						toggleClass(image, CLASS_MOVE, options.movable);
+						toggleClass(image, CLASS_TRANSITION, isTransitionEnabled(options, "view"));
+						_this.renderImage(function() {
+							_this.viewed = true;
+							_this.viewing = false;
+							setTimeout(function() {
+								toggleClass(image, CLASS_TRANSITION, options.transition);
+							}, 300);
+							if (isFunction(options.viewed)) addListener(element, EVENT_VIEWED, options.viewed, { once: true });
+							dispatchEvent(element, EVENT_VIEWED, {
+								originalImage: _this.images[index],
+								index,
+								image,
+								originalEvent: _this.viewOriginalEvent || null
+							}, { cancelable: false });
+							_this.viewOriginalEvent = null;
+						});
+					});
+				},
+				loadImage: function loadImage(event) {
+					var image = event.target;
+					var parent = image.parentNode;
+					var parentWidth = parent.offsetWidth || 30;
+					var parentHeight = parent.offsetHeight || 50;
+					var filled = !!getData(image, "filled");
+					getImageNaturalSizes(image, this.options, function(naturalWidth, naturalHeight) {
+						var aspectRatio = naturalWidth / naturalHeight;
+						var width = parentWidth;
+						var height = parentHeight;
+						if (parentHeight * aspectRatio > parentWidth) {
+							if (filled) width = parentHeight * aspectRatio;
+							else height = parentWidth / aspectRatio;
+						} else if (filled) height = parentWidth / aspectRatio;
+						else width = parentHeight * aspectRatio;
+						setStyle(image, assign({
+							width,
+							height
+						}, getTransforms({
+							translateX: (parentWidth - width) / 2,
+							translateY: (parentHeight - height) / 2
+						})));
+					});
+				},
+				keydown: function keydown(event) {
+					var options = this.options;
+					if (!options.keyboard) return;
+					var keyCode = event.keyCode || event.which || event.charCode;
+					this.actionEvent = event;
+					switch (keyCode) {
+						case 13: if (this.viewer.contains(event.target)) this.click(event);
+					}
+					if (!this.fulled) return;
+					switch (keyCode) {
+						case 27:
+							if (this.played) this.stop();
+							else if (options.inline) {
+								if (this.fulled) this.exit();
+							} else this.hide();
+							break;
+						case 32:
+							if (this.played) this.stop();
+							break;
+						case 37:
+							if (this.played && this.playing) this.playing.prev();
+							else this.prev(options.loop);
+							break;
+						case 38:
+							event.preventDefault();
+							this.zoom(options.zoomRatio, true);
+							break;
+						case 39:
+							if (this.played && this.playing) this.playing.next();
+							else this.next(options.loop);
+							break;
+						case 40:
+							event.preventDefault();
+							this.zoom(-options.zoomRatio, true);
+							break;
+						case 48:
+						case 49: if (event.ctrlKey) {
+							event.preventDefault();
+							this.toggle();
+						}
+					}
+				},
+				dragstart: function dragstart(event) {
+					if (event.target.localName === "img") event.preventDefault();
+				},
+				magnify: function magnify(event) {
+					if (event.changedTouches || event.pointerType && event.pointerType !== "mouse") {
+						this.hideMagnifier();
+						return;
+					}
+					this.magnifierPoint = {
+						clientX: event.clientX,
+						clientY: event.clientY
+					};
+					this.renderMagnifier();
+				},
+				renderMagnifier: function renderMagnifier() {
+					var options = this.options, imageData = this.imageData, magnifier = this.magnifier, magnifierImage = this.magnifierImage, viewer = this.viewer;
+					var config = isPlainObject(options.magnifier) ? options.magnifier : {};
+					var point = this.magnifierPoint;
+					if (!options.magnifier || !this.fulled || !this.viewed || !magnifier || !magnifierImage || !point) {
+						this.hideMagnifier();
+						return;
+					}
+					var size = Math.max(1, Number(config.size) || 100);
+					var zoomRatio = Math.max(1, Number(config.zoomRatio) || 2);
+					var opacity = Number(config.opacity);
+					var rect = viewer.getBoundingClientRect();
+					var x = point.clientX - rect.left;
+					var y = point.clientY - rect.top;
+					var imageURL = this.image.currentSrc || this.image.src;
+					var imageRect = this.image.getBoundingClientRect();
+					if (point.clientX < imageRect.left || point.clientX > imageRect.right || point.clientY < imageRect.top || point.clientY > imageRect.bottom) {
+						this.hideMagnifier();
+						return;
+					}
+					var scaleX = isNumber(imageData.scaleX) ? imageData.scaleX : 1;
+					var scaleY = isNumber(imageData.scaleY) ? imageData.scaleY : 1;
+					var rotate = (imageData.rotate || 0) * Math.PI / 180;
+					var cos = Math.cos(rotate);
+					var sin = Math.sin(rotate);
+					var matrixA = cos * scaleX;
+					var matrixB = sin * scaleX;
+					var matrixC = -sin * scaleY;
+					var matrixD = cos * scaleY;
+					var determinant = scaleX * scaleY;
+					if (determinant === 0) {
+						this.hideMagnifier();
+						return;
+					}
+					var centerX = imageData.x + imageData.width / 2;
+					var centerY = imageData.y + imageData.height / 2;
+					var localX = (matrixD * (x - centerX) - matrixC * (y - centerY)) / determinant;
+					var localY = (-matrixB * (x - centerX) + matrixA * (y - centerY)) / determinant;
+					var sourceX = localX + imageData.width / 2;
+					var sourceY = localY + imageData.height / 2;
+					var magnifiedWidth = imageData.width * zoomRatio;
+					var magnifiedHeight = imageData.height * zoomRatio;
+					var transformedX = matrixA * (sourceX * zoomRatio - magnifiedWidth / 2) + matrixC * (sourceY * zoomRatio - magnifiedHeight / 2);
+					var transformedY = matrixB * (sourceX * zoomRatio - magnifiedWidth / 2) + matrixD * (sourceY * zoomRatio - magnifiedHeight / 2);
+					this.magnifierSourcePoint = {
+						x: sourceX,
+						y: sourceY
+					};
+					magnifier.style.width = "".concat(size, "px");
+					magnifier.style.height = "".concat(size, "px");
+					magnifier.style.opacity = "".concat(Math.max(0, Math.min(1, isNumber(opacity) ? opacity : 1)));
+					magnifierImage.src = imageURL;
+					magnifierImage.style.width = "".concat(magnifiedWidth, "px");
+					magnifierImage.style.height = "".concat(magnifiedHeight, "px");
+					magnifierImage.style.left = "".concat(size / 2 - magnifiedWidth / 2 - transformedX, "px");
+					magnifierImage.style.top = "".concat(size / 2 - magnifiedHeight / 2 - transformedY, "px");
+					magnifierImage.style.transform = "rotate(".concat(imageData.rotate || 0, "deg) scaleX(").concat(scaleX, ") scaleY(").concat(scaleY, ")");
+					magnifier.removeAttribute("aria-hidden");
+					addClass(magnifier, "viewer-show");
+				},
+				hideMagnifier: function hideMagnifier() {
+					if (this.magnifier) {
+						removeClass(this.magnifier, "viewer-show");
+						this.magnifier.setAttribute("aria-hidden", true);
+						this.magnifierPoint = null;
+					}
+				},
+				pointerdown: function pointerdown(event) {
+					var options = this.options, pointers = this.pointers;
+					var buttons = event.buttons, button = event.button;
+					this.pointerMoved = false;
+					if (!this.viewed || this.showing || this.viewing || this.hiding || (event.type === "mousedown" || event.type === "pointerdown" && event.pointerType === "mouse") && (isNumber(buttons) && buttons !== 1 || isNumber(button) && button !== 0 || event.ctrlKey)) return;
+					event.preventDefault();
+					if (event.changedTouches) forEach(event.changedTouches, function(touch) {
+						pointers[touch.identifier] = getPointer(touch);
+					});
+					else pointers[event.pointerId || 0] = getPointer(event);
+					var action = options.movable ? ACTION_MOVE : false;
+					if ((options.zoomable && options.zoomOnTouch || options.rotatable && options.rotateOnTouch) && Object.keys(pointers).length > 1) action = ACTION_TRANSFORM;
+					else if (options.slideOnTouch && (event.pointerType === "touch" || event.type === "touchstart") && this.isSwitchable()) action = ACTION_SWITCH;
+					if (action === ACTION_MOVE || action === ACTION_ZOOM || action === ACTION_ROTATE || action === ACTION_TRANSFORM) removeClass(this.image, CLASS_TRANSITION);
+					this.action = action;
+				},
+				pointermove: function pointermove(event) {
+					var pointers = this.pointers, action = this.action;
+					if (!this.viewed || !action) return;
+					event.preventDefault();
+					if (event.changedTouches) forEach(event.changedTouches, function(touch) {
+						assign(pointers[touch.identifier] || {}, getPointer(touch, true));
+					});
+					else assign(pointers[event.pointerId || 0] || {}, getPointer(event, true));
+					this.change(event);
+				},
+				pointerup: function pointerup(event) {
+					var _this2 = this;
+					var options = this.options, action = this.action, pointers = this.pointers;
+					var pointer;
+					if (event.changedTouches) forEach(event.changedTouches, function(touch) {
+						pointer = pointers[touch.identifier];
+						delete pointers[touch.identifier];
+					});
+					else {
+						pointer = pointers[event.pointerId || 0];
+						delete pointers[event.pointerId || 0];
+					}
+					if (!action) return;
+					event.preventDefault();
+					if (action === ACTION_MOVE || action === ACTION_ZOOM || action === ACTION_ROTATE || action === ACTION_TRANSFORM) {
+						var transition = action === ACTION_TRANSFORM ? isTransitionEnabled(options, ACTION_ZOOM) || isTransitionEnabled(options, ACTION_ROTATE) : isTransitionEnabled(options, action);
+						toggleClass(this.image, CLASS_TRANSITION, transition);
+					}
+					this.action = false;
+					if (IS_TOUCH_DEVICE && action !== ACTION_ZOOM && action !== ACTION_TRANSFORM && pointer && Date.now() - pointer.timeStamp < 500) {
+						clearTimeout(this.clickCanvasTimeout);
+						clearTimeout(this.doubleClickImageTimeout);
+						if (options.toggleOnDblclick && this.viewed && event.target === this.image) {
+							if (this.pointerMoved) this.imageClicked = false;
+							else if (this.imageClicked) {
+								this.imageClicked = false;
+								this.doubleClickImageTimeout = setTimeout(function() {
+									dispatchEvent(_this2.image, EVENT_DBLCLICK, { originalEvent: event });
+								}, 50);
+							} else {
+								this.imageClicked = true;
+								this.doubleClickImageTimeout = setTimeout(function() {
+									_this2.imageClicked = false;
+								}, 500);
+							}
+						} else {
+							this.imageClicked = false;
+							if (options.backdrop && options.backdrop !== "static" && event.target === this.canvas) this.clickCanvasTimeout = setTimeout(function() {
+								dispatchEvent(_this2.canvas, EVENT_CLICK, { originalEvent: event });
+							}, 50);
+						}
+					}
+				},
+				resize: function resize() {
+					var _this3 = this;
+					if (!this.isShown || this.hiding) return;
+					if (this.fulled) {
+						this.close();
+						this.initBody();
+						this.open();
+					}
+					this.initContainer();
+					this.initViewer();
+					this.renderViewer();
+					if (isUndefined((isPlainObject(this.options.navbar) ? this.options.navbar : {}).visibleItemCount)) this.initList(this.index);
+					this.renderList();
+					if (this.viewed) this.initImage(function() {
+						_this3.renderImage();
+					});
+					if (this.played) {
+						if (this.options.fullscreen && this.fulled && !(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)) {
+							this.stop();
+							return;
+						}
+						forEach(this.player.getElementsByTagName("img"), function(image) {
+							addListener(image, EVENT_LOAD, _this3.loadImage.bind(_this3), { once: true });
+							dispatchEvent(image, EVENT_LOAD);
+						});
+					}
+				},
+				wheel: function wheel(event) {
+					var _this4 = this;
+					var options = this.options, navbar = this.navbar;
+					if (!this.viewed) return;
+					event.preventDefault();
+					if (this.gesturing) return;
+					if (this.wheeling) return;
+					this.wheeling = true;
+					setTimeout(function() {
+						_this4.wheeling = false;
+					}, 50);
+					var delta = 1;
+					if (event.deltaY) delta = event.deltaY > 0 ? 1 : -1;
+					else if (event.wheelDelta) delta = -event.wheelDelta / 120;
+					else if (event.detail) delta = event.detail > 0 ? 1 : -1;
+					if (!(navbar && navbar.contains(event.target)) && options.zoomable && isWheelActionEnabled(options.zoomOnWheel, event)) {
+						var ratio = Number(options.zoomRatio) || .1;
+						this.actionEvent = event;
+						this.zoom(-delta * ratio, true);
+						return;
+					}
+					if (isWheelActionEnabled(options.slideOnWheel, event)) {
+						this.actionEvent = event;
+						if (delta > 0) this.next(options.loop);
+						else if (delta < 0) this.prev(options.loop);
+					}
+				},
+				gesture: function gesture(event) {
+					var options = this.options;
+					if (!this.viewed || !options.zoomOnGesture && !options.rotateOnGesture) return;
+					event.preventDefault();
+					switch (event.type) {
+						case "gesturestart":
+							this.gesturing = true;
+							this.gestureScale = event.scale || 1;
+							this.gestureRotation = event.rotation || 0;
+							break;
+						case "gesturechange":
+							var scale = event.scale || 1;
+							var ratio = scale / (this.gestureScale || 1);
+							var rotation = Number(event.rotation);
+							var degree = rotation - (this.gestureRotation || 0);
+							this.gestureScale = scale;
+							if (options.zoomable && options.zoomOnGesture && ratio !== 1) {
+								this.actionEvent = event;
+								this.zoom(ratio >= 1 ? ratio - 1 : 1 - 1 / ratio);
+							}
+							if (options.rotatable && options.rotateOnGesture && isNumber(rotation)) {
+								this.gestureRotation = rotation;
+								if (degree !== 0) {
+									this.actionEvent = event;
+									this.rotate(degree);
+								}
+							}
+							break;
+						case "gestureend":
+							this.gesturing = false;
+							this.gestureScale = 1;
+							this.gestureRotation = 0;
+					}
+				}
+			};
+			var methods = {
+				show: function show() {
+					var immediate = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+					var element = this.element, options = this.options;
+					if (options.inline || this.showing || this.isShown || this.showing) return this;
+					if (!this.ready) {
+						this.build();
+						if (this.ready) this.show(immediate);
+						return this;
+					}
+					var originalEvent = this.actionEvent || this.showOriginalEvent || this.viewOriginalEvent || null;
+					this.actionEvent = null;
+					this.showOriginalEvent = originalEvent;
+					if (isFunction(options.show)) addListener(element, EVENT_SHOW, options.show, { once: true });
+					if (dispatchEvent(element, EVENT_SHOW, { originalEvent }) === false || !this.ready) return this;
+					if (this.hiding) this.transitioning.abort();
+					this.showing = true;
+					this.open();
+					var viewer = this.viewer;
+					removeClass(viewer, CLASS_HIDE);
+					viewer.setAttribute("role", "dialog");
+					viewer.setAttribute("aria-labelledby", this.title.id);
+					viewer.setAttribute("aria-modal", true);
+					viewer.removeAttribute("aria-hidden");
+					if (isTransitionEnabled(options, "show") && !immediate) {
+						var shown = this.shown.bind(this);
+						this.transitioning = { abort: function abort() {
+							removeListener(viewer, EVENT_TRANSITION_END, shown);
+							removeClass(viewer, CLASS_IN);
+						} };
+						addClass(viewer, CLASS_TRANSITION);
+						viewer.initialOffsetWidth = viewer.offsetWidth;
+						addListener(viewer, EVENT_TRANSITION_END, shown, { once: true });
+						addClass(viewer, CLASS_IN);
+					} else {
+						addClass(viewer, CLASS_IN);
+						this.shown();
+					}
+					return this;
+				},
+				hide: function hide() {
+					var _this = this;
+					var immediate = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+					var element = this.element, options = this.options;
+					if (options.inline || this.hiding || !(this.isShown || this.showing)) return this;
+					var originalEvent = this.actionEvent || this.hideOriginalEvent || null;
+					this.actionEvent = null;
+					this.hideOriginalEvent = originalEvent;
+					if (isFunction(options.hide)) addListener(element, EVENT_HIDE, options.hide, { once: true });
+					if (dispatchEvent(element, EVENT_HIDE, { originalEvent }) === false || this.destroyed) return this;
+					if (this.showing) this.transitioning.abort();
+					this.hiding = true;
+					if (this.played) this.stop();
+					else if (this.viewing) this.viewing.abort();
+					var viewer = this.viewer, image = this.image;
+					var hideImmediately = function hideImmediately() {
+						removeClass(viewer, CLASS_IN);
+						_this.hidden();
+					};
+					if (isTransitionEnabled(options, "hide") && !immediate) {
+						var _onViewerTransitionEnd = function onViewerTransitionEnd(event) {
+							if (event && event.target === viewer) {
+								removeListener(viewer, EVENT_TRANSITION_END, _onViewerTransitionEnd);
+								_this.hidden();
+							}
+						};
+						var onImageTransitionEnd = function onImageTransitionEnd() {
+							if (hasClass(viewer, CLASS_TRANSITION)) {
+								addListener(viewer, EVENT_TRANSITION_END, _onViewerTransitionEnd);
+								removeClass(viewer, CLASS_IN);
+							} else hideImmediately();
+						};
+						this.transitioning = { abort: function abort() {
+							if (_this.viewed && hasClass(image, CLASS_TRANSITION)) removeListener(image, EVENT_TRANSITION_END, onImageTransitionEnd);
+							else if (hasClass(viewer, CLASS_TRANSITION)) removeListener(viewer, EVENT_TRANSITION_END, _onViewerTransitionEnd);
+						} };
+						if (this.viewed && hasClass(image, CLASS_TRANSITION)) {
+							addListener(image, EVENT_TRANSITION_END, onImageTransitionEnd, { once: true });
+							this.zoomTo(0, false, null, true);
+						} else onImageTransitionEnd();
+					} else hideImmediately();
+					return this;
+				},
+				view: function view() {
+					var _this2 = this;
+					var index = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : this.options.initialViewIndex;
+					var previousIndex = this.index;
+					index = Number(index) || 0;
+					if (this.hiding || this.played || index < 0 || index >= this.length || this.viewed && index === previousIndex) return this;
+					var originalEvent = this.actionEvent || this.viewOriginalEvent || null;
+					this.actionEvent = null;
+					this.viewOriginalEvent = originalEvent;
+					if (!this.isShown) {
+						this.index = index;
+						return this.show();
+					}
+					if (this.viewing) this.viewing.abort();
+					var element = this.element, options = this.options, title = this.title, canvas = this.canvas;
+					var item = this.getItem(index);
+					if (!item) {
+						this.initList(index);
+						item = this.getItem(index);
+					}
+					var img = item.querySelector("img");
+					var url = getData(img, "originalUrl");
+					var alt = img.getAttribute("alt");
+					var image = document.createElement("img");
+					inheritAttributes(image, img, options.inheritedAttributes);
+					image.src = url;
+					image.alt = alt;
+					if (isFunction(options.view)) addListener(element, EVENT_VIEW, options.view, { once: true });
+					if (dispatchEvent(element, EVENT_VIEW, {
+						originalImage: this.images[index],
+						index,
+						image,
+						originalEvent
+					}) === false || !this.isShown || this.hiding || this.played) return this;
+					this.hideMagnifier();
+					var activeItem = this.getItem(previousIndex);
+					if (activeItem) {
+						removeClass(activeItem, CLASS_ACTIVE);
+						activeItem.removeAttribute("aria-selected");
+					}
+					addClass(item, CLASS_ACTIVE);
+					item.setAttribute("aria-selected", true);
+					if (options.focus) item.focus();
+					this.image = image;
+					this.viewed = false;
+					this.index = index;
+					this.imageData = {};
+					addClass(image, CLASS_INVISIBLE);
+					if (options.loading) addClass(canvas, CLASS_LOADING);
+					canvas.innerHTML = "";
+					canvas.appendChild(image);
+					this.renderList();
+					title.innerHTML = "";
+					var onViewed = function onViewed() {
+						var imageData = _this2.imageData;
+						var render = Array.isArray(options.title) ? options.title[1] : options.title;
+						title.innerHTML = escapeHTMLEntities(isFunction(render) ? render.call(_this2, image, imageData) : "".concat(alt, " (").concat(imageData.naturalWidth, " × ").concat(imageData.naturalHeight, ")"));
+						if (options.preload) {
+							var direction = index < previousIndex ? -1 : 1;
+							var nextIndex = index + direction;
+							if (nextIndex < 0 || nextIndex >= _this2.length) {
+								if (options.loop) nextIndex = direction > 0 ? 0 : _this2.length - 1;
+								else nextIndex = -1;
+							}
+							if (nextIndex !== index) {
+								var nextImage = _this2.images[nextIndex];
+								var preloadedImage = document.createElement("img");
+								inheritAttributes(preloadedImage, nextImage, options.inheritedAttributes);
+								preloadedImage.src = _this2.getImageURL(nextImage) || nextImage.src;
+							}
+						}
+					};
+					addListener(element, EVENT_VIEWED, onViewed, { once: true });
+					var _loadImage = function loadImage() {
+						var isFallback = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+						var onLoad;
+						var onError;
+						var clean = function clean() {
+							removeListener(image, EVENT_LOAD, onLoad);
+							removeListener(image, EVENT_ERROR, onError);
+							if (_this2.timeout) {
+								clearTimeout(_this2.timeout);
+								_this2.timeout = false;
+							}
+						};
+						_this2.viewing = { abort: function abort() {
+							removeListener(element, EVENT_VIEWED, onViewed);
+							if (image.complete) {
+								if (_this2.imageRendering) _this2.imageRendering.abort();
+								else if (_this2.imageInitializing) _this2.imageInitializing.abort();
+							} else {
+								image.src = "";
+								clean();
+							}
+						} };
+						if (image.complete) _this2.load();
+						else {
+							addListener(image, EVENT_LOAD, onLoad = function onLoad() {
+								clean();
+								_this2.load();
+							}, { once: true });
+							addListener(image, EVENT_ERROR, onError = function onError() {
+								clean();
+								if (!isFallback) {
+									var fallbackSrc = img.src;
+									if (fallbackSrc && fallbackSrc !== image.src) {
+										image.src = fallbackSrc;
+										_loadImage(true);
+										return;
+									}
+								}
+								removeClass(image, CLASS_INVISIBLE);
+								if (options.loading) removeClass(_this2.canvas, CLASS_LOADING);
+							}, { once: true });
+							if (_this2.timeout) clearTimeout(_this2.timeout);
+							_this2.timeout = setTimeout(function() {
+								removeClass(image, CLASS_INVISIBLE);
+								_this2.timeout = false;
+							}, 1e3);
+						}
+					};
+					_loadImage();
+					return this;
+				},
+				prev: function prev() {
+					var loop = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+					var index = this.index - 1;
+					if (index < 0) index = loop ? this.length - 1 : 0;
+					this.view(index);
+					return this;
+				},
+				next: function next() {
+					var loop = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+					var maxIndex = this.length - 1;
+					var index = this.index + 1;
+					if (index > maxIndex) index = loop ? 0 : maxIndex;
+					this.view(index);
+					return this;
+				},
+				move: function move(x) {
+					var y = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : x;
+					var imageData = this.imageData;
+					this.moveTo(isUndefined(x) ? x : imageData.x + Number(x), isUndefined(y) ? y : imageData.y + Number(y));
+					return this;
+				},
+				moveTo: function moveTo(x) {
+					var _this3 = this;
+					var y = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : x;
+					var element = this.element, options = this.options, imageData = this.imageData;
+					x = Number(x);
+					y = Number(y);
+					if (this.viewed && !this.played && options.movable) {
+						var oldX = imageData.x;
+						var oldY = imageData.y;
+						var changed = false;
+						if (isNumber(x)) changed = true;
+						else x = oldX;
+						if (isNumber(y)) changed = true;
+						else y = oldY;
+						if (changed) {
+							var originalEvent = this.actionEvent || null;
+							this.actionEvent = null;
+							if (isFunction(options.move)) addListener(element, EVENT_MOVE, options.move, { once: true });
+							if (dispatchEvent(element, EVENT_MOVE, {
+								x,
+								y,
+								oldX,
+								oldY,
+								originalEvent
+							}) === false) return this;
+							imageData.x = x;
+							imageData.y = y;
+							imageData.left = x;
+							imageData.top = y;
+							toggleClass(this.image, CLASS_TRANSITION, isTransitionEnabled(options, "move"));
+							this.moving = true;
+							this.renderImage(function() {
+								_this3.moving = false;
+								if (isFunction(options.moved)) addListener(element, EVENT_MOVED, options.moved, { once: true });
+								dispatchEvent(element, EVENT_MOVED, {
+									x,
+									y,
+									oldX,
+									oldY,
+									originalEvent
+								}, { cancelable: false });
+							});
+						}
+					}
+					return this;
+				},
+				rotate: function rotate(degree) {
+					this.rotateTo((this.imageData.rotate || 0) + Number(degree));
+					return this;
+				},
+				rotateTo: function rotateTo(degree) {
+					var _this4 = this;
+					var element = this.element, options = this.options, imageData = this.imageData;
+					degree = Number(degree);
+					if (isNumber(degree) && this.viewed && !this.played && options.rotatable) {
+						var oldDegree = imageData.rotate;
+						var originalEvent = this.actionEvent || null;
+						this.actionEvent = null;
+						if (isFunction(options.rotate)) addListener(element, EVENT_ROTATE, options.rotate, { once: true });
+						if (dispatchEvent(element, EVENT_ROTATE, {
+							degree,
+							oldDegree,
+							originalEvent
+						}) === false) return this;
+						imageData.rotate = degree;
+						toggleClass(this.image, CLASS_TRANSITION, isTransitionEnabled(options, "rotate"));
+						this.rotating = true;
+						this.renderImage(function() {
+							_this4.rotating = false;
+							if (isFunction(options.rotated)) addListener(element, EVENT_ROTATED, options.rotated, { once: true });
+							dispatchEvent(element, EVENT_ROTATED, {
+								degree,
+								oldDegree,
+								originalEvent
+							}, { cancelable: false });
+						});
+					}
+					return this;
+				},
+				scaleX: function scaleX(_scaleX) {
+					this.scale(_scaleX, this.imageData.scaleY);
+					return this;
+				},
+				scaleY: function scaleY(_scaleY) {
+					this.scale(this.imageData.scaleX, _scaleY);
+					return this;
+				},
+				scale: function scale(scaleX) {
+					var _this5 = this;
+					var scaleY = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : scaleX;
+					var element = this.element, options = this.options, imageData = this.imageData;
+					scaleX = Number(scaleX);
+					scaleY = Number(scaleY);
+					if (this.viewed && !this.played && options.scalable) {
+						var oldScaleX = imageData.scaleX;
+						var oldScaleY = imageData.scaleY;
+						var changed = false;
+						if (isNumber(scaleX)) changed = true;
+						else scaleX = oldScaleX;
+						if (isNumber(scaleY)) changed = true;
+						else scaleY = oldScaleY;
+						if (changed) {
+							var originalEvent = this.actionEvent || null;
+							this.actionEvent = null;
+							if (isFunction(options.scale)) addListener(element, EVENT_SCALE, options.scale, { once: true });
+							if (dispatchEvent(element, EVENT_SCALE, {
+								scaleX,
+								scaleY,
+								oldScaleX,
+								oldScaleY,
+								originalEvent
+							}) === false) return this;
+							imageData.scaleX = scaleX;
+							imageData.scaleY = scaleY;
+							toggleClass(this.image, CLASS_TRANSITION, isTransitionEnabled(options, "scale"));
+							this.scaling = true;
+							this.renderImage(function() {
+								_this5.scaling = false;
+								if (isFunction(options.scaled)) addListener(element, EVENT_SCALED, options.scaled, { once: true });
+								dispatchEvent(element, EVENT_SCALED, {
+									scaleX,
+									scaleY,
+									oldScaleX,
+									oldScaleY,
+									originalEvent
+								}, { cancelable: false });
+							});
+						}
+					}
+					return this;
+				},
+				zoom: function zoom(ratio) {
+					var showTooltip = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : false;
+					var pivot = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : null;
+					var imageData = this.imageData;
+					ratio = Number(ratio);
+					if (ratio < 0) ratio = 1 / (1 - ratio);
+					else ratio = 1 + ratio;
+					this.zoomTo(imageData.width * ratio / imageData.naturalWidth, showTooltip, pivot);
+					return this;
+				},
+				zoomTo: function zoomTo(ratio) {
+					var _this6 = this;
+					var showTooltip = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : false;
+					var pivot = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : null;
+					var _zoomable = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : false;
+					var element = this.element, options = this.options, pointers = this.pointers, imageData = this.imageData;
+					var x = imageData.x, y = imageData.y, width = imageData.width, height = imageData.height, naturalWidth = imageData.naturalWidth, naturalHeight = imageData.naturalHeight;
+					ratio = Math.max(0, ratio);
+					if (isNumber(ratio) && this.viewed && !this.played && (_zoomable || options.zoomable)) {
+						if (!_zoomable) {
+							var minZoomRatio = Math.max(.01, isFunction(options.minZoomRatio) ? options.minZoomRatio.call(this, this.image, imageData) : options.minZoomRatio);
+							var maxZoomRatio = Math.min(100, isFunction(options.maxZoomRatio) ? options.maxZoomRatio.call(this, this.image, imageData) : options.maxZoomRatio);
+							ratio = Math.min(Math.max(ratio, minZoomRatio), maxZoomRatio);
+						}
+						var originalEvent = this.actionEvent || null;
+						this.actionEvent = null;
+						if (originalEvent && originalEvent.type !== EVENT_CLICK) switch (originalEvent.type) {
+							case "wheel":
+								if (options.zoomRatio >= .055 && ratio > .95 && ratio < 1.05) ratio = 1;
+								break;
+							case "pointermove":
+							case "touchmove":
+							case "mousemove": if (ratio > .99 && ratio < 1.01) ratio = 1;
+						}
+						var newWidth = naturalWidth * ratio;
+						var newHeight = naturalHeight * ratio;
+						var offsetWidth = newWidth - width;
+						var offsetHeight = newHeight - height;
+						var oldRatio = imageData.ratio;
+						if (isFunction(options.zoom)) addListener(element, EVENT_ZOOM, options.zoom, { once: true });
+						if (dispatchEvent(element, EVENT_ZOOM, {
+							ratio,
+							oldRatio,
+							originalEvent
+						}) === false) return this;
+						this.zooming = true;
+						if (originalEvent && originalEvent.type !== EVENT_CLICK) {
+							var offset = getOffset(this.viewer);
+							var center = pointers && Object.keys(pointers).length > 0 ? getPointersCenter(pointers) : {
+								pageX: originalEvent.pageX,
+								pageY: originalEvent.pageY
+							};
+							imageData.x -= offsetWidth * ((center.pageX - offset.left - x) / width);
+							imageData.y -= offsetHeight * ((center.pageY - offset.top - y) / height);
+						} else if (isPlainObject(pivot) && isNumber(pivot.x) && isNumber(pivot.y)) {
+							imageData.x -= offsetWidth * ((pivot.x - x) / width);
+							imageData.y -= offsetHeight * ((pivot.y - y) / height);
+						} else {
+							imageData.x -= offsetWidth / 2;
+							imageData.y -= offsetHeight / 2;
+						}
+						imageData.left = imageData.x;
+						imageData.top = imageData.y;
+						imageData.width = newWidth;
+						imageData.height = newHeight;
+						imageData.oldRatio = oldRatio;
+						imageData.ratio = ratio;
+						toggleClass(this.image, CLASS_TRANSITION, isTransitionEnabled(options, "zoom"));
+						this.renderImage(function() {
+							_this6.zooming = false;
+							if (isFunction(options.zoomed)) addListener(element, EVENT_ZOOMED, options.zoomed, { once: true });
+							dispatchEvent(element, EVENT_ZOOMED, {
+								ratio,
+								oldRatio,
+								originalEvent
+							}, { cancelable: false });
+						});
+						if (showTooltip) this.tooltip();
+					}
+					return this;
+				},
+				play: function play() {
+					var _this7 = this;
+					var fullscreen = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : false;
+					if (!this.isShown || this.played) return this;
+					var element = this.element, options = this.options;
+					var originalEvent = this.actionEvent || null;
+					this.actionEvent = null;
+					if (isFunction(options.play)) addListener(element, EVENT_PLAY, options.play, { once: true });
+					if (dispatchEvent(element, EVENT_PLAY, { originalEvent }) === false) return this;
+					var player = this.player;
+					var onLoad = this.loadImage.bind(this);
+					var list = [];
+					var total = 0;
+					var index = 0;
+					this.played = true;
+					this.onLoadWhenPlay = onLoad;
+					if (fullscreen) this.requestFullscreen(fullscreen);
+					addClass(player, CLASS_SHOW);
+					player.removeAttribute("aria-hidden");
+					forEach(this.images, function(originalImage, i) {
+						var image = document.createElement("img");
+						image.src = _this7.getImageURL(originalImage) || originalImage.src;
+						image.alt = originalImage.alt || "";
+						image.referrerPolicy = originalImage.referrerPolicy;
+						total += 1;
+						addClass(image, CLASS_FADE);
+						toggleClass(image, CLASS_TRANSITION, isTransitionEnabled(options, "play"));
+						if (i === _this7.index) {
+							addClass(image, CLASS_IN);
+							index = i;
+						}
+						list.push(image);
+						addListener(image, EVENT_LOAD, onLoad, { once: true });
+						player.appendChild(image);
+					});
+					if (isNumber(options.interval) && options.interval > 0) {
+						var _prev = function prev() {
+							clearTimeout(_this7.playing.timeout);
+							var currentOriginalEvent = _this7.actionEvent || null;
+							_this7.actionEvent = null;
+							var prevIndex = index - 1;
+							prevIndex = prevIndex >= 0 ? prevIndex : total - 1;
+							if (isFunction(options.playing)) addListener(element, EVENT_PLAYING, options.playing, { once: true });
+							if (dispatchEvent(element, EVENT_PLAYING, {
+								originalImage: _this7.images[prevIndex],
+								index: prevIndex,
+								image: list[prevIndex],
+								originalEvent: currentOriginalEvent
+							}) === false) {
+								_this7.playing.timeout = options.autoplay ? setTimeout(_prev, options.interval) : null;
+								return;
+							}
+							removeClass(list[index], CLASS_IN);
+							index = prevIndex;
+							addClass(list[index], CLASS_IN);
+							_this7.playing.timeout = options.autoplay ? setTimeout(_prev, options.interval) : null;
+						};
+						var _next = function next() {
+							clearTimeout(_this7.playing.timeout);
+							var currentOriginalEvent = _this7.actionEvent || null;
+							_this7.actionEvent = null;
+							var nextIndex = index + 1;
+							nextIndex = nextIndex < total ? nextIndex : 0;
+							if (isFunction(options.playing)) addListener(element, EVENT_PLAYING, options.playing, { once: true });
+							if (dispatchEvent(element, EVENT_PLAYING, {
+								originalImage: _this7.images[nextIndex],
+								index: nextIndex,
+								image: list[nextIndex],
+								originalEvent: currentOriginalEvent
+							}) === false) {
+								_this7.playing.timeout = options.autoplay ? setTimeout(_next, options.interval) : null;
+								return;
+							}
+							removeClass(list[index], CLASS_IN);
+							index = nextIndex;
+							addClass(list[index], CLASS_IN);
+							_this7.playing.timeout = options.autoplay ? setTimeout(_next, options.interval) : null;
+						};
+						if (total > 1) this.playing = {
+							prev: _prev,
+							next: _next,
+							timeout: options.autoplay ? setTimeout(_next, options.interval) : null
+						};
+					}
+					return this;
+				},
+				stop: function stop() {
+					var _this8 = this;
+					if (!this.played) return this;
+					var element = this.element, options = this.options;
+					var originalEvent = this.actionEvent || null;
+					this.actionEvent = null;
+					if (isFunction(options.stop)) addListener(element, EVENT_STOP, options.stop, { once: true });
+					if (dispatchEvent(element, EVENT_STOP, { originalEvent }) === false) return this;
+					var player = this.player;
+					clearTimeout(this.playing.timeout);
+					this.playing = false;
+					this.played = false;
+					forEach(player.getElementsByTagName("img"), function(image) {
+						removeListener(image, EVENT_LOAD, _this8.onLoadWhenPlay);
+					});
+					removeClass(player, CLASS_SHOW);
+					player.setAttribute("aria-hidden", true);
+					player.innerHTML = "";
+					this.exitFullscreen();
+					return this;
+				},
+				full: function full() {
+					var _this9 = this;
+					var options = this.options, viewer = this.viewer, image = this.image, list = this.list;
+					if (!this.isShown || this.played || this.fulled || !options.inline) return this;
+					this.fulled = true;
+					this.open();
+					addClass(this.button, CLASS_FULLSCREEN_EXIT);
+					removeClass(list, CLASS_TRANSITION);
+					if (this.viewed) removeClass(image, CLASS_TRANSITION);
+					addClass(viewer, CLASS_FIXED);
+					viewer.setAttribute("role", "dialog");
+					viewer.setAttribute("aria-labelledby", this.title.id);
+					viewer.setAttribute("aria-modal", true);
+					viewer.removeAttribute("style");
+					setStyle(viewer, { zIndex: options.zIndex });
+					if (options.focus) this.enforceFocus();
+					this.initContainer();
+					this.viewerData = assign({}, this.containerData);
+					this.renderList();
+					if (this.viewed) this.initImage(function() {
+						_this9.renderImage();
+					});
+					return this;
+				},
+				exit: function exit() {
+					var _this0 = this;
+					var options = this.options, viewer = this.viewer, image = this.image, list = this.list;
+					if (!this.isShown || this.played || !this.fulled || !options.inline) return this;
+					this.fulled = false;
+					this.close();
+					removeClass(this.button, CLASS_FULLSCREEN_EXIT);
+					removeClass(list, CLASS_TRANSITION);
+					if (this.viewed) removeClass(image, CLASS_TRANSITION);
+					if (options.focus) this.clearEnforceFocus();
+					viewer.removeAttribute("role");
+					viewer.removeAttribute("aria-labelledby");
+					viewer.removeAttribute("aria-modal");
+					removeClass(viewer, CLASS_FIXED);
+					setStyle(viewer, { zIndex: options.zIndexInline });
+					this.viewerData = assign({}, this.parentData);
+					this.renderViewer();
+					this.renderList();
+					if (this.viewed) this.initImage(function() {
+						_this0.renderImage();
+					});
+					return this;
+				},
+				tooltip: function tooltip() {
+					var _this1 = this;
+					var options = this.options, tooltipBox = this.tooltipBox, imageData = this.imageData;
+					if (!this.viewed || this.played || !options.tooltip) return this;
+					tooltipBox.textContent = "".concat(Math.round(imageData.ratio * 100), "%");
+					if (!this.tooltipping) {
+						if (isTransitionEnabled(options, "tooltip")) {
+							if (this.fading) dispatchEvent(tooltipBox, EVENT_TRANSITION_END);
+							addClass(tooltipBox, CLASS_SHOW);
+							addClass(tooltipBox, CLASS_FADE);
+							addClass(tooltipBox, CLASS_TRANSITION);
+							tooltipBox.removeAttribute("aria-hidden");
+							tooltipBox.initialOffsetWidth = tooltipBox.offsetWidth;
+							addClass(tooltipBox, CLASS_IN);
+						} else {
+							addClass(tooltipBox, CLASS_SHOW);
+							tooltipBox.removeAttribute("aria-hidden");
+						}
+					} else clearTimeout(this.tooltipping);
+					this.tooltipping = setTimeout(function() {
+						if (isTransitionEnabled(options, "tooltip")) {
+							addListener(tooltipBox, EVENT_TRANSITION_END, function() {
+								removeClass(tooltipBox, CLASS_SHOW);
+								removeClass(tooltipBox, CLASS_FADE);
+								removeClass(tooltipBox, CLASS_TRANSITION);
+								tooltipBox.setAttribute("aria-hidden", true);
+								_this1.fading = false;
+							}, { once: true });
+							removeClass(tooltipBox, CLASS_IN);
+							_this1.fading = true;
+						} else {
+							removeClass(tooltipBox, CLASS_SHOW);
+							tooltipBox.setAttribute("aria-hidden", true);
+						}
+						_this1.tooltipping = false;
+					}, 1e3);
+					return this;
+				},
+				toggle: function toggle() {
+					if (this.imageData.ratio === 1) this.zoomTo(this.imageData.oldRatio, true);
+					else this.zoomTo(1, true);
+					return this;
+				},
+				reset: function reset() {
+					if (this.viewed && !this.played) {
+						this.imageData = assign({}, this.initialImageData);
+						this.renderImage();
+					}
+					return this;
+				},
+				update: function update(updateOptions) {
+					var _this10 = this;
+					var element = this.element, options = this.options, isImg = this.isImg;
+					if (isPlainObject(updateOptions)) assign(options, updateOptions);
+					if (isImg && !element.parentNode) return this.destroy();
+					var images = [];
+					forEach(isImg ? [element] : element.querySelectorAll("img"), function(image) {
+						if (isFunction(options.filter)) {
+							if (options.filter.call(_this10, image)) images.push(image);
+						} else if (_this10.getImageURL(image)) images.push(image);
+					});
+					if (!images.length) return this;
+					this.images = images;
+					this.length = images.length;
+					if (this.ready) {
+						var changedIndexes = [];
+						forEach(this.items, function(item) {
+							var img = item.querySelector("img");
+							var index = Number(getData(item, "index"));
+							var image = images[index];
+							if (image && img) {
+								if (image.src !== img.src || image.alt !== img.alt) changedIndexes.push(index);
+							} else changedIndexes.push(index);
+						});
+						setStyle(this.list, { width: "auto" });
+						this.initList();
+						if (this.isShown) {
+							if (this.length) {
+								if (this.viewed) {
+									var changedIndex = changedIndexes.indexOf(this.index);
+									if (changedIndex >= 0) {
+										this.viewed = false;
+										this.view(Math.max(Math.min(this.index - changedIndex, this.length - 1), 0));
+									} else {
+										var activeItem = this.getItem(this.index);
+										addClass(activeItem, CLASS_ACTIVE);
+										activeItem.setAttribute("aria-selected", true);
+									}
+								}
+							} else {
+								this.image = null;
+								this.viewed = false;
+								this.index = 0;
+								this.imageData = {};
+								this.canvas.innerHTML = "";
+								this.title.innerHTML = "";
+							}
+						}
+					} else this.build();
+					return this;
+				},
+				destroy: function destroy() {
+					var element = this.element, options = this.options;
+					if (!element[NAMESPACE]) return this;
+					this.destroyed = true;
+					if (this.ready) {
+						if (this.played) this.stop();
+						if (options.inline) {
+							if (this.fulled) this.exit();
+							this.unbind();
+						} else if (this.isShown) {
+							if (this.viewing) {
+								if (this.imageRendering) this.imageRendering.abort();
+								else if (this.imageInitializing) this.imageInitializing.abort();
+							}
+							if (this.hiding) this.transitioning.abort();
+							this.hidden();
+						} else if (this.showing) {
+							this.transitioning.abort();
+							this.hidden();
+						}
+						this.ready = false;
+						this.viewer.parentNode.removeChild(this.viewer);
+					} else if (options.inline) {
+						if (this.delaying) this.delaying.abort();
+						else if (this.initializing) this.initializing.abort();
+					}
+					if (!options.inline) {
+						removeListener(element, EVENT_CLICK, this.onElementClick);
+						removeListener(element, EVENT_KEY_DOWN, this.onElementKeyDown);
+					}
+					element[NAMESPACE] = void 0;
+					return this;
+				}
+			};
+			var others = {
+				getImageURL: function getImageURL(image) {
+					var url = this.options.url;
+					if (isString(url)) url = image.getAttribute(url);
+					else if (isFunction(url)) url = url.call(this, image);
+					else url = "";
+					return url;
+				},
+				enforceFocus: function enforceFocus() {
+					var _this = this;
+					this.clearEnforceFocus();
+					addListener(document, EVENT_FOCUSIN, this.onFocusin = function(event) {
+						var viewer = _this.viewer;
+						var target = event.target;
+						if (target === document || target === viewer || viewer.contains(target)) return;
+						while (target) {
+							if (target.getAttribute("tabindex") !== null || target.getAttribute("aria-modal") === "true") return;
+							target = target.parentElement;
+						}
+						viewer.focus();
+					});
+				},
+				clearEnforceFocus: function clearEnforceFocus() {
+					if (this.onFocusin) {
+						removeListener(document, EVENT_FOCUSIN, this.onFocusin);
+						this.onFocusin = null;
+					}
+				},
+				open: function open() {
+					var body = this.body;
+					addClass(body, CLASS_OPEN);
+					if (this.scrollbarWidth > 0) body.style.paddingRight = "".concat(this.scrollbarWidth + (parseFloat(this.initialBodyComputedPaddingRight) || 0), "px");
+				},
+				close: function close() {
+					var body = this.body;
+					removeClass(body, CLASS_OPEN);
+					if (this.scrollbarWidth > 0) body.style.paddingRight = this.initialBodyPaddingRight;
+				},
+				shown: function shown() {
+					var element = this.element, options = this.options, viewer = this.viewer;
+					this.fulled = true;
+					this.isShown = true;
+					this.render();
+					this.bind();
+					this.showing = false;
+					if (options.focus) {
+						viewer.focus();
+						this.enforceFocus();
+					}
+					if (isFunction(options.shown)) addListener(element, EVENT_SHOWN, options.shown, { once: true });
+					if (dispatchEvent(element, EVENT_SHOWN, { originalEvent: this.showOriginalEvent || null }) === false) return;
+					this.showOriginalEvent = null;
+					if (this.ready && this.isShown && !this.hiding) this.view(this.index);
+				},
+				hidden: function hidden() {
+					var element = this.element, options = this.options, viewer = this.viewer;
+					var activeElement = viewer.ownerDocument.activeElement;
+					if (activeElement && viewer.contains(activeElement) && isFunction(activeElement.blur)) activeElement.blur();
+					if (options.focus) this.clearEnforceFocus();
+					this.close();
+					this.unbind();
+					addClass(viewer, CLASS_HIDE);
+					viewer.removeAttribute("role");
+					viewer.removeAttribute("aria-labelledby");
+					viewer.removeAttribute("aria-modal");
+					viewer.setAttribute("aria-hidden", true);
+					this.resetList();
+					this.resetImage();
+					this.fulled = false;
+					this.viewed = false;
+					this.isShown = false;
+					this.hiding = false;
+					if (!this.destroyed) {
+						if (isFunction(options.hidden)) addListener(element, EVENT_HIDDEN, options.hidden, { once: true });
+						dispatchEvent(element, EVENT_HIDDEN, { originalEvent: this.hideOriginalEvent || null }, { cancelable: false });
+						this.hideOriginalEvent = null;
+					}
+				},
+				requestFullscreen: function requestFullscreen(options) {
+					var document = this.ownerDocument;
+					if (this.fulled && !(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)) {
+						var documentElement = document.documentElement;
+						if (documentElement.requestFullscreen) {
+							if (isPlainObject(options)) documentElement.requestFullscreen(options);
+							else documentElement.requestFullscreen();
+						} else if (documentElement.webkitRequestFullscreen) documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+						else if (documentElement.mozRequestFullScreen) documentElement.mozRequestFullScreen();
+						else if (documentElement.msRequestFullscreen) documentElement.msRequestFullscreen();
+					}
+				},
+				exitFullscreen: function exitFullscreen() {
+					var document = this.ownerDocument;
+					if (this.fulled && (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)) {
+						if (document.exitFullscreen) document.exitFullscreen();
+						else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+						else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+						else if (document.msExitFullscreen) document.msExitFullscreen();
+					}
+				},
+				change: function change(event) {
+					var options = this.options, pointers = this.pointers;
+					var pointer = pointers[Object.keys(pointers)[0]];
+					if (!pointer) return;
+					var offsetX = pointer.endX - pointer.startX;
+					var offsetY = pointer.endY - pointer.startY;
+					switch (this.action) {
+						case ACTION_MOVE:
+							if (offsetX !== 0 || offsetY !== 0) {
+								this.pointerMoved = true;
+								this.actionEvent = event;
+								this.move(offsetX, offsetY);
+							}
+							break;
+						case ACTION_ZOOM:
+							if (options.zoomable && options.zoomOnTouch) {
+								var zoomRatio = getMaxZoomRatio(pointers);
+								if (zoomRatio !== 0) {
+									this.actionEvent = event;
+									this.zoom(zoomRatio);
+								}
+							}
+							break;
+						case ACTION_ROTATE:
+							if (options.rotatable && options.rotateOnTouch) {
+								var rotateDegree = getMaxRotateDegree(pointers);
+								if (rotateDegree !== 0) {
+									this.actionEvent = event;
+									this.rotate(rotateDegree);
+								}
+							}
+							break;
+						case ACTION_TRANSFORM:
+							if (options.zoomable && options.zoomOnTouch) {
+								var _zoomRatio = getMaxZoomRatio(pointers);
+								if (_zoomRatio !== 0) {
+									this.actionEvent = event;
+									this.zoom(_zoomRatio);
+								}
+							}
+							if (options.rotatable && options.rotateOnTouch) {
+								var _rotateDegree = getMaxRotateDegree(pointers);
+								if (_rotateDegree !== 0) {
+									this.actionEvent = event;
+									this.rotate(_rotateDegree);
+								}
+							}
+							break;
+						case ACTION_SWITCH:
+							this.action = "switched";
+							var absoluteOffsetX = Math.abs(offsetX);
+							if (absoluteOffsetX > 1 && absoluteOffsetX > Math.abs(offsetY)) {
+								this.pointers = {};
+								this.actionEvent = event;
+								if (offsetX > 1) this.prev(options.loop);
+								else if (offsetX < -1) this.next(options.loop);
+							}
+					}
+					forEach(pointers, function(p) {
+						p.startX = p.endX;
+						p.startY = p.endY;
+					});
+				},
+				isSwitchable: function isSwitchable() {
+					var imageData = this.imageData, viewerData = this.viewerData;
+					return this.length > 1 && imageData.x >= 0 && imageData.y >= 0 && imageData.width <= viewerData.width && imageData.height <= viewerData.height;
+				}
+			};
+			var AnotherViewer = WINDOW.Viewer;
+			var getUniqueID = function(id) {
+				return function() {
+					id += 1;
+					return id;
+				};
+			}(-1);
+			var Viewer = function() {
+				function Viewer(element) {
+					var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+					_classCallCheck(this, Viewer);
+					if (!element || element.nodeType !== 1 && element.nodeType !== 11) throw new Error("The first argument is required and must be an element.");
+					this.element = element;
+					this.ownerDocument = element.ownerDocument || element.host.ownerDocument;
+					this.options = assign({}, DEFAULTS, isPlainObject(options) && options);
+					this.action = false;
+					this.actionEvent = null;
+					this.fading = false;
+					this.fulled = false;
+					this.hiding = false;
+					this.imageClicked = false;
+					this.imageData = {};
+					this.index = this.options.initialViewIndex;
+					this.isImg = false;
+					this.isShown = false;
+					this.length = 0;
+					this.moving = false;
+					this.played = false;
+					this.playing = false;
+					this.pointers = {};
+					this.ready = false;
+					this.rotating = false;
+					this.scaling = false;
+					this.showing = false;
+					this.timeout = false;
+					this.tooltipping = false;
+					this.viewed = false;
+					this.viewing = false;
+					this.wheeling = false;
+					this.zooming = false;
+					this.pointerMoved = false;
+					this.id = getUniqueID();
+					this.init();
+				}
+				return _createClass(Viewer, [{
+					key: "init",
+					value: function init() {
+						var _this = this;
+						var element = this.element, options = this.options;
+						if (element[NAMESPACE]) return;
+						element[NAMESPACE] = this;
+						if (options.focus && !options.keyboard) options.focus = false;
+						var isImg = element.localName === "img";
+						var images = [];
+						forEach(isImg ? [element] : element.querySelectorAll("img"), function(image) {
+							if (isFunction(options.filter)) {
+								if (options.filter.call(_this, image)) images.push(image);
+							} else if (_this.getImageURL(image)) images.push(image);
+						});
+						this.isImg = isImg;
+						this.length = images.length;
+						this.images = images;
+						this.initBody();
+						if (isUndefined(this.ownerDocument.createElement(NAMESPACE).style.transition)) options.transition = false;
+						if (options.inline) {
+							var count = 0;
+							var progress = function progress() {
+								count += 1;
+								if (count === _this.length) {
+									var timeout;
+									_this.initializing = false;
+									_this.delaying = { abort: function abort() {
+										clearTimeout(timeout);
+									} };
+									timeout = setTimeout(function() {
+										_this.delaying = false;
+										_this.build();
+									}, 0);
+								}
+							};
+							this.initializing = { abort: function abort() {
+								forEach(images, function(image) {
+									if (!image.complete) {
+										removeListener(image, EVENT_LOAD, progress);
+										removeListener(image, EVENT_ERROR, progress);
+									}
+								});
+							} };
+							forEach(images, function(image) {
+								if (image.complete) progress();
+								else {
+									var onLoad;
+									var onError;
+									addListener(image, EVENT_LOAD, onLoad = function onLoad() {
+										removeListener(image, EVENT_ERROR, onError);
+										progress();
+									}, { once: true });
+									addListener(image, EVENT_ERROR, onError = function onError() {
+										removeListener(image, EVENT_LOAD, onLoad);
+										progress();
+									}, { once: true });
+								}
+							});
+						} else {
+							addListener(element, EVENT_CLICK, this.onElementClick = function(event) {
+								var target = event.target;
+								if (target.localName === "img" && (!isFunction(options.filter) || options.filter.call(_this, target))) {
+									_this.actionEvent = event;
+									_this.view(_this.images.indexOf(target));
+								}
+							});
+							addListener(element, EVENT_KEY_DOWN, this.onElementKeyDown = function(event) {
+								var target = event.target, key = event.key;
+								if (target.localName === "img" && (key === "Enter" || key === " ")) {
+									event.preventDefault();
+									if (!isFunction(options.filter) || options.filter.call(_this, target)) {
+										_this.actionEvent = event;
+										_this.view(_this.images.indexOf(target));
+									}
+								}
+							});
+						}
+					}
+				}, {
+					key: "build",
+					value: function build() {
+						if (this.ready) return;
+						var element = this.element, options = this.options;
+						var parent = element.parentNode;
+						var template = document.createElement("div");
+						template.innerHTML = TEMPLATE;
+						var viewer = template.querySelector(".".concat(NAMESPACE, "-container"));
+						var title = viewer.querySelector(".".concat(NAMESPACE, "-title"));
+						var toolbar = viewer.querySelector(".".concat(NAMESPACE, "-toolbar"));
+						var navbar = viewer.querySelector(".".concat(NAMESPACE, "-navbar"));
+						var navigation = viewer.querySelector(".".concat(NAMESPACE, "-navigation"));
+						var button = viewer.querySelector(".".concat(NAMESPACE, "-button"));
+						var canvas = viewer.querySelector(".".concat(NAMESPACE, "-canvas"));
+						this.parent = parent;
+						this.viewer = viewer;
+						this.title = title;
+						this.toolbar = toolbar;
+						this.navbar = navbar;
+						this.navigation = navigation;
+						this.button = button;
+						this.canvas = canvas;
+						this.footer = viewer.querySelector(".".concat(NAMESPACE, "-footer"));
+						this.magnifier = viewer.querySelector(".".concat(NAMESPACE, "-magnifier"));
+						this.magnifierImage = viewer.querySelector(".".concat(NAMESPACE, "-magnifier-image"));
+						this.tooltipBox = viewer.querySelector(".".concat(NAMESPACE, "-tooltip"));
+						this.player = viewer.querySelector(".".concat(NAMESPACE, "-player"));
+						this.list = viewer.querySelector(".".concat(NAMESPACE, "-list"));
+						viewer.id = "".concat(NAMESPACE).concat(this.id);
+						title.id = "".concat(NAMESPACE, "Title").concat(this.id);
+						addClass(title, !options.title ? CLASS_HIDE : getResponsiveClass(Array.isArray(options.title) ? options.title[0] : options.title));
+						if (options.title) title.removeAttribute("aria-hidden");
+						var navbarOptions = isPlainObject(options.navbar) ? options.navbar : {};
+						var navbarShow = options.navbar;
+						var navbarSize = !isUndefined(navbarOptions.size) ? navbarOptions.size : options.navbar;
+						if (isPlainObject(options.navbar)) navbarShow = !isUndefined(navbarOptions.show) ? navbarOptions.show : true;
+						addClass(navbar, !navbarShow ? CLASS_HIDE : getResponsiveClass(navbarShow));
+						if (navbarShow) navbar.removeAttribute("aria-hidden");
+						if ([
+							"small",
+							"medium",
+							"large"
+						].indexOf(navbarSize) !== -1) addClass(navbar, "".concat(NAMESPACE, "-").concat(navbarSize));
+						if (isPlainObject(options.navigation)) forEach(navigation.querySelectorAll("[role=\"button\"]"), function(item) {
+							var name = getData(item, DATA_ACTION);
+							var value = options.navigation[name];
+							var deep = isPlainObject(value);
+							var show = deep && !isUndefined(value.show) ? value.show : value;
+							var size = deep && !isUndefined(value.size) ? value.size : value;
+							toggleClass(item, CLASS_HIDE, !show);
+							if (isNumber(show)) addClass(item, getResponsiveClass(show));
+							if (["small", "large"].indexOf(size) !== -1) addClass(item, "".concat(NAMESPACE, "-").concat(size));
+						});
+						else addClass(navigation, !options.navigation ? CLASS_HIDE : getResponsiveClass(options.navigation));
+						if (options.navigation) navigation.removeAttribute("aria-hidden");
+						toggleClass(button, CLASS_HIDE, !options.button);
+						if (options.button) button.removeAttribute("aria-hidden");
+						if (options.keyboard) {
+							button.setAttribute("tabindex", 0);
+							forEach(navigation.querySelectorAll("[role=\"button\"]"), function(item) {
+								item.setAttribute("tabindex", 0);
+							});
+						}
+						if (options.backdrop) {
+							addClass(viewer, "".concat(NAMESPACE, "-backdrop"));
+							if (!options.inline && options.backdrop !== "static") setData(canvas, DATA_ACTION, "hide");
+						}
+						if (isString(options.className) && options.className) options.className.split(REGEXP_SPACES).forEach(function(className) {
+							addClass(viewer, className);
+						});
+						if (options.toolbar) {
+							var list = document.createElement("ul");
+							var custom = isPlainObject(options.toolbar);
+							var zoomButtons = BUTTONS.slice(0, 3);
+							var rotateButtons = BUTTONS.slice(7, 9);
+							var scaleButtons = BUTTONS.slice(9);
+							if (!custom) addClass(toolbar, getResponsiveClass(options.toolbar));
+							toolbar.removeAttribute("aria-hidden");
+							forEach(custom ? options.toolbar : BUTTONS, function(value, index) {
+								var deep = custom && isPlainObject(value);
+								var name = custom ? hyphenate(index) : value;
+								var show = deep && !isUndefined(value.show) ? value.show : value;
+								if (!show || !options.zoomable && zoomButtons.indexOf(name) !== -1 || !options.rotatable && rotateButtons.indexOf(name) !== -1 || !options.scalable && scaleButtons.indexOf(name) !== -1) return;
+								var size = deep && !isUndefined(value.size) ? value.size : value;
+								var click = deep && !isUndefined(value.click) ? value.click : value;
+								var item = document.createElement("li");
+								if (options.keyboard) item.setAttribute("tabindex", 0);
+								item.setAttribute("role", "button");
+								addClass(item, "".concat(NAMESPACE, "-").concat(name));
+								if (!isFunction(click)) setData(item, DATA_ACTION, name);
+								if (isNumber(show)) addClass(item, getResponsiveClass(show));
+								if (["small", "large"].indexOf(size) !== -1) addClass(item, "".concat(NAMESPACE, "-").concat(size));
+								else if (name === "play") addClass(item, "".concat(NAMESPACE, "-large"));
+								if (isFunction(click)) addListener(item, EVENT_CLICK, click);
+								list.appendChild(item);
+							});
+							toolbar.appendChild(list);
+						} else addClass(toolbar, CLASS_HIDE);
+						if (options.title || navbarShow || options.toolbar) this.footer.removeAttribute("aria-hidden");
+						else addClass(this.footer, CLASS_HIDE);
+						if (!options.rotatable) {
+							var rotates = toolbar.querySelectorAll("li[class*=\"rotate\"]");
+							addClass(rotates, CLASS_INVISIBLE);
+							forEach(rotates, function(rotate) {
+								toolbar.appendChild(rotate);
+							});
+						}
+						if (options.inline) {
+							addClass(button, CLASS_FULLSCREEN);
+							setStyle(viewer, { zIndex: options.zIndexInline });
+							if (window.getComputedStyle(parent).position === "static") setStyle(parent, { position: "relative" });
+							parent.insertBefore(viewer, element.nextSibling);
+						} else {
+							addClass(button, CLASS_CLOSE);
+							addClass(viewer, CLASS_FIXED);
+							addClass(viewer, CLASS_FADE);
+							addClass(viewer, CLASS_HIDE);
+							setStyle(viewer, { zIndex: options.zIndex });
+							var container = options.container;
+							if (isString(container)) container = this.ownerDocument.querySelector(container);
+							if (!container) container = this.body;
+							container.appendChild(viewer);
+						}
+						if (options.inline) {
+							this.render();
+							this.bind();
+							this.isShown = true;
+						}
+						this.ready = true;
+						if (isFunction(options.ready)) addListener(element, EVENT_READY, options.ready, { once: true });
+						if (dispatchEvent(element, EVENT_READY) === false) {
+							this.ready = false;
+							return;
+						}
+						if (this.ready && options.inline) this.view(this.index);
+					}
+				}], [
+					{
+						key: "create",
+						value: function create(element, options) {
+							return new Viewer(element, options);
+						}
+					},
+					{
+						key: "setDefaults",
+						value: function setDefaults(options) {
+							assign(DEFAULTS, isPlainObject(options) && options);
+						}
+					},
+					{
+						key: "noConflict",
+						value: function noConflict() {
+							window.Viewer = AnotherViewer;
+							return Viewer;
+						}
+					}
+				]);
+			}();
+			assign(Viewer.prototype, render, events, handlers, methods, others);
+			return Viewer;
+		}));
+	}))(), 1);
+	_css("/*!\n * Viewer.js v1.14.0\n * https://fengyuanchen.github.io/viewerjs\n *\n * Copyright 2015-present Chen Fengyuan\n * Released under the MIT license\n *\n * Date: 2026-09-12T12:12:27.170Z\n */\n.viewer-zoom-in:before,.viewer-zoom-out:before,.viewer-one-to-one:before,.viewer-reset:before,.viewer-prev:before,.viewer-play:before,.viewer-next:before,.viewer-rotate-left:before,.viewer-rotate-right:before,.viewer-flip-horizontal:before,.viewer-flip-vertical:before,.viewer-fullscreen:before,.viewer-fullscreen-exit:before,.viewer-close:before{color:#0000;background-image:url(\"data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 560 40%22%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M49.6 17.9h20.2v3.9H49.6zm123.1 2 10.9-11 2.7 2.8-8.2 8.2 8.2 8.2-2.7 2.7-10.9-10.9zm94 0-10.8-11-2.7 2.8 8.1 8.2-8.1 8.2 2.7 2.7 10.8-10.9zM212 9.3l20.1 10.6L212 30.5V9.3zm161.5 4.6-7.2 6 7.2 5.9v-4h12.4v4l7.3-5.9-7.3-6v4h-12.4v-4zm40.2 12.3 5.9 7.2 5.9-7.2h-4V13.6h4l-5.9-7.3-5.9 7.3h4v12.6h-4zm35.9-16.5h6.3v2h-4.3V16h-2V9.7Zm14 0h6.2V16h-2v-4.3h-4.2v-2Zm6.2 14V30h-6.2v-2h4.2v-4.3h2Zm-14 6.3h-6.2v-6.3h2v4.4h4.3v2Zm-438 .1v-8.3H9.6v-3.9h8.2V9.7h3.9v8.2h8.1v3.9h-8.1v8.3h-3.9zM93.6 9.7h-5.8v3.9h2V30h3.8V9.7zm16.1 0h-5.8v3.9h1.9V30h3.9V9.7zm-11.9 4.1h3.9v3.9h-3.9zm0 8.2h3.9v3.9h-3.9zm244.6-11.7 7.2 5.9-7.2 6v-3.6c-5.4-.4-7.8.8-8.7 2.8-.8 1.7-1.8 4.9 2.8 8.2-6.3-2-7.5-6.9-6-11.3 1.6-4.4 8-5 11.9-4.9v-3.1Zm147.2 13.4h6.3V30h-2v-4.3h-4.3v-2zm14 6.3v-6.3h6.2v2h-4.3V30h-1.9zm6.2-14h-6.2V9.7h1.9V14h4.3v2zm-13.9 0h-6.3v-2h4.3V9.7h2V16zm33.3 12.5 8.6-8.6-8.6-8.7 1.9-1.9 8.6 8.7 8.6-8.7 1.9 1.9-8.6 8.7 8.6 8.6-1.9 2-8.6-8.7-8.6 8.7-1.9-2zM297 10.3l-7.1 5.9 7.2 6v-3.6c5.3-.4 7.7.8 8.7 2.8.8 1.7 1.7 4.9-2.9 8.2 6.3-2 7.5-6.9 6-11.3-1.6-4.4-7.9-5-11.8-4.9v-3.1Zm-157.3-.6c2.3 0 4.4.7 6 2l2.5-3 1.9 9.2h-9.3l2.6-3.1a6.2 6.2 0 0 0-9.9 5.1c0 3.4 2.8 6.3 6.2 6.3 2.8 0 5.1-1.9 6-4.4h4c-1 4.7-5 8.3-10 8.3a10 10 0 0 1-10-10.2 10 10 0 0 1 10-10.2Z%22%2F%3E%3C%2Fsvg%3E\");background-repeat:no-repeat;background-size:280px;width:20px;height:20px;font-size:0;line-height:0;display:block}.viewer-zoom-in:before{content:\"Zoom In\";background-position:0 0}.viewer-zoom-out:before{content:\"Zoom Out\";background-position:-20px 0}.viewer-one-to-one:before{content:\"One to One\";background-position:-40px 0}.viewer-reset:before{content:\"Reset\";background-position:-60px 0}.viewer-prev:before{content:\"Previous\";background-position:-80px 0}.viewer-play:before{content:\"Play\";background-position:-100px 0}.viewer-next:before{content:\"Next\";background-position:-120px 0}.viewer-rotate-left:before{content:\"Rotate Left\";background-position:-140px 0}.viewer-rotate-right:before{content:\"Rotate Right\";background-position:-160px 0}.viewer-flip-horizontal:before{content:\"Flip Horizontal\";background-position:-180px 0}.viewer-flip-vertical:before{content:\"Flip Vertical\";background-position:-200px 0}.viewer-fullscreen:before{content:\"Enter Full Screen\";background-position:-220px 0}.viewer-fullscreen-exit:before{content:\"Exit Full Screen\";background-position:-240px 0}.viewer-close:before{content:\"Close\";background-position:-260px 0}.viewer-container{-webkit-tap-highlight-color:transparent;-ms-touch-action:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;direction:ltr;font-size:0;line-height:0;position:absolute;inset:0;overflow:hidden}.viewer-container::-moz-selection{background-color:#0000}.viewer-container ::-moz-selection{background-color:#0000}.viewer-container::selection{background-color:#0000}.viewer-container ::selection{background-color:#0000}.viewer-container:focus{outline:0}.viewer-container img{width:100%;height:auto;display:block;min-width:0!important;max-width:none!important;min-height:0!important;max-height:none!important}.viewer-canvas{position:absolute;inset:0;overflow:hidden}.viewer-canvas>img{width:auto;height:auto;margin:15px auto;max-width:90%!important}.viewer-magnifier{box-sizing:border-box;pointer-events:none;z-index:2;background-color:#fff;background-repeat:no-repeat;border:2px solid #fff;border-radius:50%;display:none;position:absolute;top:16px;left:16px;overflow:hidden;box-shadow:0 1px 5px #00000080}.viewer-magnifier.viewer-show{display:block}.viewer-magnifier-image{transform-origin:50%;position:absolute;top:0;left:0;max-width:none!important}.viewer-navigation{position:absolute;top:50%;left:0;right:0}.viewer-navigation>.viewer-prev,.viewer-navigation>.viewer-next{cursor:pointer;background-color:#00000080;border-radius:50%;width:40px;height:40px;margin-top:-20px;position:absolute}.viewer-navigation>.viewer-prev:focus,.viewer-navigation>.viewer-next:focus,.viewer-navigation>.viewer-prev:hover,.viewer-navigation>.viewer-next:hover{background-color:#000c}.viewer-navigation>.viewer-prev:focus,.viewer-navigation>.viewer-next:focus{outline:0;box-shadow:0 0 3px #fff}.viewer-navigation>.viewer-prev:before,.viewer-navigation>.viewer-next:before{margin:10px}.viewer-navigation>.viewer-prev{left:15px}.viewer-navigation>.viewer-next{right:15px}.viewer-navigation>.viewer-large{width:48px;height:48px;margin-top:-24px}.viewer-navigation>.viewer-large:before{margin:14px}.viewer-navigation>.viewer-small{width:32px;height:32px;margin-top:-16px}.viewer-navigation>.viewer-small:before{margin:6px}.viewer-footer{text-align:center;position:absolute;bottom:0;left:0;right:0;overflow:hidden}.viewer-navbar{background-color:#00000080;overflow:hidden}.viewer-navbar.viewer-small>.viewer-list{height:40px}.viewer-navbar.viewer-small>.viewer-list>li{width:24px;height:40px}.viewer-navbar.viewer-large>.viewer-list{height:60px}.viewer-navbar.viewer-large>.viewer-list>li{width:36px;height:60px}.viewer-list{box-sizing:content-box;height:50px;margin:0;padding:1px 0;overflow:hidden}.viewer-list>li{color:#0000;cursor:pointer;float:left;opacity:.5;width:30px;height:50px;font-size:0;line-height:0;transition:opacity .15s;overflow:hidden}.viewer-list>li:focus,.viewer-list>li:hover{opacity:.75}.viewer-list>li:focus{outline:0}.viewer-list>li+li{margin-left:1px}.viewer-list>.viewer-loading{position:relative}.viewer-list>.viewer-loading:after{border-width:2px;width:20px;height:20px;margin-top:-10px;margin-left:-10px}.viewer-list>.viewer-active,.viewer-list>.viewer-active:focus,.viewer-list>.viewer-active:hover{opacity:1}.viewer-player{cursor:none;z-index:1;background-color:#000;display:none;position:absolute;inset:0}.viewer-player>img{position:absolute;top:0;left:0}.viewer-toolbar>ul{margin:0 auto 5px;padding:6px 3px;display:inline-block;overflow:hidden}.viewer-toolbar>ul>li{cursor:pointer;float:left;background-color:#00000080;border-radius:50%;width:24px;height:24px;transition:background-color .15s;overflow:hidden}.viewer-toolbar>ul>li:focus,.viewer-toolbar>ul>li:hover{background-color:#000c}.viewer-toolbar>ul>li:focus{z-index:1;outline:0;position:relative;box-shadow:0 0 3px #fff}.viewer-toolbar>ul>li:before{margin:2px}.viewer-toolbar>ul>li+li{margin-left:1px}.viewer-toolbar>ul>.viewer-small{width:18px;height:18px;margin-top:3px;margin-bottom:3px}.viewer-toolbar>ul>.viewer-small:before{margin:-1px}.viewer-toolbar>ul>.viewer-large{width:30px;height:30px;margin-top:-3px;margin-bottom:-3px}.viewer-toolbar>ul>.viewer-large:before{margin:5px}.viewer-tooltip{color:#fff;text-align:center;background-color:#000c;border-radius:10px;width:50px;height:20px;margin-top:-10px;margin-left:-25px;font-size:12px;line-height:20px;display:none;position:absolute;top:50%;left:50%}.viewer-title{color:#ccc;opacity:.8;text-overflow:ellipsis;white-space:nowrap;max-width:90%;min-height:14px;margin:5px 5%;font-size:12px;line-height:1.2;transition:opacity .15s;display:inline-block;overflow:hidden}.viewer-title:hover{opacity:1}.viewer-button{-webkit-app-region:no-drag;cursor:pointer;background-color:#00000080;border-radius:50%;width:80px;height:80px;transition:background-color .15s;position:absolute;top:-40px;right:-40px;overflow:hidden}.viewer-button:focus,.viewer-button:hover{background-color:#000c}.viewer-button:focus{outline:0;box-shadow:0 0 3px #fff}.viewer-button:before{position:absolute;bottom:15px;left:15px}.viewer-fixed{position:fixed}.viewer-open{overflow:hidden}.viewer-show{display:block}.viewer-hide{display:none}.viewer-backdrop{background-color:#00000080}.viewer-invisible{visibility:hidden}.viewer-move{cursor:move;cursor:grab}.viewer-fade{opacity:0}.viewer-in{opacity:1}.viewer-transition{transition:all .3s}@keyframes viewer-spinner{0%{transform:rotate(0)}to{transform:rotate(360deg)}}.viewer-loading:after{content:\"\";z-index:1;border:4px solid #ffffff1a;border-left-color:#ffffff80;border-radius:50%;width:40px;height:40px;margin-top:-20px;margin-left:-20px;animation:1s linear infinite viewer-spinner;display:inline-block;position:absolute;top:50%;left:50%}@media (width<=767px){.viewer-hide-xs-down{display:none}}@media (width<=991px){.viewer-hide-sm-down{display:none}}@media (width<=1199px){.viewer-hide-md-down{display:none}}");
+	_css(".nspp-image-preview{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:0 0;border:0;width:100%;max-width:none;height:100%;max-height:none;margin:0;padding:0;position:fixed;inset:0;overflow:hidden}.nspp-image-preview::backdrop{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);background:#0b0e14eb}.nspp-image-preview .viewer-backdrop{background:0 0}.nspp-image-preview .viewer-footer{padding:0 12px max(20px, env(safe-area-inset-bottom));box-sizing:border-box}.nspp-image-preview .viewer-toolbar>ul{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);background:#252a34e6;border:1px solid #ffffff26;border-radius:999px;gap:4px;padding:6px;display:inline-flex;box-shadow:0 8px 32px #0005}.nspp-image-preview .viewer-toolbar>ul>li{background:0 0;border-radius:50%;place-items:center;width:36px;height:36px;margin:0;padding:0;display:grid}.nspp-image-preview .viewer-toolbar>ul>li:hover,.nspp-image-preview .viewer-button:hover{background-color:#ffffff24}.nspp-image-preview .viewer-button{top:max(16px, env(safe-area-inset-top));right:max(16px, env(safe-area-inset-right));background:#252a34e6;border:1px solid #ffffff26;border-radius:50%;width:40px;height:40px}.nspp-image-preview .viewer-button:before{margin:9px;position:static}.nspp-image-preview .viewer-list{margin-top:12px}.nspp-image-preview .viewer-list>li{opacity:.5;border:2px solid #0000;border-radius:6px}.nspp-image-preview .viewer-list>.viewer-active{opacity:1;border-color:#fff}.nspp-image-preview [role=button]:focus-visible{outline-offset:3px;outline:2px solid #fff}.nspp-preview-content img{cursor:zoom-in}.nspp-preview-content img:focus-visible{outline:2px solid var(--link-color,#0969da);outline-offset:3px;border-radius:3px}");
+	function openImagePreview(content, image, onClose) {
+		const dialog = document.createElement("dialog");
+		dialog.className = "nspp-image-preview";
+		dialog.setAttribute("aria-label", "图片预览");
+		document.body.append(dialog);
+		dialog.showModal();
+		let viewer;
+		let closed = false;
+		const close = () => {
+			if (closed) return;
+			closed = true;
+			viewer?.destroy();
+			dialog.close();
+			dialog.remove();
+			if (image.isConnected) image.focus({ preventScroll: true });
+			onClose();
+		};
+		dialog.addEventListener("cancel", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			close();
+		});
+		const images = Array.from(content.querySelectorAll("img"));
+		const multiple = images.length > 1;
+		viewer = new import_viewer.default(content, {
+			container: dialog,
+			initialViewIndex: images.indexOf(image),
+			title: false,
+			navbar: multiple,
+			toolbar: {
+				zoomOut: true,
+				zoomIn: true,
+				oneToOne: true,
+				reset: true,
+				prev: multiple,
+				next: multiple
+			},
+			fullscreen: false,
+			rotatable: false,
+			scalable: false,
+			inheritedAttributes: ["referrerPolicy"],
+			transition: !matchMedia("(prefers-reduced-motion: reduce)").matches,
+			ready() {
+				const labels = {
+					"zoom-in": "放大",
+					"zoom-out": "缩小",
+					"one-to-one": "原始大小",
+					reset: "适应窗口",
+					prev: "上一张",
+					next: "下一张",
+					mix: "关闭预览"
+				};
+				dialog.querySelectorAll("[data-viewer-action]").forEach((control) => {
+					const label = labels[control.dataset.viewerAction || ""];
+					if (label) {
+						control.title = label;
+						control.setAttribute("aria-label", label);
+					}
+				});
+				const container = dialog.querySelector(".viewer-container");
+				container?.removeAttribute("aria-labelledby");
+				container?.setAttribute("aria-label", "图片预览");
+			},
+			hidden: close
+		});
+		viewer.show();
+		return close;
+	}
 	function readingContent(source, base) {
 		const fragment = document.createDocumentFragment();
 		const allowed = new Set([
@@ -15476,6 +18273,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				if (el instanceof HTMLImageElement) {
 					el.alt = node.getAttribute("alt") || "";
 					el.loading = "lazy";
+					el.tabIndex = 0;
+					el.setAttribute("role", "button");
+					el.setAttribute("aria-label", el.alt ? `查看大图：${el.alt}` : "查看大图");
 				}
 			}
 			node.childNodes.forEach((child) => copy(child, el));
@@ -15533,20 +18333,44 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		let request;
 		const mobile = () => matchMedia("(max-width: 600px), (hover: none)").matches;
 		let closeTimer;
+		let closeImage;
 		const keepOpen = () => clearTimeout(closeTimer);
 		const hide = () => {
+			closeImage?.();
 			request?.abort();
 			keepOpen();
 			view.close();
 			view.hidden = true;
 		};
 		const scheduleClose = () => {
-			if (mobile()) return;
+			if (mobile() || closeImage) return;
 			keepOpen();
 			closeTimer = setTimeout(hide, 220);
 		};
 		view.addEventListener("mouseenter", keepOpen, { signal: ctx.signal });
 		view.addEventListener("mouseleave", scheduleClose, { signal: ctx.signal });
+		content.addEventListener("click", (event) => {
+			if (!(event.target instanceof HTMLImageElement) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+			event.preventDefault();
+			event.stopPropagation();
+			if (closeImage) return;
+			keepOpen();
+			closeImage = openImagePreview(content, event.target, () => {
+				closeImage = void 0;
+			});
+		}, {
+			capture: true,
+			signal: ctx.signal
+		});
+		content.addEventListener("keydown", (event) => {
+			if (!(event.target instanceof HTMLImageElement) || !["Enter", " "].includes(event.key)) return;
+			event.preventDefault();
+			event.stopPropagation();
+			event.target.click();
+		}, {
+			capture: true,
+			signal: ctx.signal
+		});
 		const position = () => {
 			if (view.hidden || !source) return;
 			if (mobile()) {
@@ -15637,6 +18461,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					window.open(url.href, "_blank", "noopener,noreferrer");
 					return;
 				}
+				if (closeImage) return;
 				keepOpen();
 				if (!view.hidden && source === link) return;
 				source = link;
@@ -15673,6 +18498,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			keepOpen,
 			scheduleClose,
 			destroy() {
+				closeImage?.();
 				keepOpen();
 				view.close();
 				actionsObserver?.disconnect();
@@ -15686,7 +18512,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		id: "post-preview",
 		title: "帖子卡片预览",
 		group: "阅读",
-		description: "桌面悬停打开卡片，移出后自动收起，移动端点击标题打开弹窗，可从卡片进入原帖。",
+		description: "桌面悬停打开卡片，移动端点击标题打开弹窗；点击图片放大，支持缩放和切换，可从卡片进入原帖。",
 		defaults: { enabled: true },
 		mount(ctx) {
 			const preview = createPostPreview(ctx);
@@ -16502,7 +19328,148 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			};
 		}
 	};
-	_css("#nspp-tools{z-index:999;flex-direction:column;align-items:flex-end;gap:.4rem;max-width:min(22rem,75vw);max-height:55dvh;padding:8px 8px 0 0;display:flex;position:fixed;bottom:4rem;right:calc(1rem - 8px);overflow-y:auto}#nspp-tools button,[data-nspp-resolve],.nspp-action{font:inherit;border:1px solid var(--border-color,#929a9380);color:var(--text-color,inherit);background:var(--bg-color,Canvas);cursor:pointer;border-radius:.4rem;padding:.35rem .6rem;font-size:.8rem}#nspp-tools a,[data-nspp-footprints] a{text-underline-offset:.2em}#nspp-tools a:hover,[data-nspp-footprints] a:hover{text-decoration:underline}#nspp-tools button:disabled,.nspp-compose button:disabled{opacity:1;cursor:wait}#nspp-tools :focus-visible{outline-offset:2px;outline:2px solid}@media (prefers-reduced-motion:reduce){[class*=nspp-]{scroll-behavior:auto!important}}.nspp-monitor{border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(42rem,92vw);max-height:85dvh;color:var(--text-color,CanvasText);border-radius:.75rem;padding:1rem;overflow:auto}.nspp-monitor::backdrop{background:#0006}.nspp-monitor ul{padding-left:1.25rem}.nspp-monitor li{overflow-wrap:anywhere;margin:.4rem 0}.nspp-monitor a{text-underline-offset:.2em}.nspp-monitor a:hover{text-decoration:underline}.nspp-block-controls{flex-wrap:wrap;gap:.3rem;margin-left:.4rem;font-size:.75rem;display:inline-flex}.nspp-user-badges{vertical-align:baseline;white-space:nowrap;font-variant-numeric:tabular-nums;flex-wrap:nowrap;align-items:center;gap:5px;margin-inline-start:4px;font:10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.nspp-user-badges>span{white-space:nowrap;background:0 0;border:0;padding:0}.nspp-level{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-age{color:#59636e;cursor:help}.nspp-user-badges button{font:inherit;color:inherit;min-height:0;box-shadow:none;cursor:pointer;background:0 0;border:0;border-radius:2px;padding:0}.nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-user-badges .nspp-trust:hover{text-underline-offset:3px;text-decoration:underline}.nspp-user-badges button:focus-visible{outline-offset:2px;outline:2px solid #0969da}.nspp-level[data-level=\"0\"]{--nspp-badge-color:#66717e}.nspp-level[data-level=\"2\"]{--nspp-badge-color:#0969da}.nspp-level[data-level=\"3\"]{--nspp-badge-color:#087f8c}.nspp-level[data-level=\"4\"]{--nspp-badge-color:#218044}.nspp-level[data-level=\"5\"]{--nspp-badge-color:#a66b08}.dark-layout .nspp-level,.dark-layout .nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#9198a1)}.dark-layout .nspp-age{color:#9198a1}.dark-layout .nspp-level[data-level=\"0\"]{--nspp-badge-color:#a3adb8}.dark-layout .nspp-level[data-level=\"2\"]{--nspp-badge-color:#79b8ff}.dark-layout .nspp-level[data-level=\"3\"]{--nspp-badge-color:#56c8ce}.dark-layout .nspp-level[data-level=\"4\"]{--nspp-badge-color:#70cf91}.dark-layout .nspp-level[data-level=\"5\"]{--nspp-badge-color:#dfb653}.nspp-level[data-level=\"1\"],.nspp-trust[data-tier=danger]{--nspp-badge-color:#cf3434}.nspp-trust[data-tier=warning]{--nspp-badge-color:#a66b08}.nspp-trust[data-tier=success]{--nspp-badge-color:#218044}.dark-layout .nspp-level[data-level=\"1\"],.dark-layout .nspp-trust[data-tier=danger]{--nspp-badge-color:#ff8585}.dark-layout .nspp-trust[data-tier=warning]{--nspp-badge-color:#dfb653}.dark-layout .nspp-trust[data-tier=success]{--nspp-badge-color:#70cf91}.nspp-user-badges .nspp-trust[data-tier=perfect]{--nspp-badge-color:#ffe66d;background:#b82025;border-radius:3px;padding:0 4px}.nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#916008;background:#fff3cd;border-radius:3px;padding:0 4px;box-shadow:inset 0 0 0 1px #dfba6266}.dark-layout .nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#f0ce78;background:#3c321c;box-shadow:inset 0 0 0 1px #dfba6255}.role-tag[data-nspp-role]{color:#2463a0;box-shadow:none;letter-spacing:0;vertical-align:middle;white-space:nowrap;background:#eaf3fc;border:0;border-radius:3px;flex:none;align-items:center;gap:3px;padding:0 5px;font:600 10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.role-tag[data-nspp-role]:before{content:\"\";clip-path:polygon(50% 0,95% 17%,88% 65%,50% 100%,12% 65%,5% 17%);background:currentColor;flex:none;width:9px;height:10px}.role-tag[data-nspp-role=founder]{color:#087f78;background:#e5f4ef}.role-tag[data-nspp-role=founder]:before{clip-path:polygon(50% 0,66% 34%,100% 50%,66% 66%,50% 100%,34% 66%,0 50%,34% 34%)}.role-tag[data-nspp-role=owner]{color:#4c596a;background:#eaf0f5}.role-tag[data-nspp-role=owner]:before{clip-path:polygon(0 15%,25% 40%,50% 0,75% 40%,100% 15%,88% 85%,12% 85%)}.dark-layout .role-tag[data-nspp-role=admin]{color:#9ac7f2;background:#23374b}.dark-layout .role-tag[data-nspp-role=founder]{color:#7cd4c1;background:#1e3b35}.dark-layout .role-tag[data-nspp-role=owner]{color:#c1ccd9;background:#303a47}.nspp-history{color:#1f2328;background:#fff;border:1px solid #d1d9e0;border-radius:8px;width:min(640px,100vw - 24px);max-width:none;max-height:80dvh;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;box-shadow:0 8px 28px #1f232833}.nspp-history[open]{flex-direction:column;display:flex}.nspp-history::backdrop{background:#1f232866}.nspp-history *{box-sizing:border-box}.nspp-history header{box-shadow:none;background:0 0;border-bottom:0;flex:none;justify-content:space-between;align-items:center;padding:6px 12px;display:flex}.nspp-history h2{margin:0;font-size:14px;font-weight:600}.nspp-history button{min-height:26px;color:inherit;cursor:pointer;white-space:nowrap;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:5px;padding:2px 8px;font-family:inherit;font-size:12px;line-height:20px}.nspp-history [hidden]{display:none!important}.nspp-history-toolbar{border-bottom:0;flex:none;gap:6px;padding:4px 12px 6px;display:flex}.nspp-history input{width:0;min-width:0;color:inherit;font:inherit;background:0 0;border:1px solid #d1d9e0;border-radius:5px;flex:1;padding:4px 8px}.nspp-history ol{overscroll-behavior:contain;min-height:60px;margin:0;padding:0 12px;list-style:none;overflow-y:auto}.nspp-history li{border:0;align-items:center;gap:8px;margin:0;padding:3px 0;display:flex}.nspp-history li button{background:0 0;border-color:#0000;min-height:24px;padding:1px 6px}.nspp-history li:hover{background:#818b980c}.nspp-history li a{color:#0969da;white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;text-decoration:none;overflow:hidden}.nspp-history a:hover{text-underline-offset:2px;text-decoration:underline}.nspp-history time{color:#59636e;flex:none;font-size:11px}.nspp-history :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-history{color:#f0f6fc;background:#0d1117;border-color:#3d444d}.dark-layout .nspp-history header,.dark-layout .nspp-history button{background:#151b23}.dark-layout .nspp-history a{color:#79c0ff}@media (width<=600px){.nspp-history{width:calc(100vw - 16px)}.nspp-history-toolbar{flex-wrap:wrap}.nspp-history time{display:none}}.nspp-block-toggle{vertical-align:middle;color:#59636e;cursor:pointer;background:0 0;border:0;border-radius:4px;min-width:0;margin-left:5px;padding:0 2px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-block-toggle[data-blocked=true]{color:#cf222e;border-color:#ff818280}.nspp-block-toggle:disabled{opacity:1;cursor:wait}.dark-layout .nspp-block-toggle{color:#9198a1;border-color:#3d444d}.nspp-user-badges[aria-busy=true]{color:#59636e;border-radius:4px;min-width:88px;min-height:16px}.nspp-trust-dialog{padding:16px}.nspp-trust-dialog p{white-space:pre-line;line-height:1.8}.nspp-trust-dialog button{align-self:flex-end}.nspp-post-preview{z-index:2147483644;border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(340px,100vw - 24px);height:auto;max-height:min(320px,100dvh - 24px);color:var(--text-color,CanvasText);text-align:left;border-radius:6px;flex-direction:column;margin:0;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;overflow:hidden;box-shadow:0 3px 12px #00000018}.nspp-post-preview[hidden]{display:none}.nspp-post-preview header{border-bottom:1px solid #929a9350;flex-shrink:0;align-items:center;gap:8px;padding:5px 8px;font-size:12px;line-height:18px;display:flex;position:static;box-shadow:none!important;text-shadow:none!important}.nspp-post-preview header a{white-space:normal;overflow-wrap:anywhere;min-width:0;color:inherit;flex:1;font-weight:500;text-decoration:none;text-shadow:none!important;box-shadow:none!important}.nspp-post-preview button{width:20px;height:20px;min-height:0;color:inherit;cursor:pointer;background:0 0;border:0;border-radius:3px;flex:none;padding:0;font:16px/18px Arial,sans-serif}.nspp-post-preview>p{margin:0;padding:5px 8px;font-size:11px}.nspp-post-preview>p:empty{display:none}.nspp-preview-content{overscroll-behavior:contain;overflow-wrap:anywhere;flex:0 auto;min-height:0;padding:7px 8px;font-size:12px;line-height:1.5;overflow:auto}.nspp-preview-meta{opacity:.65;margin-bottom:5px;font-size:11px}.nspp-preview-content img{object-fit:contain;width:auto;max-width:100%;height:auto;max-height:120px}.nspp-preview-content pre{background:#818b9814;border-radius:6px;padding:6px;overflow:auto}.nspp-preview-content blockquote{border-left:3px solid #818b9850;margin:6px 0;padding-left:8px}.nspp-preview-content table{max-width:100%;display:block;overflow:auto}.nspp-preview-content h3{margin:6px 0;font-size:12px}.nspp-preview-comment{border-top:1px solid #818b9830;padding:6px 0}.nspp-preview-comment>strong{font-size:12px}.nspp-post-preview footer{background:0 0;border-top:1px solid #818b9830;flex-shrink:0;padding:4px 8px;font-size:11px;line-height:16px}.nspp-post-preview footer a,.nspp-preview-content a{color:var(--link-color,#0969da)}.nspp-preview-content article>:first-child{margin-top:0}.nspp-preview-content article>:last-child{margin-bottom:0}.nspp-post-preview,.nspp-post-preview *{box-sizing:border-box}.nspp-preview-content p{font-size:inherit;line-height:inherit;margin:5px 0}.nspp-preview-content :is(ul,ol){margin:5px 0;padding-left:18px}.nspp-preview-content :is(h1,h2,h4){margin:6px 0;font-size:13px;line-height:1.5}.nspp-post-preview button:hover{background:#818b981a}.nspp-post-preview footer a{color:inherit;opacity:.7;text-decoration:none}.nspp-post-preview footer a:hover{opacity:1;text-decoration:underline}.nspp-meta-label{opacity:.6;font-size:10px}.nspp-user-badges :is(.nspp-level,.nspp-age,.nspp-trust){align-items:center;gap:3px;display:inline-flex}.nspp-user-badges .iconpark-icon{flex:none;width:11px;height:11px}.nspp-list-actions{white-space:nowrap;color:var(--text-color,#777);flex-wrap:nowrap;align-items:center;gap:12px;padding-top:5px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;overflow-x:auto}.nspp-list-actions button{color:inherit;font:inherit;cursor:pointer;opacity:.75;background:0 0;border:0;border-radius:0;align-items:center;gap:4px;margin:0;padding:0;display:inline-flex}.nspp-list-actions .iconpark-icon{width:13px;height:13px}.nspp-interaction{background:var(--bg-color,Canvas);color:var(--text-color,CanvasText);border:1px solid #818b9840;border-radius:6px;margin:4px 0 12px 52px;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;list-style:none}.nspp-interaction[hidden],.nspp-interaction form[hidden]{display:none!important}.nspp-interaction header{border-bottom:1px solid #818b9820;align-items:center;gap:8px;padding:6px 10px;display:flex}.nspp-interaction header a{white-space:nowrap;text-overflow:ellipsis;min-width:0;color:inherit;flex:1;overflow:hidden}.nspp-interaction button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0}.nspp-interaction header button{font-size:18px}.nspp-interaction p{margin:0;padding:6px 10px;font-size:11px}.nspp-interaction p:empty{display:none}.nspp-interaction form{padding:8px 10px}.nspp-interaction textarea{box-sizing:border-box;resize:vertical;width:100%;min-height:84px;max-height:240px;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:4px;padding:8px;display:block}.nspp-reply-actions{justify-content:space-between;align-items:center;gap:8px;margin-top:6px;display:flex}.nspp-reply-actions span{opacity:.6;font-size:10px}.nspp-reply-actions button{color:#fff;background:#238636;border-radius:4px;padding:3px 10px}.nspp-reply-actions button:disabled{opacity:.4;cursor:default}@media (width<=600px){.nspp-interaction{margin-left:0}.nspp-list-actions{gap:8px}}.nspp-list-actions [hidden]{display:none!important}.nspp-block-toggle{align-items:center;gap:3px;display:inline-flex}.nspp-block-toggle .iconpark-icon{width:11px;height:11px}.nspp-block-toggle[hidden],#nspp-tools button[hidden]{display:none!important}.nspp-action-category{color:inherit;opacity:.65;flex:none;margin-left:auto;text-decoration:none}.nspp-action-category:hover{text-underline-offset:3px;text-decoration:underline}.nspp-list-actions button{flex-shrink:0}.nspp-post-preview footer .nspp-list-actions{gap:10px;padding:2px 0 5px}.nspp-post-preview footer .nspp-list-actions button{width:auto;height:auto;font:inherit;line-height:18px}.nspp-post-preview footer .nspp-list-actions button:hover{text-underline-offset:3px;background:0 0;text-decoration:underline}.nspp-post-preview::backdrop{background:#0006}@media (width<=600px),(hover:none){.nspp-post-preview{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;inset:auto 0 0}.nspp-post-preview header{padding:10px 16px;font-size:14px}.nspp-post-preview header a{white-space:normal}.nspp-post-preview button{width:40px;height:40px;font-size:22px}.nspp-preview-content{padding:12px 16px;font-size:14px;line-height:1.7}.nspp-post-preview footer{padding:12px 16px;font-size:13px}.nspp-post-preview footer a{padding:8px 0;display:block}}.nspp-count-loading{flex:none;font-size:10px}.nspp-quick-replies{box-sizing:border-box;background:var(--bg-color,Canvas);width:min(440px,100vw - 24px);max-height:85dvh;color:var(--text-color,CanvasText);border:1px solid #818b9838;border-radius:12px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:hidden;box-shadow:0 16px 60px #0003}.nspp-quick-replies[open]{flex-direction:column;display:flex}.nspp-quick-replies::backdrop{background:#0005}.nspp-quick-replies [hidden]{display:none!important}.nspp-quick-head,.nspp-quick-pagination{color:inherit;background:0 0;flex:none;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;display:flex}.nspp-quick-head strong{font-size:14px}.nspp-quick-replies button{font:inherit;color:inherit;cursor:pointer;min-height:28px;box-shadow:none;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:4px 8px}.nspp-quick-replies button:hover:not(:disabled){background:#818b9814}.nspp-quick-replies :is(button,input,textarea):focus-visible{outline:2px solid var(--link-color,#0969da);outline-offset:2px}.nspp-quick-replies button:disabled{opacity:.4;cursor:default}.nspp-quick-head button{border:0;width:28px;padding:0;font-size:18px}.nspp-quick-replies p{margin:0}.nspp-quick-replies .nspp-quick-target{white-space:nowrap;text-overflow:ellipsis;opacity:.65;flex:none;padding:0 12px 6px;font-size:12px;overflow:hidden}.nspp-quick-toolbar{flex:none;gap:6px;padding:2px 12px 8px;display:flex}.nspp-quick-replies input,.nspp-quick-replies textarea{box-sizing:border-box;min-width:0;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:6px;padding:5px 8px}.nspp-quick-toolbar input{flex:1;width:0}.nspp-quick-replies .nspp-quick-primary{color:var(--link-color,#0969da);background:#0969da0c;border-color:#0969da40;flex:none}.nspp-quick-list{overscroll-behavior:contain;min-height:0;padding:0 12px;overflow-y:auto}.nspp-quick-item{border-bottom:1px solid #818b9820;align-items:center;gap:4px;padding:2px 0;display:flex}.nspp-quick-item:last-child{border-bottom:0}.nspp-quick-item .nspp-quick-send{text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;border:0;flex:1;min-width:0;min-height:30px;padding:4px 6px}.nspp-quick-item button:not(.nspp-quick-send){border-color:#0000;flex:none;padding:4px 6px;font-size:11px}.nspp-quick-item .nspp-quick-delete:hover:not(:disabled){color:#cf3434;background:#cf343410}.nspp-quick-list>p{text-align:center;opacity:.6;padding:16px 6px}.nspp-quick-replies form{border-top:1px solid #818b9830;flex:none;padding:8px 12px}.nspp-quick-replies form button+button{margin-left:8px}.nspp-quick-replies textarea{resize:vertical;width:100%;max-height:22dvh;margin-bottom:8px;display:block}.nspp-quick-pagination{border-top:1px solid #818b9830;padding-top:6px;padding-bottom:6px;font-size:11px}.nspp-quick-replies .nspp-quick-status{opacity:.65;flex:none;padding:0 12px 6px;font-size:11px}@media (width<=600px){.nspp-quick-replies{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;margin:auto 0 0}.nspp-quick-replies button{min-height:34px}}#nspp-tools .nspp-tool-icon{flex:none;justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}.nspp-user-badges .nspp-age,.nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#59636e)}.nspp-age[data-tone=new]{--nspp-age-color:#cf3434}.nspp-age[data-tone=recent]{--nspp-age-color:#a66b08}.nspp-age[data-tone=member]{--nspp-age-color:#0969da}.nspp-age[data-tone=longtime]{--nspp-age-color:#218044}.dark-layout .nspp-age[data-tone=new]{--nspp-age-color:#ff8585}.dark-layout .nspp-age[data-tone=recent]{--nspp-age-color:#dfb653}.dark-layout .nspp-age[data-tone=member]{--nspp-age-color:#79b8ff}.dark-layout .nspp-age[data-tone=longtime]{--nspp-age-color:#70cf91}.dark-layout .nspp-user-badges .nspp-age,.dark-layout .nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#9198a1)}.nspp-user-badges button.nspp-age{cursor:pointer}.nspp-user-badges button.nspp-age:hover{text-underline-offset:3px;text-decoration:underline}.nspp-profile-dialog{width:min(320px,100vw - 24px)}.nspp-profile-dialog header{justify-content:space-between;padding:10px 12px}.nspp-profile-summary{align-items:baseline;gap:8px;padding:4px 12px 10px;display:flex}.nspp-profile-summary strong{font-variant-numeric:tabular-nums;font-size:22px;line-height:1.3}.nspp-profile-summary span{font-size:11px}.nspp-profile-dialog dl{border-top:1px solid #818b9830;grid-template-columns:1fr auto;gap:6px 12px;margin:0;padding:10px 12px;display:grid}.nspp-profile-dialog dt{opacity:.65}.nspp-profile-dialog dd{font-variant-numeric:tabular-nums;margin:0}.nspp-profile-dialog>p{opacity:.75;margin:0;padding:0 12px 12px;font-size:11px}.post-title .nspp-readonly{vertical-align:middle;border-radius:3px;flex:none;align-items:center;color:#b52b32!important;box-shadow:none!important;background:#cf343410!important;border:0!important;margin-left:5px!important;padding:0 4px!important;font:500 10px/17px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif!important;display:inline-flex!important}.post-title .nspp-pinned{vertical-align:middle;flex:none;margin-left:4px;color:#768390!important;background:0 0!important;border:0!important;border-radius:0!important;width:13px!important;height:13px!important;padding:0!important}.post-title .nspp-pin-wrap{align-items:center;display:inline-flex;box-shadow:none!important;background:0 0!important;border:0!important;padding:0!important}.dark-layout .post-title .nspp-readonly{color:#ff8585!important;background:#ff858514!important}.dark-layout .post-title .nspp-pinned{color:#9198a1!important}.nspp-monitor{color:#1f2328;background:#fff;border:1px solid #818b9840;border-radius:10px;width:min(560px,100vw - 24px);max-height:80dvh;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}.nspp-monitor[open]{flex-direction:column;display:flex}.nspp-monitor *{box-sizing:border-box}.nspp-monitor header,.nspp-monitor footer{flex:none;align-items:center;gap:8px;padding:8px 12px;display:flex}.nspp-monitor header{border-bottom:1px solid #818b9828;justify-content:space-between}.nspp-monitor h3{margin:0;font-size:14px}.nspp-monitor button{min-height:28px;color:inherit;font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:1px solid #818b9838;border-radius:5px;padding:3px 8px}.nspp-monitor button:hover{background:#818b9814}.nspp-monitor button:disabled{opacity:1;cursor:wait}.nspp-monitor>p{opacity:.65;margin:0;padding:6px 12px;font-size:11px}.nspp-monitor-summary{flex-wrap:wrap;align-items:center;gap:2px 10px;display:flex}.nspp-monitor-results:empty{display:none}.nspp-monitor-results{overscroll-behavior:contain;min-height:0;padding:0 12px 8px;overflow:auto}.nspp-monitor-results section+section{border-top:1px solid #818b9828;margin-top:8px;padding-top:4px}.nspp-monitor h4{color:#768390;align-items:center;gap:6px;margin:5px 0;font-size:11px;display:flex}.nspp-monitor h4 small{background:#818b9814;border-radius:8px;padding:0 5px;font-size:10px}.nspp-monitor ul{margin:0;padding:0;list-style:none}.nspp-monitor li{margin:0;padding:4px 0}.nspp-monitor a{color:inherit;text-decoration:none}.nspp-monitor a:hover{color:#0969da;text-decoration:underline}.nspp-monitor section>p{opacity:.55;margin:6px 0;font-size:11px}.nspp-monitor footer{border-top:1px solid #818b9828;flex-wrap:wrap}.nspp-monitor footer span{opacity:.6;flex:1;font-size:10px}.nspp-monitor-tracked{flex-shrink:0;max-height:25dvh;padding:0 12px 8px;overflow:auto}.nspp-monitor-tracked[hidden]{display:none}.nspp-monitor-tracked>div{align-items:center;gap:8px;padding:3px 0;display:flex}.nspp-monitor-tracked a{flex:1;min-width:0}#nspp-tools button[data-unread=true]{color:#cf3434;background:#fff0f0;border-color:#cf3434}.dark-layout .nspp-monitor{color:#e6edf3;background:#161b22}@media (width<=600px){.nspp-monitor{width:100%;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:12px 12px 0 0;margin:auto 0 0}.nspp-monitor button{min-height:34px}}[data-nspp-monitor-match=\"0\"]{background-color:#fff2c9!important}[data-nspp-monitor-match=\"1\"]{background-color:#dff3e7!important}[data-nspp-monitor-match=\"2\"]{background-color:#e2efff!important}[data-nspp-monitor-match=\"3\"]{background-color:#ffe8dc!important}.dark-layout [data-nspp-monitor-match=\"0\"]{background-color:#3c3420!important}.dark-layout [data-nspp-monitor-match=\"1\"]{background-color:#203a2c!important}.dark-layout [data-nspp-monitor-match=\"2\"]{background-color:#23344c!important}.dark-layout [data-nspp-monitor-match=\"3\"]{background-color:#432f26!important}.nspp-monitor header,.nspp-monitor footer,.nspp-monitor-results section+section{border:0}.nspp-monitor-results section+section{margin-top:12px}.nspp-monitor footer{background:#818b980a}#nspp-tools button[data-monitor-state]{position:relative}.nspp-monitor-badge{box-sizing:border-box;border:1px solid var(--bg-color,Canvas);color:#fff;text-align:center;pointer-events:none;background:#cf3434;border-radius:999px;min-width:16px;padding:0 3px;font:600 9px/14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:absolute;top:-6px;right:-6px}.nspp-monitor-badge[hidden]{display:none}#nspp-tools button[data-monitor-state=running]{color:#218044;background:var(--bg-color,Canvas);border-color:#218044}.dark-layout #nspp-tools button[data-monitor-state=running]{color:#70cf91}.nspp-monitor-editor{flex-wrap:wrap;flex:none;align-items:flex-end;gap:6px;padding:4px 12px 8px;display:flex}.nspp-monitor-editor label{min-width:180px;color:inherit;flex:1;font-size:11px}.nspp-monitor-editor textarea{width:100%;color:inherit;font:inherit;resize:vertical;background:#818b9810;border:0;border-radius:6px;max-height:18dvh;margin-top:4px;padding:6px 8px;display:block}.nspp-monitor-editor>span{opacity:.65;flex-basis:100%;font-size:10px}.nspp-monitor-editor>span:empty{display:none}@media (prefers-reduced-motion:reduce){.nspp-monitor[data-checking=true]>p:before{animation:none}}.nspp-monitor-spinner{vertical-align:-2px;border:2px solid #0969da30;border-top-color:#0969da;border-radius:50%;width:10px;height:10px;margin-right:6px;display:inline-block}.nspp-monitor-spinner[hidden]{display:none}.nspp-regex-help{opacity:.65;border:1px solid;border-radius:50%;justify-content:center;align-items:center;width:16px;height:16px;margin-left:6px;font-size:10px;display:inline-flex;text-decoration:none!important}.nspp-regex-help:hover{opacity:1}.nspp-monitor button,.nspp-footprints-dialog button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-monitor button svg,.nspp-footprints-dialog button svg{flex:none;width:13px;height:13px}.nspp-monitor-editor>small{opacity:.65;flex-basis:100%;font-size:10px;line-height:1.6}.nspp-monitor-editor textarea{min-height:56px}.nspp-footprints-dialog{border-radius:10px;width:min(480px,100vw - 24px);padding:8px}.nspp-footprints-dialog header{padding:4px 4px 10px}.nspp-footprints-toolbar{flex-wrap:wrap;align-items:center;gap:6px;padding:4px;display:flex}.nspp-footprints-toolbar [role=status]{opacity:.6;margin-left:auto;font-size:11px}.nspp-footprints-dialog>div:last-child{padding:8px 4px}.nspp-footprints-dialog a{color:inherit;border-radius:4px;padding:4px 6px;text-decoration:none}.nspp-footprints-dialog a:hover{background:#818b9810}.nspp-monitor>header h3{margin-right:auto}.nspp-monitor-config{width:min(420px,100vw - 24px)}.nspp-monitor-config .nspp-monitor-editor{flex-direction:column;align-items:stretch;gap:8px;padding:8px 14px 14px;display:flex;overflow:auto}.nspp-monitor-config .nspp-monitor-editor label{flex:none;min-width:0}.nspp-monitor-config .nspp-monitor-editor textarea{min-height:88px}.nspp-monitor-config input{width:100%;font:inherit;color:inherit;background:#818b9810;border:0;border-radius:6px;margin-top:5px;padding:7px 8px;display:block}.nspp-monitor-config .nspp-monitor-editor>small,.nspp-monitor-config .nspp-monitor-editor>span{flex-basis:auto}.nspp-monitor-config .nspp-monitor-editor>button{align-self:flex-end;min-width:72px}@media (width<=600px){.nspp-monitor-config{border-radius:12px 12px 0 0;width:100%;margin:auto 0 0}}.md-editor .nspp-upload-status{background:0 0;border:0;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:0 6px;font-size:11px;line-height:24px;display:inline-flex}.nspp-upload-status [hidden]{display:none!important}.nspp-upload-status [role=status]{opacity:.7;overflow-wrap:anywhere;font-size:11px}.nspp-upload-status a{color:inherit;font-size:11px;text-decoration:none}.nspp-upload-status a:hover{text-decoration:underline}.nspp-upload-status button{color:inherit;cursor:pointer;background:0 0;border:0;justify-content:center;align-items:center;padding:4px;display:inline-flex}.nspp-upload-status button svg{width:16px;height:16px}.nspp-notifications{box-sizing:border-box;width:100%;min-width:0;font:inherit;flex:0 0 100%;align-items:center;gap:8px;padding:10px 0;display:flex}.nspp-notifications>span{flex-wrap:wrap;flex:1;justify-content:space-between;gap:6px;min-width:0;display:flex}.nspp-notifications :focus-visible{outline-offset:2px;outline:2px solid}.nspp-ai-compose{flex-wrap:wrap;align-items:start;gap:8px;padding:8px;display:flex}.nspp-ai-compose textarea{min-width:180px;color:inherit;background:0 0;border:1px solid #8885;border-radius:6px;flex:1;padding:6px}.nspp-ai-compose small{opacity:.7;width:100%}.nspp-original-notification{display:none!important}.nspp-ecg-shine{display:none}#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{stroke:#8ce9aa;stroke-dasharray:18 118;animation:1.8s linear infinite nspp-ecg-scan;display:block}@keyframes nspp-ecg-scan{0%{stroke-dashoffset:18px}to{stroke-dashoffset:-118px}}@media (prefers-reduced-motion:reduce){#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{animation:none;display:none}}.user-stat .stat-block:has(>.nspp-notification-row)>:has(>.nspp-original-notification:only-child){display:none}.nspp-notifications .nspp-notification-icon{width:1em;height:1em}.nspp-list-actions[hidden]{display:none!important}.nspp-user-hover{z-index:10010;box-sizing:border-box;border:1px solid var(--border-color,#818b9840);background:var(--bg-color,Canvas);width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);color:var(--text-color,CanvasText);border-radius:8px;padding:12px;font:12px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;overflow:auto;box-shadow:0 6px 24px #0002}.nspp-user-hover[hidden]{display:none!important}.nspp-user-hover-name{color:inherit;font-weight:600;text-decoration:none}.nspp-user-hover dl{grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0;display:grid}.nspp-user-hover dt{opacity:.65}.nspp-user-hover dd{font-variant-numeric:tabular-nums;margin:0}.nspp-user-hover>.nspp-block-toggle{font:inherit;color:inherit;background:0 0;border:1px solid #818b9840;border-radius:4px;margin:8px 0 0;padding:4px 8px;display:flex}.nspp-user-hover{border-radius:12px;width:280px;padding:12px;box-shadow:0 12px 36px #0002,0 2px 6px #0001}.nspp-user-hover .nspp-user-hover-header{align-items:center;gap:8px;margin-bottom:10px;display:flex}.nspp-user-hover .nspp-user-hover-header>div{flex-wrap:wrap;align-items:center;gap:6px;min-width:0;display:flex}.nspp-user-hover-name{overflow-wrap:anywhere;font-size:14px}.nspp-user-hover-monogram{color:#0969da;background:#0969da10;border-radius:10px;flex:0 0 36px;place-items:center;height:36px;font-size:18px;font-weight:600;display:grid}.nspp-user-hover .nspp-user-hover-rich{background:#818b9808;border:1px solid #818b9824;border-radius:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:7px 6px;font-size:13px;line-height:22px;display:grid}.nspp-user-hover-rich>div{flex-direction:column;align-items:center;gap:4px;min-width:0;display:flex}.nspp-user-hover-rich small{opacity:.6;font-size:11px;line-height:16px}.nspp-user-hover-rich .iconpark-icon{width:13px;height:13px}.nspp-user-hover-rich .nspp-age{font-weight:600}.nspp-user-hover dl{gap:4px 10px;margin:0}.nspp-user-hover dd{text-align:right;font-weight:500}.nspp-user-hover-note{color:#768390;border-top:1px solid #818b9824;margin:12px 0 0;padding-top:10px;font-size:10px;line-height:1.6}.nspp-user-hover-note[data-tone=danger],.nspp-user-hover-note[data-tone=new]{color:#cf3434}.nspp-user-hover>.nspp-block-toggle{border-radius:6px;justify-content:center;width:100%;margin-top:12px;padding:5px 8px}.nspp-user-hover>.nspp-block-toggle:hover{color:#cf3434;background:#cf343410;border-color:#cf343440}.dark-layout .nspp-user-hover{color:#e6edf3;background:#161b22}.dark-layout .nspp-user-hover-monogram{color:#79b8ff;background:#79b8ff18}.dark-layout .nspp-user-hover-note[data-tone=danger],.dark-layout .nspp-user-hover-note[data-tone=new]{color:#ff8585}.nspp-user-badges[hidden],.nspp-user-hover-tags[hidden]{display:none!important}.nspp-user-hover-tags{flex-wrap:wrap;gap:5px;width:100%;display:flex}.nspp-user-hover-avatar{object-fit:cover;border-radius:10px;flex:0 0 34px;width:34px;height:34px}.nspp-user-hover-avatar[hidden],.nspp-user-hover-monogram[hidden]{display:none!important}.nspp-user-hover-signature{color:inherit;opacity:.7;white-space:pre-wrap;overflow-wrap:anywhere;max-height:5.1em;margin:-2px 0 10px;font-size:11px;line-height:1.7;overflow:auto}.nspp-user-hover[data-trust=danger]{background:#fff3f3;border-color:#e9b9bf}.nspp-user-hover[data-trust=warning]{background:#fff9ed;border-color:#e7d5ae}.nspp-user-hover[data-trust=success]{background:#f0faf4;border-color:#b8ddc5}.nspp-user-hover[data-trust=perfect]{background:#fff8e3;border-color:#ddbc6a}.dark-layout .nspp-user-hover[data-trust=danger]{background:#2b1c22;border-color:#643740}.dark-layout .nspp-user-hover[data-trust=warning]{background:#29251b;border-color:#605234}.dark-layout .nspp-user-hover[data-trust=success]{background:#182820;border-color:#355c45}.dark-layout .nspp-user-hover[data-trust=perfect]{background:#2d2617;border-color:#756031}.nspp-user-hover .nspp-user-hover-header{width:auto;height:auto;min-height:0;box-shadow:none;background:0 0;border:0;padding:0;position:static}.nspp-copy-button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0;border-radius:4px;padding:2px 5px}.nspp-copy-button:hover{background:#818b9820}.nspp-user-hover .nspp-copy-button{opacity:.65;font-size:10px}.nspp-category-actions{white-space:nowrap;flex:none;align-items:center;gap:5px;width:max-content;max-width:none;display:inline-flex}.nspp-category-reply{cursor:pointer;white-space:nowrap;flex:none;margin:0;font-family:inherit;position:static}.nspp-copy-button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-copy-button[data-copied=true]{color:#218044;opacity:1}.nspp-user-hover{width:270px;padding:10px}.nspp-user-hover .nspp-user-hover-header{gap:8px;margin-bottom:8px}.nspp-user-hover .nspp-user-hover-header>div{flex:1}.nspp-user-hover .nspp-user-hover-score{color:#768390;cursor:pointer;background:0 0;border:0;flex-direction:column;flex:none;align-items:center;gap:0;margin:0 0 0 auto;padding:0;display:flex}.nspp-user-hover-score strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font:700 30px/1 -apple-system,BlinkMacSystemFont,sans-serif}.nspp-user-hover-score small{opacity:.75;font-size:9px;line-height:16px}.nspp-user-hover[data-trust=danger] .nspp-user-hover-score{color:#c63849}.nspp-user-hover[data-trust=warning] .nspp-user-hover-score{color:#a66b08}.nspp-user-hover[data-trust=success] .nspp-user-hover-score{color:#218044}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#a56b00}.dark-layout .nspp-user-hover .nspp-user-hover-score{filter:brightness(1.5)}.nspp-user-hover .nspp-user-hover-rich{gap:4px;margin-bottom:8px;padding:5px 4px}.nspp-user-hover-rich>div{gap:2px}.nspp-participation{font-variant-numeric:tabular-nums;font-weight:600}.nspp-user-hover-note{margin-top:8px;padding-top:6px}.nspp-user-hover>.nspp-block-toggle{margin-top:8px;padding:3px 6px}.nspp-user-hover-signature{margin:0 0 8px}.nspp-user-hover[data-trust=perfect],.dark-layout .nspp-user-hover[data-trust=perfect]{color:#eee9df;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:radial-gradient(at 100% 0,#c8a5651c,#0000 65%),linear-gradient(145deg,#26272b,#191a1e);border-color:#ac8e555c;border-radius:12px;padding:12px;box-shadow:inset 0 1px #e8ce9133,0 16px 40px #0004,0 3px 10px #0002}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-header{margin-bottom:12px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-name{color:#f5efe2;font-weight:600}.nspp-user-hover[data-trust=perfect] :is(.nspp-user-hover-avatar,.nspp-user-hover-monogram){outline-offset:2px;border-radius:9px;outline:1px solid #d3b57566}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-monogram{color:#e8ce96;background:#d3b57514}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#ebce91;filter:none}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score strong{letter-spacing:-1.8px;text-shadow:0 2px 14px #d6b46c20;font-size:36px;font-weight:600}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score small{color:#c6b899;opacity:1;font-size:9px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich{background:#d3b57508;border-color:#d3b57526;border-radius:7px;margin-bottom:10px;padding:8px 4px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich>div+div{border-left:1px solid #d3b57520}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich small{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-user-badges :is(.nspp-age,.nspp-level,.nspp-participation){--nspp-badge-color:#e5ce9c;--nspp-age-color:#b9d0be}.nspp-user-hover[data-trust=perfect] .nspp-user-badges .nspp-level[data-level=\"6\"]{background:#d3b57518;box-shadow:inset 0 0 0 1px #d3b57538}.nspp-user-hover[data-trust=perfect] dt{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] dd{color:#eee6d6}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-note{color:#aaa69b;border-color:#d3b57524}.nspp-user-hover[data-trust=perfect] .nspp-copy-button{color:#cabb9c;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-copy-button[data-copied=true]{color:#9cd3ac}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle{color:#c7bcaa;background:0 0;border-color:#d3b57530}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle:hover{color:#ffb4b4;background:#c9787810;border-color:#c978785c}.nspp-user-hover[data-trust=perfect] :focus-visible{outline-offset:2px;outline:2px solid #e8ce96}.nspp-ai-dialog{box-sizing:border-box;width:min(600px,100vw - 32px);max-height:85dvh;color:var(--text-color,#24292f);background:var(--bg-color,#fff);border:1px solid #8884;border-radius:10px;padding:20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 16px 48px #0002}.nspp-ai-dialog.nspp-ai-config{width:min(460px,100vw - 32px)}.nspp-ai-dialog::backdrop{background:#0005}.nspp-ai-dialog .nspp-ai-header{align-items:center;gap:8px;margin-bottom:8px;display:flex}.nspp-ai-dialog h2{margin:0;font-size:16px;font-weight:600;line-height:24px}.nspp-ai-dialog .nspp-ai-hint{opacity:.65;margin:0 0 18px;font-size:12px}.nspp-ai-dialog label{gap:6px;margin-bottom:14px;font-size:12px;font-weight:500;display:grid}.nspp-ai-dialog :is(input,textarea,select){box-sizing:border-box;color:inherit;font:inherit;background:0 0;border:1px solid #8885;border-radius:6px;padding:7px 10px;line-height:20px}.nspp-ai-dialog :is(input,textarea){width:100%}.nspp-ai-dialog textarea{resize:vertical}.nspp-ai-dialog input::placeholder,.nspp-ai-dialog textarea::placeholder{color:inherit;opacity:.4}.nspp-ai-dialog button{appearance:none;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:#8881;border:1px solid #8885;border-radius:6px;padding:5px 12px}.nspp-ai-dialog button:hover{background:#8882}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#fff;background:#24292f;border-color:#24292f}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]):hover{background:#39414a}.nspp-ai-dialog :focus-visible{outline-offset:2px;outline:2px solid #5989ba}.nspp-ai-dialog .nspp-ai-actions{border-top:1px solid #8883;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;display:flex}.nspp-ai-dialog .nspp-ai-compose{gap:8px;padding:12px 0 0}.dark-layout .nspp-ai-dialog{color:#dce1e7;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#202428}.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#24292f;background:#e0e5eb;border-color:#e0e5eb}@media (width<=480px){.nspp-ai-dialog{padding:16px}.nspp-ai-dialog .nspp-ai-compose textarea{min-width:100%}}");
+	function count(value) {
+		if (typeof value !== "number" && !(typeof value === "string" && /^\d+$/.test(value))) return null;
+		const number = Number(value);
+		return Number.isSafeInteger(number) && number >= 0 ? number : null;
+	}
+	function discussionStats(root, postId) {
+		const encoded = root.querySelector("#temp-script")?.textContent?.trim();
+		if (!encoded) throw new Error("帖子数据不可用");
+		const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+		const data = JSON.parse(new TextDecoder().decode(bytes))?.postData;
+		if (!data || String(data.postId) !== postId) throw new Error("帖子数据不匹配");
+		const page = count(data.postPage), lastPage = count(data.postPageCount);
+		const floors = Array.isArray(data.comments) ? data.comments.map((comment) => count(comment?.floorIndex)).filter((floor) => floor !== null) : [];
+		return {
+			views: count(data.views),
+			comments: page && page === lastPage && floors.length ? Math.max(...floors) : null,
+			lastPage: lastPage && lastPage > 0 ? lastPage : null
+		};
+	}
+	var discussionStatsFeature = {
+		id: "discussion-stats",
+		title: "主题帖浏览与评论数",
+		group: "阅读",
+		description: "个人主页主题帖列表显示浏览数和评论数；按可见行加载，每帖最多读取两页，结果缓存 5 分钟。",
+		defaults: { enabled: true },
+		mount(ctx) {
+			if (!/^\/space\/\d+\/?$/.test(location.pathname)) return;
+			const cache = new Map();
+			const pending = new Map();
+			const rows = new Map();
+			let route = "", controller = new AbortController();
+			const active = () => /^#\/discussions(?:\/\d+)?\/?(?:\?.*)?$/.test(location.hash);
+			const read = (href) => {
+				const cached = cache.get(href);
+				if (cached && Date.now() - cached.time < 3e5) return Promise.resolve(cached);
+				const existing = pending.get(href);
+				if (existing) return existing;
+				const signal = controller.signal;
+				const promise = (async () => {
+					const id = href.match(/\/post-(\d+)-1$/)[1];
+					const page = async (url) => discussionStats(new DOMParser().parseFromString(await ctx.request(url, {
+						responseType: "text",
+						signal
+					}), "text/html"), id);
+					const first = await page(href);
+					const counts = {
+						views: first.views,
+						comments: first.comments
+					};
+					if (first.lastPage && first.lastPage > 1) try {
+						counts.comments = (await page(`/post-${id}-${first.lastPage}`)).comments;
+					} catch {
+						if (signal.aborted) throw new Error("读取已取消");
+					}
+					if (signal.aborted || ctx.signal.aborted) throw new Error("读取已取消");
+					if (counts.views !== null && counts.comments !== null) {
+						cache.delete(href);
+						cache.set(href, {
+							...counts,
+							time: Date.now()
+						});
+						if (cache.size > 100) cache.delete(cache.keys().next().value);
+					}
+					return counts;
+				})();
+				pending.set(href, promise);
+				promise.finally(() => {
+					if (pending.get(href) === promise) pending.delete(href);
+				}).catch(() => {});
+				return promise;
+			};
+			const load = async (row) => {
+				const entry = rows.get(row);
+				if (!entry) return;
+				observer.unobserve(row);
+				try {
+					const counts = await read(entry.href);
+					if (ctx.signal.aborted || !row.isConnected || rows.get(row) !== entry || !active()) return;
+					entry.stats.querySelectorAll("[data-count]").forEach((value) => {
+						const key = value.dataset.count;
+						value.parentElement.hidden = counts[key] === null;
+						value.textContent = counts[key] === null ? "" : String(counts[key]);
+						value.parentElement.title = `${key === "views" ? "浏览" : "评论"}：${counts[key]}`;
+					});
+					entry.stats.hidden = counts.views === null && counts.comments === null;
+				} catch {}
+			};
+			const observer = new IntersectionObserver((entries) => {
+				for (const entry of entries) if (entry.isIntersecting) load(entry.target);
+			}, { rootMargin: "200px" });
+			const remove = (row) => {
+				observer.unobserve(row);
+				rows.get(row)?.stats.remove();
+				rows.delete(row);
+				row.classList.remove("nspp-discussion-row");
+			};
+			const scan = () => {
+				if (route !== location.href) {
+					route = location.href;
+					controller.abort();
+					controller = new AbortController();
+					pending.clear();
+					for (const row of rows.keys()) remove(row);
+				}
+				for (const [row, entry] of rows) if (!row.isConnected || postURL(row.querySelector("a")?.href || "", location.origin)?.href !== entry.href) remove(row);
+				if (!active()) return;
+				document.querySelectorAll(".discussion-wrapper > div.discussion-item").forEach((row) => {
+					if (rows.has(row)) return;
+					const url = postURL(row.querySelector("a")?.href || "", location.origin);
+					if (!url) return;
+					const stats = document.createElement("span");
+					stats.className = "nspp-discussion-stats";
+					stats.hidden = true;
+					for (const [key, icon] of [["views", "eyes"], ["comments", "comments"]]) {
+						const item = document.createElement("span");
+						item.hidden = true;
+						const value = document.createElement("span");
+						value.dataset.count = key;
+						item.append(siteIcon(icon), value);
+						stats.append(item);
+					}
+					row.classList.add("nspp-discussion-row");
+					row.append(stats);
+					rows.set(row, {
+						href: url.href,
+						stats
+					});
+					observer.observe(row);
+				});
+			};
+			const stop = ctx.watch(scan);
+			window.addEventListener("hashchange", scan, { signal: ctx.signal });
+			window.addEventListener("popstate", scan, { signal: ctx.signal });
+			return () => {
+				stop();
+				controller.abort();
+				observer.disconnect();
+				for (const row of rows.keys()) remove(row);
+			};
+		}
+	};
+	_css("#nspp-tools{z-index:999;flex-direction:column;align-items:flex-end;gap:.4rem;max-width:min(22rem,75vw);max-height:55dvh;padding:8px 8px 0 0;display:flex;position:fixed;bottom:4rem;right:calc(1rem - 8px);overflow-y:auto}.discussion-wrapper .discussion-item.nspp-discussion-row>a:first-child{overflow-wrap:anywhere;flex:1;min-width:0}.discussion-wrapper .discussion-item.nspp-discussion-row>:not(a:first-child){flex:none;margin-right:0}.discussion-wrapper .nspp-discussion-row>.nspp-discussion-stats{color:#ccc;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;gap:10px;margin:0 0 0 auto;padding-left:12px;font-size:12px;display:inline-flex}.nspp-discussion-stats[hidden],.nspp-discussion-stats>span[hidden]{display:none!important}.nspp-discussion-stats>span{align-items:center;gap:4px;display:inline-flex}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon{color:currentColor;flex:none;width:14px;height:14px}.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon:hover{transform:none}#nspp-tools button,[data-nspp-resolve],.nspp-action{font:inherit;border:1px solid var(--border-color,#929a9380);color:var(--text-color,inherit);background:var(--bg-color,Canvas);cursor:pointer;border-radius:.4rem;padding:.35rem .6rem;font-size:.8rem}#nspp-tools a,[data-nspp-footprints] a{text-underline-offset:.2em}#nspp-tools a:hover,[data-nspp-footprints] a:hover{text-decoration:underline}#nspp-tools button:disabled,.nspp-compose button:disabled{opacity:1;cursor:wait}#nspp-tools :focus-visible{outline-offset:2px;outline:2px solid}@media (prefers-reduced-motion:reduce){[class*=nspp-]{scroll-behavior:auto!important}}.nspp-monitor{border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(42rem,92vw);max-height:85dvh;color:var(--text-color,CanvasText);border-radius:.75rem;padding:1rem;overflow:auto}.nspp-monitor::backdrop{background:#0006}.nspp-monitor ul{padding-left:1.25rem}.nspp-monitor li{overflow-wrap:anywhere;margin:.4rem 0}.nspp-monitor a{text-underline-offset:.2em}.nspp-monitor a:hover{text-decoration:underline}.nspp-block-controls{flex-wrap:wrap;gap:.3rem;margin-left:.4rem;font-size:.75rem;display:inline-flex}.nspp-user-badges{vertical-align:baseline;white-space:nowrap;font-variant-numeric:tabular-nums;flex-wrap:nowrap;align-items:center;gap:5px;margin-inline-start:4px;font:10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.nspp-user-badges>span{white-space:nowrap;background:0 0;border:0;padding:0}.nspp-level{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-age{color:#59636e;cursor:help}.nspp-user-badges button{font:inherit;color:inherit;min-height:0;box-shadow:none;cursor:pointer;background:0 0;border:0;border-radius:2px;padding:0}.nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#59636e);font-weight:600}.nspp-user-badges .nspp-trust:hover{text-underline-offset:3px;text-decoration:underline}.nspp-user-badges button:focus-visible{outline-offset:2px;outline:2px solid #0969da}.nspp-level[data-level=\"0\"]{--nspp-badge-color:#66717e}.nspp-level[data-level=\"2\"]{--nspp-badge-color:#0969da}.nspp-level[data-level=\"3\"]{--nspp-badge-color:#087f8c}.nspp-level[data-level=\"4\"]{--nspp-badge-color:#218044}.nspp-level[data-level=\"5\"]{--nspp-badge-color:#a66b08}.dark-layout .nspp-level,.dark-layout .nspp-user-badges .nspp-trust{color:var(--nspp-badge-color,#9198a1)}.dark-layout .nspp-age{color:#9198a1}.dark-layout .nspp-level[data-level=\"0\"]{--nspp-badge-color:#a3adb8}.dark-layout .nspp-level[data-level=\"2\"]{--nspp-badge-color:#79b8ff}.dark-layout .nspp-level[data-level=\"3\"]{--nspp-badge-color:#56c8ce}.dark-layout .nspp-level[data-level=\"4\"]{--nspp-badge-color:#70cf91}.dark-layout .nspp-level[data-level=\"5\"]{--nspp-badge-color:#dfb653}.nspp-level[data-level=\"1\"],.nspp-trust[data-tier=danger]{--nspp-badge-color:#cf3434}.nspp-trust[data-tier=warning]{--nspp-badge-color:#a66b08}.nspp-trust[data-tier=success]{--nspp-badge-color:#218044}.dark-layout .nspp-level[data-level=\"1\"],.dark-layout .nspp-trust[data-tier=danger]{--nspp-badge-color:#ff8585}.dark-layout .nspp-trust[data-tier=warning]{--nspp-badge-color:#dfb653}.dark-layout .nspp-trust[data-tier=success]{--nspp-badge-color:#70cf91}.nspp-user-badges .nspp-trust[data-tier=perfect]{--nspp-badge-color:#ffe66d;background:#b82025;border-radius:3px;padding:0 4px}.nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#916008;background:#fff3cd;border-radius:3px;padding:0 4px;box-shadow:inset 0 0 0 1px #dfba6266}.dark-layout .nspp-user-badges .nspp-level[data-level=\"6\"]{--nspp-badge-color:#f0ce78;background:#3c321c;box-shadow:inset 0 0 0 1px #dfba6255}.role-tag[data-nspp-role]{color:#2463a0;box-shadow:none;letter-spacing:0;vertical-align:middle;white-space:nowrap;background:#eaf3fc;border:0;border-radius:3px;flex:none;align-items:center;gap:3px;padding:0 5px;font:600 10px/16px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:inline-flex}.role-tag[data-nspp-role]:before{content:\"\";clip-path:polygon(50% 0,95% 17%,88% 65%,50% 100%,12% 65%,5% 17%);background:currentColor;flex:none;width:9px;height:10px}.role-tag[data-nspp-role=founder]{color:#087f78;background:#e5f4ef}.role-tag[data-nspp-role=founder]:before{clip-path:polygon(50% 0,66% 34%,100% 50%,66% 66%,50% 100%,34% 66%,0 50%,34% 34%)}.role-tag[data-nspp-role=owner]{color:#4c596a;background:#eaf0f5}.role-tag[data-nspp-role=owner]:before{clip-path:polygon(0 15%,25% 40%,50% 0,75% 40%,100% 15%,88% 85%,12% 85%)}.dark-layout .role-tag[data-nspp-role=admin]{color:#9ac7f2;background:#23374b}.dark-layout .role-tag[data-nspp-role=founder]{color:#7cd4c1;background:#1e3b35}.dark-layout .role-tag[data-nspp-role=owner]{color:#c1ccd9;background:#303a47}.nspp-history{color:#1f2328;background:#fff;border:1px solid #d1d9e0;border-radius:8px;width:min(640px,100vw - 24px);max-width:none;max-height:80dvh;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;box-shadow:0 8px 28px #1f232833}.nspp-history[open]{flex-direction:column;display:flex}.nspp-history::backdrop{background:#1f232866}.nspp-history *{box-sizing:border-box}.nspp-history header{box-shadow:none;background:0 0;border-bottom:0;flex:none;justify-content:space-between;align-items:center;padding:6px 12px;display:flex}.nspp-history h2{margin:0;font-size:14px;font-weight:600}.nspp-history button{min-height:26px;color:inherit;cursor:pointer;white-space:nowrap;background:#f6f8fa;border:1px solid #d1d9e0;border-radius:5px;padding:2px 8px;font-family:inherit;font-size:12px;line-height:20px}.nspp-history [hidden]{display:none!important}.nspp-history-toolbar{border-bottom:0;flex:none;gap:6px;padding:4px 12px 6px;display:flex}.nspp-history input{width:0;min-width:0;color:inherit;font:inherit;background:0 0;border:1px solid #d1d9e0;border-radius:5px;flex:1;padding:4px 8px}.nspp-history ol{overscroll-behavior:contain;min-height:60px;margin:0;padding:0 12px;list-style:none;overflow-y:auto}.nspp-history li{border:0;align-items:center;gap:8px;margin:0;padding:3px 0;display:flex}.nspp-history li button{background:0 0;border-color:#0000;min-height:24px;padding:1px 6px}.nspp-history li:hover{background:#818b980c}.nspp-history li a{color:#0969da;white-space:nowrap;text-overflow:ellipsis;flex:1;min-width:0;text-decoration:none;overflow:hidden}.nspp-history a:hover{text-underline-offset:2px;text-decoration:underline}.nspp-history time{color:#59636e;flex:none;font-size:11px}.nspp-history :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-history{color:#f0f6fc;background:#0d1117;border-color:#3d444d}.dark-layout .nspp-history header,.dark-layout .nspp-history button{background:#151b23}.dark-layout .nspp-history a{color:#79c0ff}@media (width<=600px){.nspp-history{width:calc(100vw - 16px)}.nspp-history-toolbar{flex-wrap:wrap}.nspp-history time{display:none}}.nspp-block-toggle{vertical-align:middle;color:#59636e;cursor:pointer;background:0 0;border:0;border-radius:4px;min-width:0;margin-left:5px;padding:0 2px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-block-toggle[data-blocked=true]{color:#cf222e;border-color:#ff818280}.nspp-block-toggle:disabled{opacity:1;cursor:wait}.dark-layout .nspp-block-toggle{color:#9198a1;border-color:#3d444d}.nspp-user-badges[aria-busy=true]{color:#59636e;border-radius:4px;min-width:88px;min-height:16px}.nspp-trust-dialog{padding:16px}.nspp-trust-dialog p{white-space:pre-line;line-height:1.8}.nspp-trust-dialog button{align-self:flex-end}.nspp-post-preview{z-index:2147483644;border:1px solid var(--border-color,#929a9380);background:var(--bg-color,Canvas);width:min(340px,100vw - 24px);height:auto;max-height:min(320px,100dvh - 24px);color:var(--text-color,CanvasText);text-align:left;border-radius:6px;flex-direction:column;margin:0;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;overflow:hidden;box-shadow:0 3px 12px #00000018}.nspp-post-preview[hidden]{display:none}.nspp-post-preview header{border-bottom:1px solid #929a9350;flex-shrink:0;align-items:center;gap:8px;padding:5px 8px;font-size:12px;line-height:18px;display:flex;position:static;box-shadow:none!important;text-shadow:none!important}.nspp-post-preview header a{white-space:normal;overflow-wrap:anywhere;min-width:0;color:inherit;flex:1;font-weight:500;text-decoration:none;text-shadow:none!important;box-shadow:none!important}.nspp-post-preview button{width:20px;height:20px;min-height:0;color:inherit;cursor:pointer;background:0 0;border:0;border-radius:3px;flex:none;padding:0;font:16px/18px Arial,sans-serif}.nspp-post-preview>p{margin:0;padding:5px 8px;font-size:11px}.nspp-post-preview>p:empty{display:none}.nspp-preview-content{overscroll-behavior:contain;overflow-wrap:anywhere;flex:0 auto;min-height:0;padding:7px 8px;font-size:12px;line-height:1.5;overflow:auto}.nspp-preview-meta{opacity:.65;margin-bottom:5px;font-size:11px}.nspp-preview-content img{object-fit:contain;width:auto;max-width:100%;height:auto;max-height:120px}.nspp-preview-content pre{background:#818b9814;border-radius:6px;padding:6px;overflow:auto}.nspp-preview-content blockquote{border-left:3px solid #818b9850;margin:6px 0;padding-left:8px}.nspp-preview-content table{max-width:100%;display:block;overflow:auto}.nspp-preview-content h3{margin:6px 0;font-size:12px}.nspp-preview-comment{border-top:1px solid #818b9830;padding:6px 0}.nspp-preview-comment>strong{font-size:12px}.nspp-post-preview footer{background:0 0;border-top:1px solid #818b9830;flex-shrink:0;padding:4px 8px;font-size:11px;line-height:16px}.nspp-post-preview footer a,.nspp-preview-content a{color:var(--link-color,#0969da)}.nspp-preview-content article>:first-child{margin-top:0}.nspp-preview-content article>:last-child{margin-bottom:0}.nspp-post-preview,.nspp-post-preview *{box-sizing:border-box}.nspp-preview-content p{font-size:inherit;line-height:inherit;margin:5px 0}.nspp-preview-content :is(ul,ol){margin:5px 0;padding-left:18px}.nspp-preview-content :is(h1,h2,h4){margin:6px 0;font-size:13px;line-height:1.5}.nspp-post-preview button:hover{background:#818b981a}.nspp-post-preview footer a{color:inherit;opacity:.7;text-decoration:none}.nspp-post-preview footer a:hover{opacity:1;text-decoration:underline}.nspp-meta-label{opacity:.6;font-size:10px}.nspp-user-badges :is(.nspp-level,.nspp-age,.nspp-trust){align-items:center;gap:3px;display:inline-flex}.nspp-user-badges .iconpark-icon{flex:none;width:11px;height:11px}.nspp-list-actions{white-space:nowrap;color:var(--text-color,#777);flex-wrap:nowrap;align-items:center;gap:12px;padding-top:5px;font:11px/18px -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;overflow-x:auto}.nspp-list-actions button{color:inherit;font:inherit;cursor:pointer;opacity:.75;background:0 0;border:0;border-radius:0;align-items:center;gap:4px;margin:0;padding:0;display:inline-flex}.nspp-list-actions .iconpark-icon{width:13px;height:13px}.nspp-interaction{background:var(--bg-color,Canvas);color:var(--text-color,CanvasText);border:1px solid #818b9840;border-radius:6px;margin:4px 0 12px 52px;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;list-style:none}.nspp-interaction[hidden],.nspp-interaction form[hidden]{display:none!important}.nspp-interaction header{border-bottom:1px solid #818b9820;align-items:center;gap:8px;padding:6px 10px;display:flex}.nspp-interaction header a{white-space:nowrap;text-overflow:ellipsis;min-width:0;color:inherit;flex:1;overflow:hidden}.nspp-interaction button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0}.nspp-interaction header button{font-size:18px}.nspp-interaction p{margin:0;padding:6px 10px;font-size:11px}.nspp-interaction p:empty{display:none}.nspp-interaction form{padding:8px 10px}.nspp-interaction textarea{box-sizing:border-box;resize:vertical;width:100%;min-height:84px;max-height:240px;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:4px;padding:8px;display:block}.nspp-reply-actions{justify-content:space-between;align-items:center;gap:8px;margin-top:6px;display:flex}.nspp-reply-actions span{opacity:.6;font-size:10px}.nspp-reply-actions button{color:#fff;background:#238636;border-radius:4px;padding:3px 10px}.nspp-reply-actions button:disabled{opacity:.4;cursor:default}@media (width<=600px){.nspp-interaction{margin-left:0}.nspp-list-actions{gap:8px}}.nspp-list-actions [hidden]{display:none!important}.nspp-block-toggle{align-items:center;gap:3px;display:inline-flex}.nspp-block-toggle .iconpark-icon{width:11px;height:11px}.nspp-block-toggle[hidden],#nspp-tools button[hidden]{display:none!important}.nspp-action-category{color:inherit;opacity:.65;flex:none;margin-left:auto;text-decoration:none}.nspp-action-category:hover{text-underline-offset:3px;text-decoration:underline}.nspp-list-actions button{flex-shrink:0}.nspp-post-preview footer .nspp-list-actions{gap:10px;padding:2px 0 5px}.nspp-post-preview footer .nspp-list-actions button{width:auto;height:auto;font:inherit;line-height:18px}.nspp-post-preview footer .nspp-list-actions button:hover{text-underline-offset:3px;background:0 0;text-decoration:underline}.nspp-post-preview::backdrop{background:#0006}@media (width<=600px),(hover:none){.nspp-post-preview{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;inset:auto 0 0}.nspp-post-preview header{padding:10px 16px;font-size:14px}.nspp-post-preview header a{white-space:normal}.nspp-post-preview button{width:40px;height:40px;font-size:22px}.nspp-preview-content{padding:12px 16px;font-size:14px;line-height:1.7}.nspp-post-preview footer{padding:12px 16px;font-size:13px}.nspp-post-preview footer a{padding:8px 0;display:block}}.nspp-count-loading{flex:none;font-size:10px}.nspp-quick-replies{box-sizing:border-box;background:var(--bg-color,Canvas);width:min(440px,100vw - 24px);max-height:85dvh;color:var(--text-color,CanvasText);border:1px solid #818b9838;border-radius:12px;margin:auto;padding:0;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:hidden;box-shadow:0 16px 60px #0003}.nspp-quick-replies[open]{flex-direction:column;display:flex}.nspp-quick-replies::backdrop{background:#0005}.nspp-quick-replies [hidden]{display:none!important}.nspp-quick-head,.nspp-quick-pagination{color:inherit;background:0 0;flex:none;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;display:flex}.nspp-quick-head strong{font-size:14px}.nspp-quick-replies button{font:inherit;color:inherit;cursor:pointer;min-height:28px;box-shadow:none;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:4px 8px}.nspp-quick-replies button:hover:not(:disabled){background:#818b9814}.nspp-quick-replies :is(button,input,textarea):focus-visible{outline:2px solid var(--link-color,#0969da);outline-offset:2px}.nspp-quick-replies button:disabled{opacity:.4;cursor:default}.nspp-quick-head button{border:0;width:28px;padding:0;font-size:18px}.nspp-quick-replies p{margin:0}.nspp-quick-replies .nspp-quick-target{white-space:nowrap;text-overflow:ellipsis;opacity:.65;flex:none;padding:0 12px 6px;font-size:12px;overflow:hidden}.nspp-quick-toolbar{flex:none;gap:6px;padding:2px 12px 8px;display:flex}.nspp-quick-replies input,.nspp-quick-replies textarea{box-sizing:border-box;min-width:0;font:inherit;color:inherit;background:0 0;border:1px solid #818b9850;border-radius:6px;padding:5px 8px}.nspp-quick-toolbar input{flex:1;width:0}.nspp-quick-replies .nspp-quick-primary{color:var(--link-color,#0969da);background:#0969da0c;border-color:#0969da40;flex:none}.nspp-quick-list{overscroll-behavior:contain;min-height:0;padding:0 12px;overflow-y:auto}.nspp-quick-item{border-bottom:1px solid #818b9820;align-items:center;gap:4px;padding:2px 0;display:flex}.nspp-quick-item:last-child{border-bottom:0}.nspp-quick-item .nspp-quick-send{text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;border:0;flex:1;min-width:0;min-height:30px;padding:4px 6px}.nspp-quick-item button:not(.nspp-quick-send){border-color:#0000;flex:none;padding:4px 6px;font-size:11px}.nspp-quick-item .nspp-quick-delete:hover:not(:disabled){color:#cf3434;background:#cf343410}.nspp-quick-list>p{text-align:center;opacity:.6;padding:16px 6px}.nspp-quick-replies form{border-top:1px solid #818b9830;flex:none;padding:8px 12px}.nspp-quick-replies form button+button{margin-left:8px}.nspp-quick-replies textarea{resize:vertical;width:100%;max-height:22dvh;margin-bottom:8px;display:block}.nspp-quick-pagination{border-top:1px solid #818b9830;padding-top:6px;padding-bottom:6px;font-size:11px}.nspp-quick-replies .nspp-quick-status{opacity:.65;flex:none;padding:0 12px 6px;font-size:11px}@media (width<=600px){.nspp-quick-replies{width:100%;max-width:none;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:14px 14px 0 0;margin:auto 0 0}.nspp-quick-replies button{min-height:34px}}#nspp-tools .nspp-tool-icon{flex:none;justify-content:center;align-items:center;width:34px;height:34px;padding:0;display:inline-flex}.nspp-user-badges .nspp-age,.nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#59636e)}.nspp-age[data-tone=new]{--nspp-age-color:#cf3434}.nspp-age[data-tone=recent]{--nspp-age-color:#a66b08}.nspp-age[data-tone=member]{--nspp-age-color:#0969da}.nspp-age[data-tone=longtime]{--nspp-age-color:#218044}.dark-layout .nspp-age[data-tone=new]{--nspp-age-color:#ff8585}.dark-layout .nspp-age[data-tone=recent]{--nspp-age-color:#dfb653}.dark-layout .nspp-age[data-tone=member]{--nspp-age-color:#79b8ff}.dark-layout .nspp-age[data-tone=longtime]{--nspp-age-color:#70cf91}.dark-layout .nspp-user-badges .nspp-age,.dark-layout .nspp-profile-dialog .nspp-age{color:var(--nspp-age-color,#9198a1)}.nspp-user-badges button.nspp-age{cursor:pointer}.nspp-user-badges button.nspp-age:hover{text-underline-offset:3px;text-decoration:underline}.nspp-profile-dialog{width:min(320px,100vw - 24px)}.nspp-profile-dialog header{justify-content:space-between;padding:10px 12px}.nspp-profile-summary{align-items:baseline;gap:8px;padding:4px 12px 10px;display:flex}.nspp-profile-summary strong{font-variant-numeric:tabular-nums;font-size:22px;line-height:1.3}.nspp-profile-summary span{font-size:11px}.nspp-profile-dialog dl{border-top:1px solid #818b9830;grid-template-columns:1fr auto;gap:6px 12px;margin:0;padding:10px 12px;display:grid}.nspp-profile-dialog dt{opacity:.65}.nspp-profile-dialog dd{font-variant-numeric:tabular-nums;margin:0}.nspp-profile-dialog>p{opacity:.75;margin:0;padding:0 12px 12px;font-size:11px}.post-title .nspp-readonly{vertical-align:middle;border-radius:3px;flex:none;align-items:center;color:#b52b32!important;box-shadow:none!important;background:#cf343410!important;border:0!important;margin-left:5px!important;padding:0 4px!important;font:500 10px/17px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif!important;display:inline-flex!important}.post-title .nspp-pinned{vertical-align:middle;flex:none;margin-left:4px;color:#768390!important;background:0 0!important;border:0!important;border-radius:0!important;width:13px!important;height:13px!important;padding:0!important}.post-title .nspp-pin-wrap{align-items:center;display:inline-flex;box-shadow:none!important;background:0 0!important;border:0!important;padding:0!important}.dark-layout .post-title .nspp-readonly{color:#ff8585!important;background:#ff858514!important}.dark-layout .post-title .nspp-pinned{color:#9198a1!important}.nspp-monitor{color:#1f2328;background:#fff;border:1px solid #818b9840;border-radius:10px;width:min(560px,100vw - 24px);max-height:80dvh;padding:0;font:12px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}.nspp-monitor[open]{flex-direction:column;display:flex}.nspp-monitor *{box-sizing:border-box}.nspp-monitor header,.nspp-monitor footer{flex:none;align-items:center;gap:8px;padding:8px 12px;display:flex}.nspp-monitor header{border-bottom:1px solid #818b9828;justify-content:space-between}.nspp-monitor h3{margin:0;font-size:14px}.nspp-monitor button{min-height:28px;color:inherit;font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:1px solid #818b9838;border-radius:5px;padding:3px 8px}.nspp-monitor button:hover{background:#818b9814}.nspp-monitor button:disabled{opacity:1;cursor:wait}.nspp-monitor>p{opacity:.65;margin:0;padding:6px 12px;font-size:11px}.nspp-monitor-summary{flex-wrap:wrap;align-items:center;gap:2px 10px;display:flex}.nspp-monitor-results:empty{display:none}.nspp-monitor-results{overscroll-behavior:contain;min-height:0;padding:0 12px 8px;overflow:auto}.nspp-monitor-results section+section{border-top:1px solid #818b9828;margin-top:8px;padding-top:4px}.nspp-monitor h4{color:#768390;align-items:center;gap:6px;margin:5px 0;font-size:11px;display:flex}.nspp-monitor h4 small{background:#818b9814;border-radius:8px;padding:0 5px;font-size:10px}.nspp-monitor ul{margin:0;padding:0;list-style:none}.nspp-monitor li{margin:0;padding:4px 0}.nspp-monitor a{color:inherit;text-decoration:none}.nspp-monitor a:hover{color:#0969da;text-decoration:underline}.nspp-monitor section>p{opacity:.55;margin:6px 0;font-size:11px}.nspp-monitor footer{border-top:1px solid #818b9828;flex-wrap:wrap}.nspp-monitor footer span{opacity:.6;flex:1;font-size:10px}.nspp-monitor-tracked{flex-shrink:0;max-height:25dvh;padding:0 12px 8px;overflow:auto}.nspp-monitor-tracked[hidden]{display:none}.nspp-monitor-tracked>div{align-items:center;gap:8px;padding:3px 0;display:flex}.nspp-monitor-tracked a{flex:1;min-width:0}#nspp-tools button[data-unread=true]{color:#cf3434;background:#fff0f0;border-color:#cf3434}.dark-layout .nspp-monitor{color:#e6edf3;background:#161b22}@media (width<=600px){.nspp-monitor{width:100%;max-height:85dvh;padding-bottom:env(safe-area-inset-bottom);border-radius:12px 12px 0 0;margin:auto 0 0}.nspp-monitor button{min-height:34px}}[data-nspp-monitor-match=\"0\"]{background-color:#fff2c9!important}[data-nspp-monitor-match=\"1\"]{background-color:#dff3e7!important}[data-nspp-monitor-match=\"2\"]{background-color:#e2efff!important}[data-nspp-monitor-match=\"3\"]{background-color:#ffe8dc!important}.dark-layout [data-nspp-monitor-match=\"0\"]{background-color:#3c3420!important}.dark-layout [data-nspp-monitor-match=\"1\"]{background-color:#203a2c!important}.dark-layout [data-nspp-monitor-match=\"2\"]{background-color:#23344c!important}.dark-layout [data-nspp-monitor-match=\"3\"]{background-color:#432f26!important}.nspp-monitor header,.nspp-monitor footer,.nspp-monitor-results section+section{border:0}.nspp-monitor-results section+section{margin-top:12px}.nspp-monitor footer{background:#818b980a}#nspp-tools button[data-monitor-state]{position:relative}.nspp-monitor-badge{box-sizing:border-box;border:1px solid var(--bg-color,Canvas);color:#fff;text-align:center;pointer-events:none;background:#cf3434;border-radius:999px;min-width:16px;padding:0 3px;font:600 9px/14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:absolute;top:-6px;right:-6px}.nspp-monitor-badge[hidden]{display:none}#nspp-tools button[data-monitor-state=running]{color:#218044;background:var(--bg-color,Canvas);border-color:#218044}.dark-layout #nspp-tools button[data-monitor-state=running]{color:#70cf91}.nspp-monitor-editor{flex-wrap:wrap;flex:none;align-items:flex-end;gap:6px;padding:4px 12px 8px;display:flex}.nspp-monitor-editor label{min-width:180px;color:inherit;flex:1;font-size:11px}.nspp-monitor-editor textarea{width:100%;color:inherit;font:inherit;resize:vertical;background:#818b9810;border:0;border-radius:6px;max-height:18dvh;margin-top:4px;padding:6px 8px;display:block}.nspp-monitor-editor>span{opacity:.65;flex-basis:100%;font-size:10px}.nspp-monitor-editor>span:empty{display:none}@media (prefers-reduced-motion:reduce){.nspp-monitor[data-checking=true]>p:before{animation:none}}.nspp-monitor-spinner{vertical-align:-2px;border:2px solid #0969da30;border-top-color:#0969da;border-radius:50%;width:10px;height:10px;margin-right:6px;display:inline-block}.nspp-monitor-spinner[hidden]{display:none}.nspp-regex-help{opacity:.65;border:1px solid;border-radius:50%;justify-content:center;align-items:center;width:16px;height:16px;margin-left:6px;font-size:10px;display:inline-flex;text-decoration:none!important}.nspp-regex-help:hover{opacity:1}.nspp-monitor button,.nspp-footprints-dialog button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-monitor button svg,.nspp-footprints-dialog button svg{flex:none;width:13px;height:13px}.nspp-monitor-editor>small{opacity:.65;flex-basis:100%;font-size:10px;line-height:1.6}.nspp-monitor-editor textarea{min-height:56px}.nspp-footprints-dialog{border-radius:10px;width:min(480px,100vw - 24px);padding:8px}.nspp-footprints-dialog header{padding:4px 4px 10px}.nspp-footprints-toolbar{flex-wrap:wrap;align-items:center;gap:6px;padding:4px;display:flex}.nspp-footprints-toolbar [role=status]{opacity:.6;margin-left:auto;font-size:11px}.nspp-footprints-dialog>div:last-child{padding:8px 4px}.nspp-footprints-dialog a{color:inherit;border-radius:4px;padding:4px 6px;text-decoration:none}.nspp-footprints-dialog a:hover{background:#818b9810}.nspp-monitor>header h3{margin-right:auto}.nspp-monitor-config{width:min(420px,100vw - 24px)}.nspp-monitor-config .nspp-monitor-editor{flex-direction:column;align-items:stretch;gap:8px;padding:8px 14px 14px;display:flex;overflow:auto}.nspp-monitor-config .nspp-monitor-editor label{flex:none;min-width:0}.nspp-monitor-config .nspp-monitor-editor textarea{min-height:88px}.nspp-monitor-config input{width:100%;font:inherit;color:inherit;background:#818b9810;border:0;border-radius:6px;margin-top:5px;padding:7px 8px;display:block}.nspp-monitor-config .nspp-monitor-editor>small,.nspp-monitor-config .nspp-monitor-editor>span{flex-basis:auto}.nspp-monitor-config .nspp-monitor-editor>button{align-self:flex-end;min-width:72px}@media (width<=600px){.nspp-monitor-config{border-radius:12px 12px 0 0;width:100%;margin:auto 0 0}}.md-editor .nspp-upload-status{background:0 0;border:0;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto;padding:0 6px;font-size:11px;line-height:24px;display:inline-flex}.nspp-upload-status [hidden]{display:none!important}.nspp-upload-status [role=status]{opacity:.7;overflow-wrap:anywhere;font-size:11px}.nspp-upload-status a{color:inherit;font-size:11px;text-decoration:none}.nspp-upload-status a:hover{text-decoration:underline}.nspp-upload-status button{color:inherit;cursor:pointer;background:0 0;border:0;justify-content:center;align-items:center;padding:4px;display:inline-flex}.nspp-upload-status button svg{width:16px;height:16px}.nspp-ai-compose{flex-wrap:wrap;align-items:start;gap:8px;padding:8px;display:flex}.nspp-ai-compose textarea{min-width:180px;color:inherit;background:0 0;border:1px solid #8885;border-radius:6px;flex:1;padding:6px}.nspp-ai-compose small{opacity:.7;width:100%}.nspp-original-notification{display:none!important}.nspp-ecg-shine{display:none}#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{stroke:#8ce9aa;stroke-dasharray:18 118;animation:1.8s linear infinite nspp-ecg-scan;display:block}@keyframes nspp-ecg-scan{0%{stroke-dashoffset:18px}to{stroke-dashoffset:-118px}}@media (prefers-reduced-motion:reduce){#nspp-tools button[data-monitor-state=running] .nspp-ecg-shine{animation:none;display:none}}.user-stat .stat-block:has(>.nspp-notification-row)>:has(>.nspp-original-notification:only-child){display:none}.nspp-list-actions[hidden]{display:none!important}.nspp-user-hover{z-index:10010;box-sizing:border-box;border:1px solid var(--border-color,#818b9840);background:var(--bg-color,Canvas);width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);color:var(--text-color,CanvasText);border-radius:8px;padding:12px;font:12px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;overflow:auto;box-shadow:0 6px 24px #0002}.nspp-user-hover[hidden]{display:none!important}.nspp-user-hover-name{color:inherit;font-weight:600;text-decoration:none}.nspp-user-hover dl{grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0;display:grid}.nspp-user-hover dt{opacity:.65}.nspp-user-hover dd{font-variant-numeric:tabular-nums;margin:0}.nspp-user-hover>.nspp-block-toggle{font:inherit;color:inherit;background:0 0;border:1px solid #818b9840;border-radius:4px;margin:8px 0 0;padding:4px 8px;display:flex}.nspp-user-hover{border-radius:12px;width:280px;padding:12px;box-shadow:0 12px 36px #0002,0 2px 6px #0001}.nspp-user-hover .nspp-user-hover-header{align-items:center;gap:8px;margin-bottom:10px;display:flex}.nspp-user-hover .nspp-user-hover-header>div{flex-wrap:wrap;align-items:center;gap:6px;min-width:0;display:flex}.nspp-user-hover-name{overflow-wrap:anywhere;font-size:13px}.nspp-user-hover-monogram{color:#0969da;background:#0969da10;border-radius:10px;flex:0 0 36px;place-items:center;height:36px;font-size:18px;font-weight:600;display:grid}.nspp-user-hover .nspp-user-hover-rich{background:#818b9808;border:1px solid #818b9824;border-radius:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:7px 6px;font-size:13px;line-height:22px;display:grid}.nspp-user-hover-rich>div{flex-direction:column;align-items:center;gap:4px;min-width:0;display:flex}.nspp-user-hover-rich small{opacity:.6;font-size:11px;line-height:16px}.nspp-user-hover-rich .iconpark-icon{width:13px;height:13px}.nspp-user-hover-rich .nspp-age{font-weight:600}.nspp-user-hover dl{gap:4px 10px;margin:0}.nspp-user-hover dd{text-align:right;font-weight:500}.nspp-user-hover>.nspp-block-toggle{border-radius:6px;justify-content:center;width:100%;margin-top:12px;padding:5px 8px}.nspp-user-hover>.nspp-block-toggle:hover{color:#cf3434;background:#cf343410;border-color:#cf343440}.dark-layout .nspp-user-hover{color:#e6edf3;background:#161b22}.dark-layout .nspp-user-hover-monogram{color:#79b8ff;background:#79b8ff18}.nspp-user-badges[hidden],.nspp-user-hover-tags[hidden]{display:none!important}.nspp-user-hover-tags{flex-wrap:wrap;gap:5px;width:100%;display:flex}.nspp-user-hover-avatar{object-fit:cover;border-radius:10px;flex:0 0 32px;width:32px;height:32px}.nspp-user-hover-avatar[hidden],.nspp-user-hover-monogram[hidden]{display:none!important}.nspp-user-hover-signature{color:inherit;opacity:.7;white-space:pre-wrap;overflow-wrap:anywhere;max-height:5.1em;margin:-2px 0 10px;font-size:11px;line-height:1.7;overflow:auto}.nspp-user-hover[data-trust=danger]{background:#fff3f3;border-color:#e9b9bf}.nspp-user-hover[data-trust=warning]{background:#fff9ed;border-color:#e7d5ae}.nspp-user-hover[data-trust=success]{background:#f0faf4;border-color:#b8ddc5}.nspp-user-hover[data-trust=perfect]{background:#fff8e3;border-color:#ddbc6a}.dark-layout .nspp-user-hover[data-trust=danger]{background:#2b1c22;border-color:#643740}.dark-layout .nspp-user-hover[data-trust=warning]{background:#29251b;border-color:#605234}.dark-layout .nspp-user-hover[data-trust=success]{background:#182820;border-color:#355c45}.dark-layout .nspp-user-hover[data-trust=perfect]{background:#2d2617;border-color:#756031}.nspp-user-hover .nspp-user-hover-header{width:auto;height:auto;min-height:0;box-shadow:none;background:0 0;border:0;padding:0;position:static}.nspp-copy-button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0;border-radius:4px;padding:2px 5px}.nspp-copy-button:hover{background:#818b9820}.nspp-user-hover .nspp-copy-button{opacity:.65;font-size:10px}.nspp-category-actions{white-space:nowrap;flex:none;align-items:center;gap:5px;width:max-content;max-width:none;display:inline-flex}.nspp-category-reply{cursor:pointer;white-space:nowrap;flex:none;margin:0;font-family:inherit;position:static}.nspp-copy-button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-copy-button[data-copied=true]{color:#218044;opacity:1}.nspp-user-hover{width:260px;padding:9px;line-height:1.45}.nspp-user-hover .nspp-user-hover-header{gap:7px;margin-bottom:5px}.nspp-user-hover .nspp-user-hover-header>div{flex:1}.nspp-user-hover .nspp-user-hover-score{color:#768390;cursor:pointer;background:0 0;border:0;flex-direction:column;flex:none;align-items:center;gap:0;margin:0 0 0 auto;padding:0;display:flex}.nspp-user-hover-score strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font:700 26px/1 -apple-system,BlinkMacSystemFont,sans-serif}.nspp-user-hover-score small{opacity:.75;font-size:9px;line-height:16px}.nspp-user-hover[data-trust=danger] .nspp-user-hover-score{color:#c63849}.nspp-user-hover[data-trust=warning] .nspp-user-hover-score{color:#a66b08}.nspp-user-hover[data-trust=success] .nspp-user-hover-score{color:#218044}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#a56b00}.dark-layout .nspp-user-hover .nspp-user-hover-score{filter:brightness(1.5)}.nspp-user-hover dl{border-block:1px solid #818b9824;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 10px;padding:6px 0}.nspp-user-hover dl>div{justify-content:space-between;align-items:baseline;gap:6px;min-width:0;display:flex}.nspp-user-hover dt{opacity:.7;flex:none;align-items:center;gap:4px;font-size:11px;display:inline-flex}.nspp-user-hover dt .iconpark-icon{width:13px;height:13px}.nspp-user-hover dd{overflow-wrap:anywhere;min-width:0;font-size:12px}.nspp-user-hover .nspp-user-hover-rich{background:0 0;border:0;border-radius:0;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px 6px;margin:0;padding:5px 0 0;font-size:10px;line-height:18px;display:flex}.nspp-user-hover .nspp-user-hover-rich .nspp-age{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;gap:3px;padding:1px 4px;font-size:10px;font-weight:400}.nspp-user-hover .nspp-user-hover-rich .nspp-age strong{font-weight:700}.nspp-user-hover dd.nspp-user-badges{margin:0}.nspp-user-hover dd .nspp-level{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;padding:0 4px;font-size:11px;line-height:17px}.nspp-user-hover .nspp-user-hover-rich .iconpark-icon{width:11px;height:11px;display:inline-block}.nspp-user-hover-rich>span{opacity:.65}.nspp-user-hover>.nspp-block-toggle{margin-top:8px;padding:3px 6px}.nspp-user-hover-signature{color:#8d7832;opacity:1;max-height:3em;margin:0 0 5px;line-height:1.5}.dark-layout .nspp-user-hover-signature,.nspp-user-hover[data-trust=perfect] .nspp-user-hover-signature{color:#cdbb87}.nspp-user-hover-actions{gap:4px;margin-top:6px;display:flex}.nspp-user-hover-actions[hidden]{display:none!important}.nspp-user-hover-actions>:is(a,button){box-sizing:border-box;min-width:0;color:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:6px;flex:1;justify-content:center;align-items:center;gap:3px;margin:0;padding:3px;font-family:inherit;font-size:11px;line-height:18px;text-decoration:none;display:inline-flex}.nspp-user-hover-actions .iconpark-icon{width:12px;height:12px}.nspp-user-hover-actions>[data-action=transfer]{color:#fff;background:#218044}.nspp-user-hover-actions>[data-action=follow]{color:#fff;background:#0969da}.nspp-user-hover-actions>[data-action=message]{color:#fff;background:#8250df}.nspp-user-hover-actions>.nspp-block-toggle{color:#fff;background:#cf3434}.nspp-user-hover-actions>:hover{filter:brightness(.9)}.nspp-user-hover-actions>:disabled{opacity:.5;cursor:wait}.nspp-user-transfer{width:min(340px,100vw - 32px)}.nspp-user-transfer form{gap:12px;display:grid}.nspp-user-transfer label{gap:6px;display:grid}.nspp-user-transfer input{box-sizing:border-box;width:100%;color:inherit;font:inherit;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:8px}.nspp-user-transfer [role=status]{overflow-wrap:anywhere;margin:0;font-size:12px}.nspp-user-transfer [role=status]:empty{display:none}.nspp-transfer-actions{justify-content:flex-end;gap:8px;display:flex}.nspp-user-hover[data-trust=perfect],.dark-layout .nspp-user-hover[data-trust=perfect]{color:#eee9df;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:radial-gradient(at 100% 0,#c8a5651c,#0000 65%),linear-gradient(145deg,#26272b,#191a1e);border-color:#ac8e555c;border-radius:10px;padding:9px;box-shadow:inset 0 1px #e8ce9133,0 16px 40px #0004,0 3px 10px #0002}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-header{margin-bottom:5px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-name{color:#f5efe2;font-weight:600}.nspp-user-hover[data-trust=perfect] :is(.nspp-user-hover-avatar,.nspp-user-hover-monogram){outline-offset:2px;border-radius:9px;outline:1px solid #d3b57566}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-monogram{color:#e8ce96;background:#d3b57514}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#ebce91;filter:none}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score strong{letter-spacing:-1px;text-shadow:0 2px 14px #d6b46c20;font-size:26px;font-weight:600}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score small{color:#c6b899;opacity:1;font-size:9px}.nspp-user-hover[data-trust=perfect] dl{border-color:#d3b57526}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich small{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-user-badges :is(.nspp-age,.nspp-level){--nspp-badge-color:#e5ce9c;--nspp-age-color:#b9d0be}.nspp-user-hover[data-trust=perfect] .nspp-user-badges .nspp-level[data-level=\"6\"]{background:#d3b57518;box-shadow:inset 0 0 0 1px #d3b57538}.nspp-user-hover[data-trust=perfect] dt{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] dd{color:#eee6d6}.nspp-user-hover[data-trust=perfect] .nspp-copy-button{color:#cabb9c;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-copy-button[data-copied=true]{color:#9cd3ac}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle{color:#c7bcaa;background:0 0;border-color:#d3b57530}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle:hover{color:#ffb4b4;background:#c9787810;border-color:#c978785c}.nspp-user-hover[data-trust=perfect] :focus-visible{outline-offset:2px;outline:2px solid #e8ce96}.nspp-ai-dialog{box-sizing:border-box;width:min(600px,100vw - 32px);max-height:85dvh;color:var(--text-color,#24292f);background:var(--bg-color,#fff);border:1px solid #8884;border-radius:10px;padding:20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 16px 48px #0002}.nspp-ai-dialog.nspp-ai-config{width:min(460px,100vw - 32px)}.nspp-ai-dialog::backdrop{background:#0005}.nspp-ai-dialog .nspp-ai-header{align-items:center;gap:8px;margin-bottom:8px;display:flex}.nspp-ai-dialog h2{margin:0;font-size:16px;font-weight:600;line-height:24px}.nspp-ai-dialog .nspp-ai-hint{opacity:.65;margin:0 0 18px;font-size:12px}.nspp-ai-dialog label{gap:6px;margin-bottom:14px;font-size:12px;font-weight:500;display:grid}.nspp-ai-dialog :is(input,textarea,select){box-sizing:border-box;color:inherit;font:inherit;background:0 0;border:1px solid #8885;border-radius:6px;padding:7px 10px;line-height:20px}.nspp-ai-dialog :is(input,textarea){width:100%}.nspp-ai-dialog textarea{resize:vertical}.nspp-ai-dialog input::placeholder,.nspp-ai-dialog textarea::placeholder{color:inherit;opacity:.4}.nspp-ai-dialog button{appearance:none;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:#8881;border:1px solid #8885;border-radius:6px;padding:5px 12px}.nspp-ai-dialog button:hover{background:#8882}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#fff;background:#24292f;border-color:#24292f}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]):hover{background:#39414a}.nspp-ai-dialog :focus-visible{outline-offset:2px;outline:2px solid #5989ba}.nspp-ai-dialog .nspp-ai-actions{border-top:1px solid #8883;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;display:flex}.nspp-ai-dialog .nspp-ai-compose{gap:8px;padding:12px 0 0}.dark-layout .nspp-ai-dialog{color:#dce1e7;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#202428}.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#24292f;background:#e0e5eb;border-color:#e0e5eb}@media (width<=480px){.nspp-ai-dialog{padding:16px}.nspp-ai-dialog .nspp-ai-compose textarea{min-width:100%}}.nspp-history .nspp-history-day{color:#768390;justify-content:space-between;margin-top:8px;font-size:11px}.nspp-history button[aria-pressed=true]{color:#0969da;border-color:currentColor}.nspp-history-avatar{vertical-align:middle;border-radius:50%;width:20px;height:20px;margin-right:6px}.nspp-confirm-dialog{box-sizing:border-box;background:var(--bg-color,#fff);width:min(360px,100vw - 32px);max-width:none;max-height:calc(100dvh - 32px);color:var(--text-color,#24292f);border:1px solid #818b9840;border-radius:12px;margin:auto;padding:18px;font:13px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 18px 48px #0003}.nspp-confirm-dialog::backdrop{background:#0006}.nspp-confirm-dialog h2{overflow-wrap:anywhere;margin:0;font-size:15px}.nspp-confirm-dialog p{opacity:.7;margin:8px 0 18px}.nspp-confirm-dialog form{justify-content:flex-end;gap:8px;display:flex}.nspp-confirm-dialog button{min-height:32px;color:inherit;font:inherit;cursor:pointer;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:5px 14px}.nspp-confirm-dialog .nspp-confirm-danger{color:#fff;background:#cf3434;border-color:#cf3434}.nspp-confirm-dialog :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-confirm-dialog{color:#e6edf3;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#161b22}@media (width<=480px){.nspp-confirm-dialog{width:100%;max-height:85dvh;padding:18px 16px calc(16px + env(safe-area-inset-bottom));border-radius:14px 14px 0 0;margin:0;inset:auto 0 0}.nspp-confirm-dialog form>button{flex:1;min-height:38px}}");
 	function main() {
 		if (document.getElementById("nspp-settings")) return;
 		const loadingStyle = document.createElement("style");
@@ -16513,7 +19480,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		tools.setAttribute("aria-label", "NodeSeek++");
 		document.body.append(tools);
 		const features = [
-			requestSettings,
+			requestSettings$1,
 			...readingFeatures,
 			...filteringFeatures,
 			...actionFeatures,
@@ -16523,7 +19490,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			...relationshipFeatures,
 			codeHighlight,
 			postPreview,
-			listInteractions
+			listInteractions,
+			discussionStatsFeature
 		];
 		if (new Set(features.map((feature) => feature.id)).size !== features.length) throw new Error("重复功能 ID");
 		const ui = mountSettings(features);

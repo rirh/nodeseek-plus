@@ -14,7 +14,7 @@ export const extraFeatures: Feature[] = [
     id: 'footprints', title: '回帖足迹', description: '手动同步自己的历史评论，按账号缓存并提供帖子入口；可续传和清空。', group: '阅读', defaults: { enabled: false },
     mount(ctx) {
       const uid = pageConfig()?.user?.member_id; if (!uid) return;
-      type Entry = { post_id: number; floor_id: number };
+      type Entry = { post_id: number; floor_id: number; title?: string };
       const key = `records:${location.host}:${uid}`;
       let records = ctx.get<Entry[]>(key) || [];
       let cursor = ctx.get<number>(`${key}:cursor`) || 1;
@@ -23,12 +23,12 @@ export const extraFeatures: Feature[] = [
       const summary = document.createElement('h2'); summary.textContent = '我的回帖足迹';
       const open = document.createElement('button'); open.type = 'button'; open.className = 'nspp-tool-icon'; open.title = '回帖足迹'; open.setAttribute('aria-label', open.title); open.append(toolIcon('footprints'));
       const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
-      open.addEventListener('click', () => panel.showModal(), { signal: ctx.signal });
+      open.addEventListener('click', () => { panel.showModal(); render(); }, { signal: ctx.signal });
       close.addEventListener('click', () => panel.close(), { signal: ctx.signal });
       const sync = document.createElement('button'); sync.type = 'button'; sync.textContent = '同步 / 继续';
       const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = '清空缓存';
       const status = document.createElement('span'); status.setAttribute('role', 'status');
-      const list = document.createElement('div'); list.style.cssText = 'max-height:240px;overflow:auto;display:grid;gap:4px';
+      const list = document.createElement('div'); list.className = 'nspp-footprints-list';
       close.prepend(toolIcon('close')); sync.prepend(toolIcon('refresh'));
       const header = document.createElement('header'); header.append(summary, close);
       const toolbar = document.createElement('div'); toolbar.className = 'nspp-footprints-toolbar'; toolbar.append(sync, reset, status);
@@ -48,12 +48,59 @@ export const extraFeatures: Feature[] = [
         });
       };
       const stopBadges = ctx.watch(markTitles);
+      let titleController = new AbortController();
+      const loadTitle = async (link: HTMLAnchorElement) => {
+        const signal = titleController.signal;
+        const post = Number(link.dataset.post);
+        const label = link.querySelector<HTMLElement>('.nspp-footprint-title')!;
+        label.textContent = '正在加载帖子标题…'; link.setAttribute('aria-busy', 'true');
+        try {
+          const html = await ctx.request<string>(`/post-${post}-1`, { responseType: 'text', signal });
+          if (signal.aborted || ctx.signal.aborted) return;
+          const page = new DOMParser().parseFromString(html, 'text/html');
+          const encoded = page.querySelector('#temp-script')?.textContent?.trim();
+          if (!encoded) throw new Error('帖子数据不可用');
+          const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+          const data = JSON.parse(new TextDecoder().decode(bytes))?.postData;
+          if (String(data?.postId) !== String(post) || typeof data?.title !== 'string' || !data.title.trim()) throw new Error('帖子标题不可用');
+          const title = data.title.trim();
+          records.forEach(record => { if (record.post_id === post) record.title = title; });
+          ctx.set(key, records); label.textContent = title; link.title = title;
+        } catch {
+          if (!signal.aborted && !ctx.signal.aborted) label.textContent = `标题暂不可用 · 帖子 ${post}`;
+        } finally { link.removeAttribute('aria-busy'); }
+      };
+      const titleObserver = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || !panel.open) continue;
+          titleObserver.unobserve(entry.target);
+          void loadTitle(entry.target as HTMLAnchorElement);
+        }
+      }, { root: list });
+      panel.addEventListener('close', () => { titleController.abort(); titleObserver.disconnect(); }, { signal: ctx.signal });
       const render = () => {
-        status.textContent = ` ${records.length} 条缓存`; list.replaceChildren(); markTitles();
+        titleController.abort(); titleController = new AbortController(); titleObserver.disconnect();
+        list.replaceChildren(); markTitles();
+        const titles = new Map<number, string>();
+        records.forEach(record => { if (record.title) titles.set(record.post_id, record.title); });
+        document.querySelectorAll<HTMLAnchorElement>('.post-title a[href*="/post-"]:not([data-nspp-footprint])').forEach(link => {
+          const post = Number(link.pathname.match(/post-(\d+)/)?.[1]);
+          const title = link.textContent?.trim(); if (post && title) titles.set(post, title);
+        });
+        let changed = false;
+        records.forEach(record => { const title = titles.get(record.post_id); if (title && record.title !== title) { record.title = title; changed = true; } });
+        if (changed) ctx.set(key, records);
         const latest = new Map<number, number>(); records.forEach(r => latest.set(r.post_id, Math.max(latest.get(r.post_id) || 0, r.floor_id)));
-        [...latest].slice(0, 100).forEach(([post, floor]) => {
+        status.textContent = `${latest.size} 个帖子 · ${records.length} 条回复`;
+        if (!latest.size) { const empty = document.createElement('p'); empty.textContent = '暂无回帖足迹，点击“同步 / 继续”获取历史回复。'; list.append(empty); }
+        latest.forEach((floor, post) => {
           const a = document.createElement('a'); a.href = footprintHref(post, floor, pageConfig()?.commentPerPage);
-          a.textContent = `帖子 ${post} · 第 ${floor} 楼`; list.append(a);
+          a.dataset.post = String(post);
+          const title = titles.get(post);
+          const label = document.createElement('span'); label.className = 'nspp-footprint-title'; label.textContent = title || '等待加载帖子标题…';
+          const floorLabel = document.createElement('small'); floorLabel.textContent = `第 ${floor} 楼`;
+          a.append(label, floorLabel); if (title) a.title = title; list.append(a);
+          if (!title && panel.open) titleObserver.observe(a);
         });
       };
       render();
@@ -82,7 +129,7 @@ export const extraFeatures: Feature[] = [
         finally { busy = false; sync.disabled = reset.disabled = false; sync.removeAttribute('aria-busy'); sync.textContent = '同步 / 继续'; }
       }, { signal: ctx.signal });
       reset.addEventListener('click', () => { records = []; cursor = 1; ctx.set(key, []); ctx.set(`${key}:cursor`, 1); render(); }, { signal: ctx.signal });
-      return () => { stopBadges(); badges.forEach(badge => badge.remove()); open.remove(); panel.remove(); };
+      return () => { titleController.abort(); titleObserver.disconnect(); stopBadges(); badges.forEach(badge => badge.remove()); open.remove(); panel.remove(); };
     },
   },
   {

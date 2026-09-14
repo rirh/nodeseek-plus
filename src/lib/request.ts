@@ -1,7 +1,14 @@
 import { GM_getValue, GM_setValue } from './userscript';
-import { createRequestQueue, retryDelay, requestInterval } from './request-scheduler';
+import { createRequestQueue, retryDelay, requestConcurrency, requestInterval } from './request-scheduler';
 
-const enqueue = createRequestQueue();
+const requestSettings = () => {
+  const settings = GM_getValue<Record<string, Record<string, unknown>>>(`nspp:settings:${location.hostname}`, {})?.['request-settings'];
+  return settings?.enabled === false ? undefined : settings;
+};
+const enqueue = createRequestQueue(
+  () => requestConcurrency(requestSettings()?.maxConcurrent),
+  () => requestInterval(requestSettings()?.requestInterval),
+);
 
 export async function request<T>(url: string, options: RequestInit & { responseType?: "json" | "text" } = {}): Promise<T> {
   const target = new URL(url, location.origin);
@@ -27,27 +34,8 @@ export async function request<T>(url: string, options: RequestInit & { responseT
   };
   if (target.origin !== location.origin) return execute();
   return enqueue(async () => {
-    const scheduled = async () => {
-      const cooldownKey = `nspp:request-cooldown:${location.host}`;
-      const lastKey = `nspp:${profile ? 'profile' : 'request'}-completed:${location.host}`;
-      init.signal?.throwIfAborted();
-      if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
-      const settings = GM_getValue<Record<string, Record<string, unknown>>>(`nspp:settings:${location.hostname}`, {})?.['request-settings'];
-      const fallback = profile ? 100 : 0;
-      const interval = settings?.enabled === false ? fallback : requestInterval(settings?.[profile ? 'profileInterval' : 'requestInterval'], fallback);
-      const delay = GM_getValue(lastKey, 0) + interval - Date.now();
-      if (delay > 0) await new Promise<void>((resolve, reject) => {
-        const abort = () => { clearTimeout(timer); reject(init.signal?.reason); };
-        const timer = setTimeout(() => { init.signal?.removeEventListener('abort', abort); resolve(); }, delay);
-        init.signal?.addEventListener('abort', abort, { once: true });
-      });
-      init.signal?.throwIfAborted();
-      if (GM_getValue(cooldownKey, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
-      try { return await execute(); }
-      finally { GM_setValue(lastKey, Date.now()); }
-    };
-    return navigator.locks?.request
-      ? navigator.locks.request('nspp:forum-requests', { signal: init.signal ?? undefined }, scheduled)
-      : scheduled();
+    init.signal?.throwIfAborted();
+    if (GM_getValue(`nspp:request-cooldown:${location.host}`, 0) > Date.now()) throw new Error('站点请求冷却中，请稍后手动重试');
+    return execute();
   }, profile ? 1 : 0);
 }

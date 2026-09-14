@@ -2,7 +2,8 @@ import { copyButton } from '../views/copy-button';
 import { forumTime } from '../lib/forum-time';
 import { toolIcon } from '../lib/tool-icon';
 import type { Context, Feature } from '../core/types';
-import { format, formatDistance, subMonths } from 'date-fns';
+import { format } from 'date-fns';
+import { unsafeWindow } from '../lib/userscript';
 import { zhCN } from 'date-fns/locale';
 import { postPath, directLink } from './reading-logic';
 const contentSelector = ':is(.post-content,.comment-content,.nsk-content,.markdown-body)';
@@ -70,13 +71,6 @@ function infinite(ctx: Context) {
                     }
                 }
             });
-            // Imported comments retain their page link; no private Vue instances or inline scripts are executed.
-            const marker = document.createElement('li');
-            const link = document.createElement('a');
-            link.href = url.href;
-            link.textContent = '查看本页原始内容与回复操作';
-            marker.append(link);
-            list.append(marker);
             for (const child of Array.from(source.children)) {
                 const id = child.id;
                 if (id && document.getElementById(id))
@@ -120,28 +114,44 @@ function infinite(ctx: Context) {
     return () => { observer.disconnect(); loading?.abort(); button.remove(); pause.remove(); };
 }
 const historyFeature: Feature = {
-    id: 'reading-history', title: '阅读历史与已读标记', description: '本地记录最近 500 个帖子，标题显示已读颜色；不上传记录。', group: '阅读', defaults: { enabled: true },
+    id: 'reading-history', title: '阅读历史与已读标记', description: '本地保存实际浏览与最近关闭的帖子，默认 100 条、7 天，按天分组；不上传记录。', group: '阅读', defaults: { enabled: true, limit: 100, days: 7 },
+    fields: { limit: { label: '保存上限', type: 'number' }, days: { label: '保存天数', type: 'number' } },
     mount(ctx) {
         type Entry = {
             path: string;
             title: string;
             time: number;
+            uid?: string | number;
+            author?: string;
         };
-        const stored = ctx.get<Entry[]>('entries');
-        let entries: Entry[] = Array.isArray(stored) ? stored.flatMap(entry => { const path = entry && typeof entry.path === 'string' ? postPath(entry.path, location.href) : undefined; return path ? [{ ...entry, path }] : []; }) : [];
-        const record = (path: string, title: string) => { entries = [{ path, title, time: Date.now() }, ...entries.filter(e => e.path !== path)].slice(0, 500); ctx.set('entries', entries); };
+        const limit = Math.max(1, Math.floor(Number(ctx.get('limit')) || 100));
+        const maxAge = Math.max(1, Number(ctx.get('days')) || 7) * 86400000;
         const key = (href: string) => postPath(href, location.href);
-        const current = key(location.href);
-        if (current)
-            record(current, document.title);
-        const stop = ctx.watch(() => document.querySelectorAll<HTMLAnchorElement>('.post-title a').forEach(a => { const path = key(a.href); a.classList.toggle('nspp-read', !!path && entries.some(e => e.path === path)); }));
-        document.addEventListener('click', e => { const a = (e.target as Element).closest<HTMLAnchorElement>('.post-title a'); if (a) {
-            const path = key(a.href);
-            if (path) {
-                record(path, a.textContent || '');
-                a.classList.add('nspp-read');
-            }
-        } }, { signal: ctx.signal });
+        const load = (name: string): Entry[] => {
+            const stored = ctx.get<Entry[]>(name);
+            const clean = (Array.isArray(stored) ? stored : []).flatMap(entry => {
+                const path = entry && typeof entry.path === 'string' ? key(entry.path) : undefined;
+                return path && typeof entry.title === 'string' && Number.isFinite(entry.time) && Date.now() - entry.time < maxAge ? [{ ...entry, path }] : [];
+            }).sort((a, b) => b.time - a.time);
+            const seen = new Set<string>();
+            const entries = clean.filter(entry => { if (seen.has(entry.path)) return false; seen.add(entry.path); return true; }).slice(0, limit);
+            ctx.set(name, entries);
+            return entries;
+        };
+        const record = (name: string) => {
+            const pd = (unsafeWindow as Window & { __config__?: { postData?: { postId?: string | number; title?: string; op?: { uid?: string | number; name?: string } } } }).__config__?.postData;
+            const path = pd?.postId ? key(`/post-${pd.postId}-1`) : key(location.href);
+            if (!path) return;
+            ctx.set(name, [{ path, title: pd?.title || document.title, time: Date.now(), uid: pd?.op?.uid, author: pd?.op?.name }, ...load(name).filter(entry => entry.path !== path)].slice(0, limit));
+        };
+        record('entries');
+        load('recent');
+        const markRead = () => {
+            const entries = load('entries');
+            document.querySelectorAll<HTMLAnchorElement>('.post-title a').forEach(a => a.classList.toggle('nspp-read', entries.some(entry => entry.path === key(a.href))));
+        };
+        const stop = ctx.watch(markRead);
+        window.addEventListener('beforeunload', () => record('recent'), { capture: true, signal: ctx.signal });
         const historyButton = document.createElement('button');
         historyButton.type = 'button';
         historyButton.className = 'nspp-tool-icon'; historyButton.title = '阅读历史'; historyButton.setAttribute('aria-label', '阅读历史'); historyButton.append(toolIcon('history'));
@@ -170,45 +180,72 @@ const historyFeature: Feature = {
             undoButton.textContent = '撤销删除';
             undoButton.hidden = true;
             let previous: Entry[] | undefined;
+            let tab = 'entries';
+            let entries = load(tab);
+            const tabs = document.createElement('div'); tabs.className = 'nspp-history-toolbar';
+            for (const [name, label] of [['entries', '全部'], ['recent', '最近关闭']]) {
+                const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
+                button.dataset.tab = name;
+                button.addEventListener('click', () => { tab = name; previous = undefined; undoButton.hidden = true; render(); });
+                tabs.append(button);
+            }
             const list = document.createElement('ol');
             const save = () => {
-                ctx.set('entries', entries);
-                document.querySelectorAll<HTMLAnchorElement>('.post-title a').forEach(a => {
-                    a.classList.toggle('nspp-read', entries.some(entry => entry.path === key(a.href)));
-                });
+                ctx.set(tab, entries);
+                markRead();
             };
             const render = () => {
                 list.replaceChildren();
-                const now = new Date();
-                const monthAgo = subMonths(now, 1);
+                entries = load(tab);
+                tabs.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === tab)));
+                let lastDay = '';
                 const query = search.value.trim().toLowerCase();
                 const matches = entries.filter(entry => entry.title.toLowerCase().includes(query));
                 for (const entry of matches) {
                     if (!/^\/post-\d+-1$/.test(entry.path))
                         continue;
+                    const day = format(new Date(entry.time), 'yyyy-MM-dd');
+                    if (day !== lastDay) {
+                        lastDay = day;
+                        const group = document.createElement('li'); group.className = 'nspp-history-day';
+                        const label = document.createElement('span');
+                        label.textContent = `${day === format(new Date(), 'yyyy-MM-dd') ? '今天 - ' : ''}${format(new Date(entry.time), 'yyyy年M月d日 EEEE', { locale: zhCN })}`;
+                        const clearDay = document.createElement('button'); clearDay.type = 'button'; clearDay.textContent = '清除当天';
+                        clearDay.addEventListener('click', () => { previous = load(tab); entries = previous.filter(item => format(new Date(item.time), 'yyyy-MM-dd') !== day); undoButton.hidden = false; save(); render(); });
+                        group.append(label, clearDay); list.append(group);
+                    }
                     const li = document.createElement('li');
                     const link = document.createElement('a');
                     link.href = entry.path;
                     link.textContent = entry.title;
+                    if (entry.uid && /^\d+$/.test(String(entry.uid))) {
+                        const avatar = document.createElement('img'); avatar.className = 'nspp-history-avatar'; avatar.src = `/avatar/${entry.uid}.png`; avatar.alt = ''; avatar.title = entry.author ? `@${entry.author}` : '';
+                        avatar.addEventListener('error', () => avatar.remove(), { once: true });
+                        link.prepend(avatar);
+                    }
                     const remove = document.createElement('button');
                     remove.type = 'button';
                     remove.textContent = '删除';
                     remove.setAttribute('aria-label', `删除历史：${entry.title}`);
                     remove.addEventListener('click', () => {
-                        previous = [...entries];
-                        entries = entries.filter(item => item.path !== entry.path);
+                        previous = load(tab);
+                        entries = previous.filter(item => item.path !== entry.path);
                         undoButton.hidden = false;
                         save();
                         render();
                     }, { signal: ctx.signal });
                     const date = document.createElement('time');
                     const visitedAt = new Date(entry.time);
-                    date.textContent = visitedAt < monthAgo
-                        ? format(visitedAt, 'yyyy-MM-dd')
-                        : formatDistance(visitedAt, now, { addSuffix: true, locale: zhCN });
+                    date.textContent = format(visitedAt, 'HH:mm');
                     date.title = format(visitedAt, 'yyyy-MM-dd HH:mm:ss');
                     link.title = entry.title;
-                    li.append(link, date, remove);
+                    li.append(link, date);
+                    if (tab === 'recent') {
+                        const restore = document.createElement('button'); restore.type = 'button'; restore.textContent = '恢复';
+                        restore.addEventListener('click', () => window.open(entry.path, '_blank', 'noopener'));
+                        li.append(restore);
+                    }
+                    li.append(remove);
                     list.append(li);
                 }
                 if (!matches.length) {
@@ -218,7 +255,7 @@ const historyFeature: Feature = {
                 }
             };
             clear.addEventListener('click', () => {
-                previous = [...entries];
+                previous = load(tab);
                 entries = [];
                 undoButton.hidden = false;
                 save();
@@ -235,7 +272,7 @@ const historyFeature: Feature = {
             search.addEventListener('input', render, { signal: ctx.signal });
             const header = document.createElement('header'); header.append(heading, close);
             const toolbar = document.createElement('div'); toolbar.className = 'nspp-history-toolbar'; toolbar.append(search, clear, undoButton);
-            historyDialog.append(header, toolbar, list);
+            historyDialog.append(header, toolbar, tabs, list);
             render();
             document.body.append(historyDialog);
             historyDialog.showModal();

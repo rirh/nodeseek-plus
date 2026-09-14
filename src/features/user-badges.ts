@@ -20,23 +20,28 @@ export const userBadges: Feature = {
     }
     let scoreDialog: HTMLDialogElement | undefined;
     const roles = new Map<Element, string | null>();
-    const cache = new Map<string, UserProfile>();
+    type CachedProfile = { time: number; user: UserProfile; withSignature?: boolean };
+    const fresh = (entry: CachedProfile | undefined): entry is CachedProfile => !!entry && entry.withSignature === true && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 24 * 60 * 60 * 1000;
+    const cache = new Map<string, CachedProfile>();
     const inflight = new Map<string, Promise<UserProfile>>();
     const nodes = new Map<Element, { id: string; badge: HTMLElement; details: HTMLElement; release(): void }>();
     const getProfile = (id: string): Promise<UserProfile> => {
-      if (cache.has(id)) return Promise.resolve(cache.get(id)!);
+      const cached = cache.get(id);
+      if (fresh(cached)) return Promise.resolve(cached.user);
+      cache.delete(id);
       if (inflight.has(id)) return inflight.get(id)!;
-      const stored = ctx.get<Record<string, { time: number; user: UserProfile }>>('profiles') || {};
-      if (stored[id] && Date.now() - stored[id].time < 24 * 60 * 60 * 1000) {
-        cache.set(id, stored[id].user);
+      const stored = ctx.get<Record<string, CachedProfile>>('profiles') || {};
+      if (fresh(stored[id])) {
+        cache.set(id, stored[id]);
         return Promise.resolve(stored[id].user);
       }
-      const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}`).then(result => {
+      const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}?signature=1`).then(result => {
         if (!result?.success || !result.detail || typeof result.detail !== 'object') throw new Error('资料不可用');
-        cache.set(id, result.detail);
+        const entry = { time: Date.now(), user: result.detail, withSignature: true };
+        cache.set(id, entry);
         const latest = ctx.get<typeof stored>('profiles') || {};
-        latest[id] = { time: Date.now(), user: result.detail };
-        ctx.set('profiles', Object.fromEntries(Object.entries(latest).sort((a, b) => b[1].time - a[1].time).slice(0, 200)));
+        latest[id] = entry;
+        ctx.set('profiles', Object.fromEntries(Object.entries(latest).filter(([, value]) => fresh(value))));
         return result.detail;
       });
       inflight.set(id, request);
@@ -52,10 +57,21 @@ export const userBadges: Feature = {
         const info = registration(user);
         const profileDetails = nodes.get(author)!.details;
         profileDetails.replaceChildren();
-        for (const [label, value] of [
-          ['注册日期', info.days === null ? '未知' : format(new Date(info.timestamp), 'yyyy-MM-dd')],
-          ['主题帖', String(user.nPost ?? '—')], ['评论', String(user.nComment ?? '—')],
-        ]) { const term = document.createElement('dt'); term.textContent = label; const valueNode = document.createElement('dd'); valueNode.textContent = value; profileDetails.append(term, valueNode); }
+        for (const [label, value, icon] of [
+          ['等级', info.level === null ? '—' : `Lv ${info.level}`, 'level'], ['主题帖', String(user.nPost ?? '—'), 'write-6ncdp62p'],
+          ['鸡腿', String(user.coin ?? '—'), 'chicken-leg'], ['评论数', String(user.nComment ?? '—'), 'comments-6ncdh3ka'],
+          ['星辰', String(user.stardust ?? '—'), 'wallet'], ['粉丝', String(user.fans ?? '—'), 'concern'],
+        ]) {
+          const cell = document.createElement('div');
+          const term = document.createElement('dt'); term.textContent = label; term.prepend(siteIcon(icon));
+          const valueNode = document.createElement('dd'); valueNode.textContent = value;
+          if (label === '等级') {
+            valueNode.className = 'nspp-user-badges';
+            const badgeValue = document.createElement('span'); badgeValue.className = 'nspp-level'; badgeValue.dataset.level = String(info.level ?? 'unknown');
+            badgeValue.textContent = value; valueNode.replaceChildren(badgeValue);
+          }
+          cell.append(term, valueNode); profileDetails.append(cell);
+        }
 
         badge.replaceChildren();
         const level = document.createElement('span');
@@ -105,18 +121,14 @@ export const userBadges: Feature = {
         const score = document.createElement('button');
         score.type = 'button'; score.className = 'nspp-trust';
         score.textContent = trust ? String(trust.score) : '—';
-        score.dataset.tier = info.level === 1 ? 'danger' : !trust ? 'unknown' : trust.score === 100 ? 'perfect' : trust.score >= 70 ? 'success' : trust.score >= 40 ? 'warning' : 'danger';
+        score.dataset.tier = !trust ? 'unknown' : trust.score === 100 ? 'perfect' : trust.score >= 70 ? 'success' : trust.score >= 40 ? 'warning' : 'danger';
         score.prepend(siteIcon('crown-two'));
         const explanation = trust
-          ? `信任参考分 ${trust.score}/100\n注册时长 ${trust.age.toFixed(1)}/60 · 发帖 ${trust.posts.toFixed(1)}/20 · 评论 ${trust.comments.toFixed(1)}/20`
-          : '资料不足，暂不评分：需要有效的注册时间、发帖数和评论数。';
-        const risk = info.level === 1
-          ? '风险提示：该用户等级为 1 级，请谨慎核实身份与交易信息，等级和分数均不代表交易信用。'
-          : trust && trust.score < 40 ? '风险提示：该用户信任参考分较低，公开参与记录有限，请谨慎核实身份与交易信息；低分不代表存在不良行为。' : '';
-        if (info.level === 1) level.title = risk;
-        const details = `${risk ? `${risk}\n\n` : ''}${explanation}\n规则 v2：各项按 ln(1 + 数量) / ln(1 + 上限) × 权重计算，总和四舍五入。注册时长上限为论坛存续天数（当前 ${forumAge()} 天，随日期增长）、发帖 100、评论 500。\n仅根据公开资料在本地计算社区参与参考分，非站点官方评分，不代表交易信用；低分可能只是新用户，发帖与评论数量不代表内容质量。`;
+          ? `信任分 ${trust.score}/100\n注册时长 ${trust.age.toFixed(1)}/35 · 主题帖 ${trust.posts.toFixed(1)}/20 · 评论 ${trust.comments.toFixed(1)}/20\n鸡腿 ${trust.coin.toFixed(1)}/10 · 星辰 ${trust.stardust.toFixed(1)}/10 · 粉丝 ${trust.fans.toFixed(1)}/5`
+          : '资料不足：需要注册日期、主题帖、评论、鸡腿、星辰和粉丝数据。';
+        const details = `${explanation}\n\n规则 v4：注册时长按 √(天数 / 730) × 35 计算，最多 35 分；其余指标按 ln(1 + 数量) / ln(1 + 上限) × 权重计算。上限：主题帖 300、评论 2000、鸡腿 6000、星辰 500、粉丝 50。负余额按 0 计算；等级不重复加分；缺少数据不评分。\n\n这是社区资料参考分，余额可转移，粉丝和发言数量不等于交易信用。`;
         score.title = details;
-        score.setAttribute('aria-label', `信任参考分 ${trust?.score ?? "未知"}，${risk ? `${risk} ` : ""}查看评分依据`);
+        score.setAttribute('aria-label', `信任分 ${trust?.score ?? "未知"}，查看评分依据`);
         score.addEventListener('click', () => {
           scoreDialog?.remove();
           scoreDialog = document.createElement('dialog'); scoreDialog.className = 'nspp-history nspp-trust-dialog'; scoreDialog.setAttribute('aria-label', '信任分依据');
@@ -130,33 +142,25 @@ export const userBadges: Feature = {
         const card = profileDetails.parentElement!;
         card.dataset.trust = !trust ? 'unknown' : trust.score === 100 ? 'perfect' : trust.score >= 70 ? 'success' : trust.score >= 40 ? 'warning' : 'danger';
         card.querySelector('.nspp-user-hover-signature')?.remove();
-        if (typeof user.signature === 'string' && user.signature.trim()) {
-          const signature = document.createElement('p'); signature.className = 'nspp-user-hover-signature'; signature.textContent = user.signature.trim();
+        const signatureText = [user.bio, user.introduction, user.signature_text, user.signature].find(value => typeof value === 'string' && value.trim());
+        if (signatureText) {
+          const signature = document.createElement('p'); signature.className = 'nspp-user-hover-signature'; signature.textContent = signatureText.trim();
           card.querySelector('.nspp-user-hover-header')!.after(signature);
         }
         card.querySelector('.nspp-user-hover-score')?.remove();
         const headline = document.createElement('button'); headline.type = 'button'; headline.className = 'nspp-user-hover-score';
-        headline.setAttribute('aria-label', `信任参考分 ${trust?.score ?? '未知'}，查看评分依据`);
+        headline.setAttribute('aria-label', `信任分 ${trust?.score ?? '未知'}，查看评分依据`);
         const number = document.createElement('strong'); number.textContent = trust ? String(trust.score) : '—';
-        const scoreLabel = document.createElement('small'); scoreLabel.textContent = '信任参考分'; headline.append(number, scoreLabel);
+        const scoreLabel = document.createElement('small'); scoreLabel.textContent = '信任分'; headline.append(number, scoreLabel);
         headline.addEventListener('click', () => score.click(), { signal: ctx.signal }); card.querySelector('.nspp-user-hover-header')!.append(headline);
-        const participation = document.createElement('span'); participation.className = 'nspp-participation';
-        participation.textContent = Number.isSafeInteger(user.nPost) && Number.isSafeInteger(user.nComment) && user.nPost! >= 0 && user.nComment! >= 0 ? String(user.nPost! + user.nComment!) : '—';
-        participation.title = '主题帖数 + 评论数';
         card.querySelector('.nspp-user-hover-rich')?.remove();
         const rich = document.createElement('div'); rich.className = 'nspp-user-hover-rich nspp-user-badges';
-        for (const [label, source] of [['加入天数', age], ['参与次数', participation], ['用户等级', level]] as const) {
-          const cell = document.createElement('div');
-          const caption = document.createElement('small'); caption.textContent = label;
-          const value = source.cloneNode(true) as HTMLElement; value.removeAttribute('title');
-          if (source instanceof HTMLButtonElement) value.addEventListener('click', () => { source.click(); }, { signal: ctx.signal });
-          cell.append(caption, value); rich.append(cell);
-        }
-        card.insertBefore(rich, profileDetails);
-        card.querySelector('.nspp-user-hover-note')?.remove();
-        const note = document.createElement('p'); note.className = 'nspp-user-hover-note'; note.dataset.tone = info.level === 1 || (trust && trust.score < 40) ? 'danger' : info.tone;
-        note.textContent = risk || `${info.label} · 本地参与度参考分，非官方信用评分`;
-        profileDetails.after(note);
+        const duration = age.cloneNode(true) as HTMLButtonElement; duration.removeAttribute('title');
+        const dayCount = document.createElement('strong'); dayCount.textContent = info.days === null ? '未知' : String(info.days);
+        duration.replaceChildren(siteIcon('calendar-thirty'), document.createTextNode('加入 '), dayCount, document.createTextNode(info.days === null ? '' : ' 天'));
+        duration.addEventListener('click', () => age.click(), { signal: ctx.signal });
+        const joined = document.createElement('span'); joined.textContent = `注册 ${info.days === null ? '未知' : format(new Date(info.timestamp), 'yyyy-MM-dd')}`;
+        rich.append(duration, joined); profileDetails.after(rich);
       } catch {
         if (ctx.signal.aborted || !badge.isConnected) return;
         const details = nodes.get(author)?.details; if (details) details.textContent = '资料读取失败，可点击用户名旁的重试。';
@@ -200,8 +204,16 @@ export const userBadges: Feature = {
         badge.setAttribute('aria-label', '用户资料');
         badge.hidden = !!author.closest('.info-last-commenter') || !!author.querySelector('img') || !author.matches('.author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a');
         const hover = userHover(author, ctx);
-        const details = document.createElement('dl'); details.textContent = '正在读取用户资料…'; hover.element.insertBefore(details, hover.element.querySelector(':scope > .nspp-block-toggle'));
+        const details = document.createElement('dl'); details.textContent = '正在读取用户资料…'; hover.element.insertBefore(details, hover.element.querySelector('.nspp-user-hover-actions, :scope > .nspp-block-toggle'));
         author.after(badge); nodes.set(author, { id, badge, details, release: hover.release });
+        if (badge.hidden) {
+          let started = false;
+          const start = () => { if (!started) { started = true; void load(author, id, badge); } };
+          author.addEventListener('mouseenter', start, { signal: ctx.signal });
+          author.addEventListener('focus', start, { signal: ctx.signal });
+          author.addEventListener('click', start, { signal: ctx.signal });
+          return;
+        }
         // Start visible names immediately, even if the observer callback is delayed.
         const rect = author.getBoundingClientRect();
         if (!observer || (rect.bottom >= 0 && rect.top <= innerHeight + 200)) void load(author, id, badge);

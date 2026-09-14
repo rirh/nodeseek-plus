@@ -8,10 +8,11 @@ const key = 'nspp:settings:www.nodeseek.com';
 async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void) {
   // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
   const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: { enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true } });
-  const storage = shared || new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, ...settings }]]);
+  const storage = shared || new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'request-settings': { enabled: true, requestInterval: 0 }, ...settings }]]);
   const requests: string[] = [];
   const menus: (() => void)[] = [];
   Object.assign(window, {
+    structuredClone,
     GM_getValue: (key: string, fallback: unknown) => storage.has(key) ? structuredClone(storage.get(key)) : fallback,
     GM_setValue: (key: string, value: unknown) => storage.set(key, structuredClone(value)),
     GM_registerMenuCommand: (_: string, fn: () => void) => menus.push(fn),
@@ -27,6 +28,76 @@ async function fixture(settings: Record<string, unknown> = {}, html = '', path =
   window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
   return { window, storage, requests, menus, close: () => window.happyDOM.abort() };
 }
+
+test('profile discussion stats load visible rows, reuse cached counts and leave other tabs alone', async () => {
+  const calls: string[] = [];
+  const observed = new Set<Element>();
+  let show: () => void = () => {};
+  const html = '<div class="discussion-wrapper"><div class="discussion-item"><a href="/post-42-1"><span>主题帖</span></a><span data-native></span></div></div>';
+  const f = await fixture({}, html, '/space/17170#/discussions', undefined, window => {
+    window.IntersectionObserver = class {
+      constructor(callback: (entries: unknown[]) => void, options?: { rootMargin?: string }) {
+        if (options?.rootMargin === '200px') show = () => callback([...observed].map(target => ({ target, isIntersecting: true })));
+      }
+      observe(target: Element) { observed.add(target); }
+      unobserve(target: Element) { observed.delete(target); }
+      disconnect() { observed.clear(); }
+    } as unknown as typeof window.IntersectionObserver;
+    window.fetch = (async (url: unknown) => {
+      const path = new URL(String(url)).pathname; calls.push(path);
+      const postData = { postId: 42, views: '44724', postPage: path.endsWith('-26') ? 26 : 1, postPageCount: 26, comments: [{ floorIndex: path.endsWith('-26') ? 256 : 10 }] };
+      return new window.Response(`<script id="temp-script" type="text/plain">${Buffer.from(JSON.stringify({ postData })).toString('base64')}</script>`);
+    }) as typeof window.fetch;
+  });
+  try {
+    const doc = f.window.document;
+    assert.equal(calls.length, 0, 'offscreen rows do not fetch');
+    assert.equal(doc.querySelector<HTMLElement>('.nspp-discussion-stats')!.hidden, true);
+    show(); show(); await new Promise(resolve => setTimeout(resolve, 40));
+    assert.deepEqual(calls, ['/post-42-1', '/post-42-26']);
+    assert.deepEqual([...doc.querySelectorAll('[data-count]')].map(el => el.textContent), ['44724', '256']);
+    assert.equal(doc.querySelector<HTMLElement>('.nspp-discussion-stats')!.hidden, false);
+    assert.ok(doc.querySelector('.discussion-item')!.lastElementChild!.classList.contains('nspp-discussion-stats'));
+    assert.deepEqual([...doc.querySelectorAll('.nspp-discussion-stats use')].map(el => el.getAttribute('href')), ['#eyes', '#comments']);
+    assert.ok(doc.querySelector('.discussion-item > [data-native]'));
+    doc.querySelector('.discussion-wrapper')!.outerHTML = html;
+    await new Promise(resolve => setTimeout(resolve, 150)); show();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.equal(calls.length, 2, 're-rendered rows use the cached counts');
+    assert.equal(doc.querySelectorAll('.nspp-discussion-stats').length, 1);
+    f.window.history.replaceState(null, '', '/space/17170#/comments');
+    f.window.dispatchEvent(new f.window.Event('popstate'));
+    assert.equal(doc.querySelector('.nspp-discussion-stats'), null);
+    assert.equal(calls.length, 2);
+  } finally { await f.close(); }
+});
+
+test('profile discussion stats hide failed requests and cancel on navigation', async () => {
+  let show: () => void = () => {};
+  let signal: AbortSignal | undefined;
+  const f = await fixture({}, '<div class="discussion-wrapper"><div class="discussion-item"><a href="/post-42-1">主题帖</a><span></span></div></div>', '/space/17170#/discussions', undefined, window => {
+    window.IntersectionObserver = class {
+      callback: (entries: unknown[]) => void;
+      constructor(callback: (entries: unknown[]) => void) { this.callback = callback; }
+      observe(target: Element) { show = () => this.callback([{ target, isIntersecting: true }]); }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof window.IntersectionObserver;
+    window.fetch = (async (_url: unknown, options: RequestInit) => {
+      signal = options.signal!;
+      return new window.Response('Unavailable', { status: 500 });
+    }) as typeof window.fetch;
+  });
+  try {
+    show(); await new Promise(resolve => setTimeout(resolve, 30));
+    assert.deepEqual([...f.window.document.querySelectorAll('[data-count]')].map(el => el.textContent), ['', '']);
+    assert.equal(f.window.document.querySelector<HTMLElement>('.nspp-discussion-stats')!.hidden, true);
+    f.window.history.replaceState(null, '', '/space/17170#/comments');
+    f.window.dispatchEvent(new f.window.Event('popstate'));
+    assert.equal(signal?.aborted, true);
+    assert.equal(f.window.document.querySelector('.nspp-discussion-stats'), null);
+  } finally { await f.close(); }
+});
 
 test('bundle is self-contained, scoped to forum hosts and has no remote require', () => {
   assert.match(bundle, /@match\s+https:\/\/www\.nodeseek\.com\/\*/);
@@ -87,25 +158,68 @@ test('pagination deduplicates concurrent loads and strips active fetched content
   } finally { await f.close(); }
 });
 
-test('attendance failure does not cache success; retry succeeds once per account per day', async () => {
-  const f = await fixture({ attendance: { enabled: true, automatic: false, mode: 'fixed' } });
+for (const outcome of ['success', 'failure', 'http-error', 'network-error', 'invalid-json']) {
+  test(`attendance ${outcome} is cached for the day, survives reopening and retries tomorrow`, async () => {
+    let clock = Date.parse('2026-09-14T04:00:00Z'), calls = 0;
+    const settings = { attendance: { enabled: true, automatic: true, mode: 'fixed' }, 'official-blocklist': { enabled: false } };
+    const setup = (window: Window) => {
+      const NativeDate = window.Date;
+      window.Date = class extends NativeDate {
+        constructor(value?: string | number) { super(value ?? clock); }
+        static now() { return clock; }
+      } as typeof window.Date;
+      window.matchMedia = (() => ({ matches: true })) as typeof window.matchMedia;
+      window.fetch = (async () => {
+        calls++;
+        if (outcome === 'network-error') throw new Error('network unavailable');
+        if (outcome === 'http-error') return new window.Response('', { status: 500 });
+        if (outcome === 'invalid-json') return new window.Response('<html>error</html>');
+        return new window.Response(JSON.stringify({ success: outcome === 'success', message: outcome === 'success' ? '签到成功' : 'retry' }));
+      }) as typeof window.fetch;
+    };
+    const first = await fixture(settings, '', '/', undefined, setup);
+    let reopened: Awaited<ReturnType<typeof fixture>> | undefined;
+    try {
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const control = first.window.document.querySelector<HTMLButtonElement>('#nspp-tools button[aria-label="已签到"]')!;
+      assert.ok(control);
+      assert.equal(control.hidden, true);
+      assert.deepEqual(first.storage.get('nspp:state:www.nodeseek.com:attendance'), { 'day:7': '2026-09-14' });
+      assert.equal(calls, 1);
+      if (outcome !== 'success') assert.doesNotMatch(first.window.document.body.textContent, /签到失败|retry/);
+      clock += 11 * 60_000;
+      control.click();
+      first.window.dispatchEvent(new first.window.Event('focus'));
+      first.window.document.dispatchEvent(new first.window.Event('visibilitychange'));
+      await new Promise(resolve => setTimeout(resolve, 20));
+      assert.equal(calls, 1, 'focus and visibility changes must not retry today');
+      reopened = await fixture(settings, '', '/', first.storage, setup);
+      await new Promise(resolve => setTimeout(resolve, 30));
+      assert.equal(calls, 1, 'reopening uses the persistent daily record');
+      assert.equal(reopened.window.document.querySelector<HTMLButtonElement>('#nspp-tools button[aria-label="签到"]')!.hidden, true);
+      await first.close();
+      clock = Date.parse('2026-09-14T16:01:00Z');
+      reopened.window.dispatchEvent(new reopened.window.Event('focus'));
+      await new Promise(resolve => setTimeout(resolve, 30));
+      assert.equal(calls, 2, 'Shanghai midnight enables a new attempt');
+      assert.deepEqual(first.storage.get('nspp:state:www.nodeseek.com:attendance'), { 'day:7': '2026-09-15' });
+      assert.equal(reopened.window.document.querySelector<HTMLButtonElement>('#nspp-tools button[aria-label="已签到"]')!.hidden, true);
+    } finally { await first.close(); await reopened?.close(); }
+  });
+}
+
+test('attendance daily cache does not suppress another account', async () => {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
+  const storage = new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: true }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'official-blocklist': { enabled: false } }], ['nspp:state:www.nodeseek.com:attendance', { 'day:7': day }]]);
+  let calls = 0;
+  const f = await fixture({}, '', '/', storage, window => {
+    Object.assign(window, { __config__: { user: { member_id: 8 } } });
+    window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: false })); }) as typeof window.fetch;
+  });
   try {
-    let calls = 0;
-    f.window.fetch = (async () => {
-      calls++;
-      return new f.window.Response(JSON.stringify(calls === 1 ? { success: false, message: 'retry' } : { success: true, message: 'ok' }), { headers: { 'Content-Type': 'application/json' } });
-    }) as typeof f.window.fetch;
-    const button = [...f.window.document.querySelectorAll('button')].find(el => el.getAttribute('aria-label') === '签到')!;
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(f.storage.get('nspp:state:www.nodeseek.com:attendance'), undefined);
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(calls, 1, 'failed attempts are briefly throttled across tabs');
-    f.storage.delete('nspp:lock:www.nodeseek.com:attendance:7');
-    f.storage.delete('nspp:profile-completed:www.nodeseek.com');
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.ok(f.storage.get('nspp:state:www.nodeseek.com:attendance'));
-    button.click(); await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(calls, 2);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    assert.deepEqual(storage.get('nspp:state:www.nodeseek.com:attendance'), { 'day:7': day, 'day:8': day });
   } finally { await f.close(); }
 });
 
@@ -207,9 +321,73 @@ test('user profiles persist across pages for one day and refresh after expiry', 
   }
 });
 
-test('request frequency settings are searchable and zero removes the profile wait', async () => {
+test('profile cache keeps more than 200 fresh users across pages and removes expired entries', async () => {
+  const stateKey = 'nspp:state:www.nodeseek.com:user-level';
+  const user = { rank: 3 };
+  const profiles = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i + 1), { time: Date.now() - 3600000, user }]));
+  profiles['999'] = { time: Date.now() - 86400000, user };
+  const storage = new Map<string, unknown>([
+    [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'official-blocklist': { enabled: false } }],
+    [stateKey, { profiles }],
+  ]);
   let calls = 0;
-  const f = await fixture({ 'request-settings': { enabled: true, profileInterval: 0, requestInterval: 0 }, 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/124">Bob</a></div>', '/', undefined, window => {
+  for (const id of ['202', '1']) {
+    const f = await fixture({}, `<div class="author-info"><a href="/space/${id}">Alice</a></div>`, '/', storage, window => {
+      window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: true, detail: user })); }) as typeof window.fetch;
+    });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 30));
+      assert.equal(calls, 1);
+      assert.equal(f.window.document.querySelector('.nspp-level')?.textContent, 'Lv3');
+      const state = storage.get(stateKey) as { profiles: typeof profiles };
+      assert.equal(Object.keys(state.profiles).length, 202);
+      assert.ok(state.profiles['1']); assert.equal(state.profiles['999'], undefined);
+    } finally { await f.close(); }
+  }
+});
+
+test('in-memory profiles expire at 24 hours on a page that stays open', async () => {
+  const now = Date.now();
+  let calls = 0;
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', undefined, window => {
+    window.Date.now = () => now;
+    window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: true, detail: { rank: calls } })); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    for (const [elapsed, expected] of [[86400000 - 1, 1], [86400000, 2]]) {
+      f.window.Date.now = () => now + elapsed;
+      const row = f.window.document.createElement('div'); row.className = 'author-info';
+      row.innerHTML = '<a href="/space/123">Alice</a>'; f.window.document.body.append(row);
+      await new Promise(resolve => setTimeout(resolve, 220));
+      assert.equal(calls, expected);
+      assert.equal(row.querySelector('.nspp-level')?.textContent, `Lv${expected}`);
+    }
+  } finally { await f.close(); }
+});
+
+test('avatar and last-commenter profiles load only on interaction and share cached data', async () => {
+  let calls = 0;
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<a href="/space/123"><img alt="Alice"></a><span class="info-last-commenter"><a href="/space/123">Alice</a></span>', '/', undefined, window => {
+    window.fetch = (async () => { calls++; return new window.Response(JSON.stringify({ success: true, detail: { rank: 3 } })); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 0);
+    f.window.document.querySelector('a:has(img)')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    f.window.document.querySelector('.info-last-commenter a')!.dispatchEvent(new f.window.Event('focus'));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    assert.equal(calls, 1);
+    assert.equal(f.window.document.querySelector('.info-last-commenter .nspp-level')?.textContent, 'Lv3');
+  } finally { await f.close(); }
+});
+
+test('request concurrency and default interval settings are searchable and saved', async () => {
+  let calls = 0;
+  const f = await fixture({ 'request-settings': { enabled: true, maxConcurrent: 2 }, 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/124">Bob</a></div>', '/', undefined, window => {
     window.fetch = (async () => {
       calls++;
       return new window.Response(JSON.stringify({ success: true, detail: { created_at: '2020-01-01' } }), { headers: { 'Content-Type': 'application/json' } });
@@ -217,15 +395,23 @@ test('request frequency settings are searchable and zero removes the profile wai
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(calls, 1, 'default 200ms interval separates request starts');
+    await new Promise(resolve => setTimeout(resolve, 220));
     assert.equal(calls, 2);
     f.menus[0]();
     const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
     const search = root.querySelector<HTMLInputElement>('input[type="search"]')!;
-    search.value = '其他站内接口间隔'; search.dispatchEvent(new f.window.Event('input'));
+    search.value = '最大并发请求数'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(root.querySelectorAll('article').length, 1);
-    assert.match(root.querySelector('article')!.textContent!, /接口请求频率/);
+    assert.match(root.querySelector('article')!.textContent!, /接口请求并发/);
     assert.equal(root.querySelector('details')!.open, true);
-    assert.equal(root.querySelector<HTMLInputElement>('input[type="number"]')!.value, '0');
+    assert.equal(root.querySelector<HTMLInputElement>('input[type="number"]')!.value, '2');
+    const inputs = root.querySelectorAll<HTMLInputElement>('input[type="number"]');
+    assert.equal(inputs[0].min, '1'); assert.equal(inputs[0].max, '10');
+    assert.equal(inputs[1].value, '200'); assert.equal(inputs[1].min, '0'); assert.equal(inputs[1].max, '5000');
+    inputs[1].value = '350'; inputs[1].dispatchEvent(new f.window.Event('input'));
+    root.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
+    assert.equal((f.storage.get(key) as Record<string, Record<string, unknown>>)['request-settings'].requestInterval, 350);
   } finally { await f.close(); }
 });
 
@@ -291,14 +477,43 @@ test('history dialog searches, deletes and restores entries', async () => {
   try {
     [...f.window.document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '阅读历史')!.click();
     const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-history')!;
-    assert.ok(dialog.open); assert.equal(dialog.querySelectorAll('ol li').length, 2);
+    assert.ok(dialog.open); assert.equal(dialog.querySelectorAll('ol a').length, 2);
     const search = dialog.querySelector('input')!; search.value = 'Alpha'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(dialog.querySelectorAll('ol a').length, 1);
-    (dialog.querySelector('ol button') as HTMLButtonElement).click();
+    (dialog.querySelector('ol button[aria-label]') as HTMLButtonElement).click();
     assert.equal(dialog.querySelectorAll('ol a').length, 0);
     [...dialog.querySelectorAll('button')].find(b => b.textContent === '撤销删除')!.click();
     assert.equal(dialog.querySelector('ol a')!.textContent, 'Alpha');
     assert.ok(dialog.querySelector('time'));
+  } finally { await f.close(); }
+});
+
+test('history records actual visits, prunes old entries and tracks recently closed posts', async () => {
+  const stateKey = 'nspp:state:www.nodeseek.com:reading-history';
+  const storage = new Map<string, unknown>([[key, { 'user-level': { enabled: false }, 'official-blocklist': { enabled: false }, monitor: { enabled: false } }], [stateKey, { entries: [
+    { path: '/post-1-1', title: 'Expired', time: Date.now() - 8 * 86400000 },
+    { path: '/post-12-2', title: 'Old title', time: Date.now() - 1000 },
+  ] }]]);
+  const f = await fixture({}, '<div class="post-title"><a href="/post-99-1">Unvisited</a></div>', '/post-12-2', storage, window => {
+    Object.assign(window, { __config__: { postData: { postId: 12, title: 'Current title', op: { uid: 7, name: 'Alice' } } } });
+  });
+  try {
+    const state = () => storage.get(stateKey) as { entries: { path: string; title: string }[]; recent: { path: string }[] };
+    assert.deepEqual(state().entries.map(item => item.path), ['/post-12-1']);
+    assert.equal(state().entries[0].title, 'Current title');
+    f.window.document.querySelector('a')!.addEventListener('click', event => event.preventDefault());
+    f.window.document.querySelector('a')!.click();
+    assert.equal(state().entries.length, 1);
+    f.window.dispatchEvent(new f.window.Event('beforeunload'));
+    assert.equal(state().recent[0].path, '/post-12-1');
+    f.window.document.querySelector<HTMLButtonElement>('[aria-label="阅读历史"]')!.click();
+    const dialog = f.window.document.querySelector('.nspp-history')!;
+    dialog.querySelector<HTMLButtonElement>('[data-tab="recent"]')!.click();
+    assert.equal(dialog.querySelector('a')!.getAttribute('href'), '/post-12-1');
+    assert.ok([...dialog.querySelectorAll('button')].some(button => button.textContent === '恢复'));
+    dialog.querySelector<HTMLButtonElement>('.nspp-history-day button')!.click();
+    assert.equal(state().recent.length, 0);
+    assert.equal(state().entries.length, 1);
   } finally { await f.close(); }
 });
 
@@ -471,7 +686,7 @@ test('visible rows load counts automatically and queue beyond the concurrency li
   try {
     await new Promise(resolve => setTimeout(resolve, 800));
     assert.equal(reads, 3);
-    assert.equal(peak, 1);
+    assert.equal(peak, 2);
     for (const bar of f.window.document.querySelectorAll('.post-list-item .nspp-list-actions')) {
       assert.match(bar.textContent!, /点赞7加鸡腿7反对7收藏7/);
       assert.equal(bar.hasAttribute('aria-busy'), false);
@@ -725,6 +940,23 @@ test('notification categories replace the sidebar notification entry and preserv
     assert.equal(doc.querySelector('.user-stat')!.children.length, 2);
     assert.equal(doc.querySelectorAll('.user-stat > .stat-block').length, 2);
     assert.equal(doc.querySelector('.user-stat > .nspp-notifications'), null);
+  } finally { await f.close(); }
+});
+
+test('notification categories stay out of floating tools when the sidebar is absent', async () => {
+  const f = await fixture({ 'notification-categories': { enabled: true } }, '', '/', undefined, window => {
+    Object.assign(window, { fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 1, atMe: 2, message: 0 } })) });
+  });
+  try {
+    const doc = f.window.document;
+    assert.ok(doc.querySelector('#nspp-tools button'));
+    assert.equal(doc.querySelector('.nspp-notifications, .nspp-notification-row'), null);
+    doc.body.insertAdjacentHTML('beforeend', '<div class="user-card"><div class="user-stat"><div class="stat-block"><a href="/notification">通知</a></div><div class="stat-block">收藏 2</div></div></div>');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(doc.querySelectorAll('.user-stat .nspp-notification-link').length, 3);
+    doc.querySelector('.user-card')!.remove();
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(doc.querySelector('.nspp-notifications, .nspp-notification-row'), null);
   } finally { await f.close(); }
 });
 
@@ -1006,26 +1238,30 @@ test('pause control blocks automatic comment loading and resume reconnects obser
 
 test('rate-limited profile requests stop queued traffic and retain Retry-After', async () => {
   let calls = 0;
-  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
+  const f = await fixture({ 'request-settings': { enabled: true, maxConcurrent: 2, requestInterval: 0 }, 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a><a href="/space/789">Carol</a></div>', '/', undefined, window => {
     window.fetch = (async () => { calls++; return new window.Response('', { status: 429, headers: { 'Retry-After': '120' } }); }) as typeof window.fetch;
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
     assert.ok(Number(f.storage.get('nspp:request-cooldown:www.nodeseek.com')) > Date.now() + 110000);
   } finally { await f.close(); }
 });
 
-test('forum profile requests default to a 100ms gap', async () => {
-  const times: number[] = [];
-  const f = await fixture({ 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a></div>', '/', undefined, window => {
-    window.fetch = (async () => { times.push(Date.now()); return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } })); }) as typeof window.fetch;
+test('forum profile requests overlap up to the configured concurrency limit', async () => {
+  let active = 0; let peak = 0; let calls = 0;
+  const f = await fixture({ 'request-settings': { enabled: true, maxConcurrent: 2, requestInterval: 0 }, 'official-blocklist': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a><a href="/space/456">Bob</a><a href="/space/789">Carol</a></div>', '/', undefined, window => {
+    window.fetch = (async () => {
+      calls++; active++; peak = Math.max(peak, active);
+      await new Promise(resolve => setTimeout(resolve, 30));
+      active--;
+      return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } }));
+    }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    assert.equal(times.length, 2);
-    assert.ok(times[1]! - times[0]! >= 90);
-    assert.ok(times[1]! - times[0]! < 750);
+    await new Promise(resolve => setTimeout(resolve, 150));
+    assert.equal(calls, 3);
+    assert.equal(peak, 2);
   } finally { await f.close(); }
 });
 
@@ -1054,3 +1290,41 @@ test('badge colors retain the original style by default', async () => {
     assert.equal([...f.window.document.querySelectorAll('style')].some(style => style.textContent?.includes('color:var(--nspp-muted, #9198a1)!important')), false);
   } finally { await f.close(); }
 });
+
+for (const mobile of [false, true]) {
+  test(`post preview images open a gallery and preserve the ${mobile ? 'mobile' : 'desktop'} card until closed`, async () => {
+    const f = await fixture({ 'official-blocklist': { enabled: false }, 'user-level': { enabled: false } }, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Images</a></div></li></ul>', '/', undefined, window => {
+      window.matchMedia = ((query: string) => ({ matches: query.includes('prefers-reduced-motion') || (query.includes('hover: hover') ? !mobile : mobile) })) as typeof window.matchMedia;
+      window.fetch = (async () => new window.Response('<div class="post-content"><a href="https://example.com/photo.png"><img src="https://example.com/photo.png" alt="First image"></a><img src="https://example.com/second.png" alt="Second image"></div>')) as typeof window.fetch;
+    });
+    try {
+      const doc = f.window.document;
+      const link = doc.querySelector<HTMLAnchorElement>('.post-title a')!;
+      if (mobile) link.click(); else link.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+      await new Promise(resolve => setTimeout(resolve, mobile ? 40 : 450));
+      const preview = doc.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
+      const images = preview.querySelectorAll<HTMLImageElement>('article img');
+      assert.equal(images.length, 2);
+      const click = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
+      images[1].dispatchEvent(click);
+      assert.equal(click.defaultPrevented, true, 'image clicks must not navigate');
+      const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-preview')!;
+      assert.equal(gallery.open, true);
+      assert.equal(gallery.querySelector('.viewer-canvas img')?.getAttribute('src'), 'https://example.com/second.png');
+      assert.ok(gallery.querySelector('[aria-label="放大"]'));
+      assert.ok(gallery.querySelector('[aria-label="关闭预览"]'));
+      preview.dispatchEvent(new f.window.MouseEvent('mouseleave'));
+      await new Promise(resolve => setTimeout(resolve, 260));
+      assert.equal(preview.hidden, false, 'the hover timer must not close an active gallery');
+      gallery.dispatchEvent(new f.window.Event('cancel', { cancelable: true }));
+      assert.equal(doc.querySelector('.nspp-image-preview'), null);
+      assert.equal(preview.open, true, 'Escape closes only the gallery');
+      assert.equal(doc.activeElement, images[1]);
+      images[0].dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      assert.equal(doc.querySelector('.viewer-canvas img')?.getAttribute('src'), 'https://example.com/photo.png');
+      f.window.dispatchEvent(new f.window.PageTransitionEvent('pagehide', { persisted: false }));
+      assert.equal(doc.querySelector('.nspp-image-preview'), null);
+      assert.equal(doc.body.classList.contains('viewer-open'), false);
+    } finally { await f.close(); }
+  });
+}

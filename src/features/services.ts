@@ -10,8 +10,7 @@ export const serviceFeatures: Feature[] = [
         const uid = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
         if (!uid) return;
         const cacheKey = `counts:${uid}`;
-        const host = document.createElement('span'); host.setAttribute('role', 'status'); host.className = 'nspp-notifications';
-        const counters = document.createElement('span'); host.append(counters); const originals = new Map<HTMLElement, HTMLElement['hidden']>();
+        const originals = new Map<HTMLElement, HTMLElement['hidden']>();
         const rows: HTMLElement[] = ['reply', 'atMe', 'message'].map(() => document.createElement('div'));
         rows.forEach(row => { row.className = 'nspp-notification-row'; });
         const place = () => {
@@ -22,11 +21,8 @@ export const serviceFeatures: Feature[] = [
               const target = columns[index === 1 ? 1 : 0]!;
               if (row.parentElement !== target) target.append(row);
             });
-            host.remove();
           } else {
-            const target = document.getElementById('nspp-tools') || document.body;
-            if (host.parentElement !== target) target.append(host);
-            rows.forEach(row => { if (row.parentElement !== counters) counters.append(row); });
+            rows.forEach(row => row.remove());
           }
           card?.querySelectorAll<HTMLAnchorElement>('a[href^="/notification"]').forEach(anchor => {
             if (anchor.classList.contains('nspp-notification-link')) return;
@@ -90,11 +86,11 @@ export const serviceFeatures: Feature[] = [
               const previous = ctx.get<Record<string, number> | undefined>(cacheKey);
               render(result.unreadCount); ctx.set(cacheKey, result.unreadCount); failed = false;
               if (previous && !ctx.signal.aborted) {
-                for (const [key, label, path] of [['reply', '新回复', 'reply'], ['atMe', '新的 @我', 'atMe'], ['message', '新私信', 'message?mode=list']]) {
+                for (const [key, label, title, path] of [['reply', '评论/回复', '收到了评论/回复', 'reply'], ['atMe', '@提醒', '有人 @你', 'atMe'], ['message', '私信', '收到了私信', 'message?mode=list']]) {
                   const before = previous[key]; const count = result.unreadCount[key];
-                  if (!Number.isFinite(before) || before < 0 || count <= before) continue;
-                  const message = `${label} ${count - before} 条，当前未读 ${count} 条`;
-                  if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`)) ctx.notify(message);
+                  if (!Number.isFinite(before) || before < 0 || !Number.isFinite(count) || count <= before) continue;
+                  const message = `收到 ${count - before} 条新${label}，当前有 ${count} 条${label}未读`;
+                  if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`, title)) ctx.notify(message);
                 }
               }
             });
@@ -108,7 +104,7 @@ export const serviceFeatures: Feature[] = [
         try { render(ctx.get<Record<string, number>>(cacheKey)); } catch { /* Invalid old cache is ignored. */ }
         const stopPlacement = ctx.watch(place);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) void run(); }, { signal: ctx.signal }); void run();
-        const timer = setInterval(() => { void run(); }, 60_000); return () => { clearInterval(timer); stopPlacement(); host.remove(); rows.forEach(row => row.remove()); originals.forEach((hidden, el) => { el.hidden = hidden; el.classList.remove('nspp-original-notification'); }); };
+        const timer = setInterval(() => { void run(); }, 60_000); return () => { clearInterval(timer); stopPlacement(); rows.forEach(row => row.remove()); originals.forEach((hidden, el) => { el.hidden = hidden; el.classList.remove('nspp-original-notification'); }); };
       };
       let cleanup: (() => void) | undefined;
       const start = () => { if (!cleanup && !ctx.signal.aborted) cleanup = initialize(); };

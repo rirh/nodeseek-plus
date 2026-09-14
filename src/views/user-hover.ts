@@ -1,4 +1,5 @@
 import { copyButton } from './copy-button';
+import { userCardActions } from './user-card-actions';
 import { authorId } from '../features/user-profile';
 import type { Context } from '../core/types';
 
@@ -7,6 +8,7 @@ export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-i
 const cards = new WeakMap<HTMLAnchorElement, { element: HTMLElement; users: number; dispose(): void }>();
 
 export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
+  if (anchor.closest('.hover-user-card')) return false;
   const url = new URL(anchor.href, location.href);
   return url.origin === location.origin && /^\/space\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash;
 }
@@ -16,10 +18,10 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
   if (!entry) {
     const title = anchor.getAttribute('title'); anchor.removeAttribute('title');
     const element = document.createElement('section'); element.className = 'nspp-user-hover'; element.hidden = true;
-    element.setAttribute('aria-label', `${anchor.textContent?.trim()} 的用户详情`);
     const heading = document.createElement('a'); heading.href = anchor.href; heading.textContent = anchor.textContent?.trim() || anchor.querySelector('img')?.alt || '用户资料'; heading.className = 'nspp-user-hover-name';
+    element.setAttribute('aria-label', `${heading.textContent} 的用户详情`);
     const header = document.createElement('div'); header.className = 'nspp-user-hover-header';
-    const mark = document.createElement('span'); mark.className = 'nspp-user-hover-monogram'; mark.textContent = (anchor.textContent?.trim() || '?').slice(0, 1);
+    const mark = document.createElement('span'); mark.className = 'nspp-user-hover-monogram'; mark.textContent = heading.textContent.slice(0, 1);
     const identity = document.createElement('div'); identity.append(heading);
     const controller = new AbortController(); const options = { signal: controller.signal };
     const copy = copyButton({ notify: ctx.notify, signal: controller.signal }, () => heading.textContent || '', '复制用户名', true);
@@ -37,14 +39,16 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     syncTags();
     const avatar = document.createElement('img'); avatar.className = 'nspp-user-hover-avatar'; avatar.alt = ''; avatar.hidden = true;
     const id = authorId(anchor, location.origin);
+    const actions = id ? userCardActions(id, () => heading.textContent || '', ctx.notify, controller.signal) : undefined;
     avatar.addEventListener('load', () => { avatar.hidden = false; mark.hidden = true; });
     avatar.addEventListener('error', () => { avatar.hidden = true; mark.hidden = false; });
-    header.append(avatar, mark, identity); element.append(header); document.body.append(element);
+    header.append(avatar, mark, identity); element.append(header); if (actions) element.append(actions.element); document.body.append(element);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const close = () => { clearTimeout(timer); element.hidden = true; };
     const open = () => {
       clearTimeout(timer); if (!anchor.isConnected) return;
       syncTags(); element.hidden = false;
+      actions?.refresh();
       if (id && !avatar.getAttribute('src')) avatar.src = `/avatar/${id}.png`;
       const rect = anchor.getBoundingClientRect();
       element.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - element.offsetWidth - 8))}px`;

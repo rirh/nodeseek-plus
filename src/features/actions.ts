@@ -14,7 +14,7 @@ function button(label: string, fn: () => void, ctx: Context) {
   el.addEventListener('click', fn, { signal: ctx.signal }); return el;
 }
 const attendance: Feature = {
-  id: 'attendance', title: '签到', description: '手动签到，可选每天自动签到；仅成功后缓存，按账户隔离。', group: '操作辅助',
+  id: 'attendance', title: '签到', description: '每天尝试一次，成功或失败均缓存当天记录并隐藏按钮，次日再试；按账户隔离。', group: '操作辅助',
   defaults: { enabled: true, automatic: true, mode: 'fixed' },
   fields: { automatic: { label: '每天自动签到', type: 'text' }, mode: { label: '奖励方式', type: 'select', options: [{ label: '固定', value: 'fixed' }, { label: '随机', value: 'random' }] } },
   mount(ctx) {
@@ -36,12 +36,9 @@ const attendance: Feature = {
       if (!animation?.isActive()) control.hidden = signed;
     };
     sync();
-    let attemptedDay = '', attemptedAt = 0;
     const tick = () => {
       sync();
-      if (ctx.get<boolean>('automatic') && !known() && !document.hidden && (attemptedDay !== day() || Date.now() - attemptedAt >= 600_000)) {
-        attemptedDay = day(); attemptedAt = Date.now(); void run();
-      }
+      if (ctx.get<boolean>('automatic') && !known() && !document.hidden && !control.disabled) void run();
     };
     window.addEventListener('focus', tick, { signal: ctx.signal });
     document.addEventListener('visibilitychange', tick, { signal: ctx.signal });
@@ -61,17 +58,20 @@ const attendance: Feature = {
       animation?.kill();
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.fromTo(control, { scale: .94 }, { scale: 1, duration: .2, ease: 'power2.out' });
       control.disabled = true; renderControl('签到中…'); control.setAttribute('aria-busy', 'true');
+      const requestDay = day();
       try {
-        const executed = await withTabLock(`attendance:${user!.member_id}`, 10000, async () => {
+        await withTabLock(`attendance:${user!.member_id}`, 10000, async () => {
         if (ctx.signal.aborted) return;
         if (known()) { complete(false); return; }
         const result = await ctx.request<{ success?: boolean; message?: string; gain?: number }>(`/api/attendance?random=${ctx.get<string>('mode') === 'random'}`, { method: 'POST' });
         if (ctx.signal.aborted) return;
-        if (result.success || /已完成|已签到/.test(result.message || '')) { ctx.set(key, day()); complete(!!result.success); }
-        ctx.notify(result.message || (result.success ? `签到成功，获得 ${result.gain ?? ''} 鸡腿` : '签到失败'));
+        ctx.set(key, requestDay);
+        if (known()) complete(!!result?.success); else sync();
+        if (result?.success) ctx.notify(result.message || `签到成功，获得 ${result.gain ?? ''} 鸡腿`);
         });
-        if (!executed) ctx.notify('其他标签页正在签到或刚刚尝试，请稍后查看');
-      } catch { if (!ctx.signal.aborted) ctx.notify('签到失败，请稍后重试'); }
+      } catch {
+        if (!ctx.signal.aborted) { ctx.set(key, requestDay); if (known()) complete(false); else sync(); }
+      }
       finally { control.disabled = false; renderControl(known() ? '已签到' : '签到'); control.removeAttribute('aria-busy'); }
     }
     const stop = ctx.watch(sync);

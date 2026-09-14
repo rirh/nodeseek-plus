@@ -26,6 +26,7 @@ function control(label: string, fn: () => void, ctx: Context) {
   const el = document.createElement('button'); el.type = 'button'; el.textContent = label;
   const icon = label === '关闭' ? 'close' : label === '刷新' || label === '更新' ? 'refresh' : label === '停止' ? 'stop' : undefined;
   if (icon) el.prepend(toolIcon(icon));
+  if (label === '关闭') { el.replaceChildren(toolIcon('close')); el.title = label; el.setAttribute('aria-label', label); }
   el.addEventListener('click', fn, { signal: ctx.signal }); return el;
 }
 const monitor: Feature = {
@@ -47,11 +48,19 @@ const monitor: Feature = {
     const statusText = document.createElement('span'); status.append(spinner, statusText); panel.append(status);
     let spin: gsap.core.Tween | undefined;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    function stopSpin() {
+      spin?.kill(); spin = undefined; spinner.style.transform = ''; spinner.hidden = true;
+    }
     function syncAnimation() {
       const active = busy && (!paused || manualCheck) && !cooling();
-      spinner.hidden = !active;
-      if (!active || reducedMotion.matches) { spin?.kill(); spin = undefined; spinner.style.transform = ''; }
-      else if (!spin) spin = gsap.to(spinner, { rotation: 360, duration: .8, repeat: -1, ease: 'none' });
+      if (reducedMotion.matches) { stopSpin(); spinner.hidden = !active; return; }
+      if (active) {
+        spinner.hidden = false;
+        if (!spin) spin = gsap.fromTo(spinner, { rotation: 0 }, {
+          rotation: 360, duration: .8, repeat: -1, ease: 'none',
+          onRepeat: () => { if (!busy || (paused && !manualCheck) || cooling()) stopSpin(); },
+        });
+      } else if (!spin) spinner.hidden = true;
     }
     reducedMotion.addEventListener('change', syncAnimation, { signal: ctx.signal });
     const stats = document.createElement('span'); stats.textContent = '0 轮 · 累计 0 帖 · 符合 0 · 不符合 0'; status.append(stats);
@@ -100,7 +109,7 @@ const monitor: Feature = {
       const matched = snapshot?.matched ?? (snapshot ? [...new Map([...snapshot.home, ...snapshot.trades].map(post => [post.id, post])).values()].filter(post => match(post)).length : 0);
       badge.textContent = String(matched);
       badge.hidden = matched === 0;
-      launch.title = `帖子监控 · ${label}\n累计匹配 ${matched} 条 · ${count} 条未读\n红色徽章表示本轮监控规则下累计匹配的帖子数，打开面板不会清零；修改规则后重新统计。\n每 ${interval / 1000} 秒检查 NodeSeek RSS，结果列表保留最近 200 条。\n点击查看匹配帖子并清除未读标记。`;
+      launch.title = `帖子监控 · ${label}\n累计匹配 ${matched} 条 · ${count} 条未读\n红色徽章表示本轮监控规则下累计匹配的帖子数，打开面板不会清零；清空记录或修改规则后重新统计。\n每 ${interval / 1000} 秒检查 NodeSeek RSS，结果列表保留最近 200 条。\n点击查看匹配帖子并清除未读标记。`;
       launch.setAttribute('aria-label', launch.title);
     }
     const wait = () => new Promise<void>(resolve => {
@@ -147,7 +156,7 @@ const monitor: Feature = {
         // Only the title is authoritative enough for a change signal. Never claim a winner from a full-page username match.
         const signal = /已开奖|开奖结果|中奖名单|已结束/.test(doc.title) ? doc.title : '';
         const updated = readTracked().map(x => x.id === entry.id ? { ...x, checked: Date.now(), signal } : x);
-        if (signal && updated.some(x => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`);
+        if (signal && updated.some(x => x.id === entry.id)) notify(`抽奖状态可能已更新：${entry.title}，请打开帖子核实`, '抽奖状态更新', 'lottery');
         ctx.set(trackKey, updated); renderTracks();
       }
     }
@@ -175,6 +184,20 @@ const monitor: Feature = {
     editor.append(label, explanation, aiHelp, frequencyLabel, frequencyHelp, feedback, apply);
     configDialog.append(configHeader, editor); document.body.append(configDialog);
     const configure = control('配置', () => { input.value = keywordText; frequency.value = String(interval / 1000); feedback.textContent = ''; configDialog.showModal(); }, ctx); configure.prepend(toolIcon('settings')); header.insertBefore(configure, header.lastElementChild);
+    const clear = control('清空记录', () => {
+      if (busy) { ctx.notify('正在检查，请完成后再清空记录'); return; }
+      const snapshot = ctx.get<Snapshot>(snapshotKey);
+      if (snapshot) {
+        const cursor = snapshot.cursor ?? [...snapshot.home, ...snapshot.trades].reduce((id, post) => BigInt(post.id) > BigInt(id) ? post.id : id, '0');
+        const cleared = { ...snapshot, cursor, rounds: 0, checked: 0, matched: 0, results: [] };
+        ctx.set(snapshotKey, cleared); display(cleared);
+      }
+      ctx.set(unreadKey, []); output.replaceChildren(); renderUnread();
+      statusText.textContent = '记录已清空，后续从上次检查位置继续监控';
+      ctx.notify('已清空监控记录、未读标记和累计计数');
+    }, ctx);
+    clear.title = '清空帖子结果、未读标记和累计计数，保留监控规则与检查位置';
+    header.insertBefore(clear, configure);
     configDialog.addEventListener('close', () => configure.focus(), { signal: ctx.signal });
     editor.addEventListener('submit', event => {
       event.preventDefault(); if (busy) { ctx.notify('正在检查，请完成后再更新'); return; }
@@ -235,7 +258,7 @@ const monitor: Feature = {
       if (cooling()) { statusText.textContent = '请求冷却中，请稍后手动刷新'; if (force) ctx.notify(statusText.textContent); return; }
       if (!force && Date.now() - last < interval) { statusText.textContent = `等待下次检查 · 约 ${Math.ceil((interval - (Date.now() - last)) / 1000)} 秒后可刷新`; return; }
       if (force) ctx.notify(message);
-      manualCheck = force; busy = true; syncAnimation(); renderCountdown(); apply.disabled = true; panel.dataset.checking = 'true'; status.setAttribute('aria-busy', 'true'); last = Date.now(); statusText.textContent = '正在检查匹配帖子…'; refreshButton.disabled = true; refreshButton.setAttribute('aria-busy', 'true');
+      manualCheck = force; busy = true; syncAnimation(); renderCountdown(); apply.disabled = true; clear.disabled = true; panel.dataset.checking = 'true'; status.setAttribute('aria-busy', 'true'); last = Date.now(); statusText.textContent = '正在检查匹配帖子…'; refreshButton.disabled = true; refreshButton.setAttribute('aria-busy', 'true');
       try {
         const executed = await withTabLock(`monitor:${user || 'guest'}`, force ? 0 : interval, async () => {
           if (ctx.signal.aborted) return;
@@ -267,7 +290,7 @@ const monitor: Feature = {
             const message = `发现 ${fresh.length} 条新帖：${fresh.slice(0, 2).map(post => post.title).join('；')}`;
             ctx.set(unreadKey, [...new Map([...fresh.map(post => ({ id: post.id, title: post.title, url: post.url, found: Date.now() })), ...readUnread()].map(post => [post.id, post])).values()].slice(0, 200));
             renderUnread();
-            notify(message);
+            notify(message, '发现匹配新帖', 'posts');
           }
           await checkTracked();
           if (force && !ctx.signal.aborted) ctx.notify(`检查完成，匹配 ${matches.length} 条帖子`);
@@ -285,12 +308,12 @@ const monitor: Feature = {
       } }
       finally { busy = false; manualCheck = false;
         if (statusText.textContent === '正在检查匹配帖子…') { const snapshot = ctx.get<Snapshot>(snapshotKey); statusText.textContent = snapshot ? `更新于 ${new Date(snapshot.at).toLocaleTimeString()}` : '检查结束'; }
-        apply.disabled = false; delete panel.dataset.checking; status.removeAttribute('aria-busy'); renderState(); refreshButton.disabled = false; refreshButton.removeAttribute('aria-busy'); }
+        apply.disabled = false; clear.disabled = false; delete panel.dataset.checking; status.removeAttribute('aria-busy'); renderState(); refreshButton.disabled = false; refreshButton.removeAttribute('aria-busy'); }
     }
-    function notify(message: string) {
+    function notify(message: string, title: string, category: string) {
       ctx.notify(message);
       if (ctx.get<boolean>('desktop-notifications') && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try { new Notification('NodeSeek++ 帖子监控', { body: message, tag: 'nspp-monitor' }); } catch { /* In-page notification remains available. */ }
+        try { new Notification(`NodeSeek++ · ${title}`, { body: message, tag: `nspp-monitor:${category}` }); } catch { /* In-page notification remains available. */ }
       }
     }
     const footer = document.createElement('footer');

@@ -1,4 +1,4 @@
-export interface UserProfile { signature?: string; coin?: number; rank?: number; created_at?: string | number; nPost?: number; nComment?: number; }
+export interface UserProfile { signature?: string; bio?: string; introduction?: string; signature_text?: string; coin?: number; stardust?: number; fans?: number; rank?: number; created_at?: string | number; nPost?: number; nComment?: number; }
 // User-provided forum age: 1388 days on 2026-09-12 (UTC+8).
 export function forumAge(now = Date.now()) {
   const baseline = Date.parse('2026-09-12T00:00:00+08:00');
@@ -32,10 +32,14 @@ export function authorId(el: Element, base: string): string | undefined {
 export function trustScore(user: UserProfile, now = Date.now()) {
   const days = registration(user, now).days;
   const validCount = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
-  if (days === null || !validCount(user.nPost) || !validCount(user.nComment)) return null;
+  if (days === null || !validCount(user.nPost) || !validCount(user.nComment) || !validCount(user.fans)
+    || !Number.isSafeInteger(user.coin) || !Number.isSafeInteger(user.stardust)) return null;
   const points = (value: number, cap: number, weight: number) => weight * Math.log1p(Math.min(value, cap)) / Math.log1p(cap);
-  const age = points(days, forumAge(now), 60);
-  const posts = points(user.nPost, 100, 20);
-  const comments = points(user.nComment, 500, 20);
-  return { score: Math.round(age + posts + comments), age, posts, comments };
+  const age = 35 * Math.sqrt(Math.min(days, 730) / 730);
+  const posts = points(user.nPost, 300, 20);
+  const comments = points(user.nComment, 2000, 20);
+  const coin = points(Math.max(0, user.coin!), 6000, 10);
+  const stardust = points(Math.max(0, user.stardust!), 500, 10);
+  const fans = points(user.fans, 50, 5);
+  return { score: Math.round(age + posts + comments + coin + stardust + fans), age, posts, comments, coin, stardust, fans };
 }

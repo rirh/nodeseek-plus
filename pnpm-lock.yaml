@@ -17,6 +17,9 @@ importers:
       highlight.js:
         specifier: ^11.12.0
         version: 11.12.0
+      viewerjs:
+        specifier: ^1.14.0
+        version: 1.14.0
     devDependencies:
       '@types/tampermonkey':
         specifier: ^5.5.0
@@ -606,6 +609,9 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
+  viewerjs@1.14.0:
+    resolution: {integrity: sha512-eFtTGjK9p1idAiax6yz9JLe5zNlmRfG/YEdGCVYeSD+p5lozmp32D8yGu+AhmYDW+o3CkMO9aDtjxpljtB/Ymg==}
+
   vite-plugin-monkey@8.1.1:
     resolution: {integrity: sha512-9mX7eTHzkCnVV5+TTW4/Xt5gKol/3g5ilJXUJd6iiCwJz4tmWUB+Qfk3YUL+b5ZGDfult2ScbxFuPkrm/NUXIg==}
     peerDependencies:
@@ -1118,6 +1124,8 @@ snapshots:
   typescript@6.0.3: {}
 
   undici-types@6.21.0: {}
+
+  viewerjs@1.14.0: {}
 
   vite-plugin-monkey@8.1.1(postcss@8.5.28)(vite@8.3.0(@types/node@22.20.2)):
     dependencies:

@@ -3,6 +3,7 @@ import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
 import { unsafeWindow } from '../lib/userscript';
 import { authorId } from './user-profile';
+import { confirmDialog } from '../views/confirm-dialog';
 
 export function parseBlocklist(value: unknown): Set<string> {
   const result = value as { success?: boolean; data?: { block_member_id?: unknown }[] } | null;
@@ -53,7 +54,7 @@ export const officialBlocklist: Feature = {
         const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).find(candidate => !candidate.closest('.nspp-user-hover, .nspp-profile-dialog') && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector('img')?.alt.trim();
         if (!id || id === String(ownId) || !name || buttons.has(anchor)) return;
         const button = document.createElement('button'); button.type = 'button'; button.className = 'nspp-block-toggle';
-        const hover = userHover(anchor, ctx); hover.element.append(button);
+        const hover = userHover(anchor, ctx); (hover.element.querySelector('.nspp-user-hover-actions') || hover.element).append(button);
         buttons.set(anchor, { id, name, button, release: hover.release });
         button.addEventListener('click', async () => {
           if (pending.has(id) || fetching) return;
@@ -62,6 +63,12 @@ export const officialBlocklist: Feature = {
           try {
             if (Date.now() - checked > 30000) await refresh();
             const remove = blocked.has(id);
+            const action = remove ? '解除屏蔽' : '屏蔽';
+            if (!await confirmDialog(`${action} ${name}？`, remove ? '解除后将恢复显示该用户的内容。' : '屏蔽后将按站点规则隐藏该用户的内容，可随时解除。', `确认${action}`, ctx.signal)) return;
+            if (Date.now() - checked > 30000) await refresh();
+            if (blocked.has(id) !== remove || (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id !== ownId) {
+              ctx.notify('状态已变化，请重新操作'); return;
+            }
             const result = await ctx.request<{ success: boolean; message?: string }>(`/api/block-list/${remove ? 'del' : 'add'}`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(remove ? { block_member_id: Number(id) } : { block_member_name: name }),
