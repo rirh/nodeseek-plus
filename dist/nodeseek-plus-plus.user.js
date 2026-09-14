@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.914.1706
+// @version      26.914.1710
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @downloadURL  https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js
@@ -693,7 +693,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		let prompting = false;
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1706")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1710")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -702,7 +702,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				promptedAt: Date.now()
 			});
 			try {
-				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1706，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
+				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1710，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
 					href: UPDATE_URL,
 					cancelLabel: "稍后提醒"
 				});
@@ -736,8 +736,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					return;
 				}
 				const version = state().version;
-				if (version && isNewerVersion(version, "26.914.1706")) await prompt(manual);
-				else if (manual) notify(`当前已是最新版本（v26.914.1706）`);
+				if (version && isNewerVersion(version, "26.914.1710")) await prompt(manual);
+				else if (manual) notify(`当前已是最新版本（v26.914.1710）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -772,7 +772,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		title.textContent = "NodeSeek++";
 		const version = document.createElement("span");
 		version.className = "about-version";
-		version.textContent = `v26.914.1706`;
+		version.textContent = `v26.914.1710`;
 		const heading = document.createElement("div");
 		heading.className = "about-heading";
 		heading.append(title, version);
@@ -843,7 +843,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.914.1706`));
+		heading.append(title, element$1("small", `v26.914.1710`));
 		const checkUpdate = element$1("button", "检查更新");
 		checkUpdate.type = "button";
 		checkUpdate.className = "check-update";

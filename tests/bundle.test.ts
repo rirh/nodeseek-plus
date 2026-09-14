@@ -1434,6 +1434,9 @@ test('mobile reply keeps the native editor and draft, cancels comment loading an
   const html = '<ul class="comments"><li><div class="comment-menu"><button class="menu-item" title="回复"><span>回复</span></button></div></li></ul><div class="nsk-pager"><a class="pager-next" href="/post-1-2">next</a></div><div class="md-editor" style="color:red"><textarea>草稿</textarea><button type="submit">发送</button></div>';
   const f = await fixture({ 'infinite-scroll': { enabled: true, comments: true }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html, '/post-1-1', undefined, window => {
     window.happyDOM.setWindowSize({ width: 390, height: 844 });
+    // Happy DOM misreads this comma-separated query; retain its real mobile MediaQueryList.
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = ((query: string) => matchMedia(query === '(max-width: 700px), (hover: none)' ? '(max-width: 700px)' : query)) as typeof window.matchMedia;
     window.IntersectionObserver = class {
       constructor(callback: (entries: unknown[]) => void, options?: { rootMargin?: string }) { if (options?.rootMargin === '150px') intersect = () => callback([{ isIntersecting: true }]); }
       observe() { observing = true; } disconnect() { observing = false; } unobserve() {}
@@ -1453,7 +1456,7 @@ test('mobile reply keeps the native editor and draft, cancels comment loading an
     assert.equal(calls, 1);
     doc.querySelector<HTMLButtonElement>('.menu-item span')!.click();
     assert.equal(nativeReplies, 1, 'native reply handler still receives the click');
-    assert.equal(doc.querySelector('.nspp-floating-reply'), editor);
+    assert.ok(doc.querySelector('.nspp-floating-reply') === editor, 'the native editor should become floating');
     assert.equal(doc.documentElement.hasAttribute('data-nspp-reply-open'), true);
     assert.equal(observing, false);
     assert.equal(requestSignal?.aborted, true);
