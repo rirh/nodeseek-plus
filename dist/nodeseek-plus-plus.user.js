@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.914.1927
+// @version      26.914.1933
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @downloadURL  https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js
@@ -650,10 +650,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			const cleanup = () => signal.removeEventListener("abort", cancel);
 			const request = _GM_xmlhttpRequest({
 				method: "GET",
-				url: UPDATE_META_URL,
+				url: `${UPDATE_META_URL}?_=${crypto.randomUUID()}`,
 				anonymous: true,
 				timeout: 2e4,
-				headers: { "Cache-Control": "no-cache" },
+				nocache: true,
+				headers: {
+					"Cache-Control": "no-cache, no-store, max-age=0",
+					Pragma: "no-cache"
+				},
 				onload: (response) => {
 					cleanup();
 					if (response.status !== 200) {
@@ -694,9 +698,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.914.1927")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.914.1933")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.914.1927。点击前往更新。`, "https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.914.1933。点击前往更新。`, "https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -705,7 +709,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1927")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.914.1933")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -714,7 +718,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				promptedAt: Date.now()
 			});
 			try {
-				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1927，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
+				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.914.1933，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
 					href: UPDATE_URL,
 					cancelLabel: "稍后提醒"
 				});
@@ -722,45 +726,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				prompting = false;
 			}
 		}
-		async function run(manual, enteredPage) {
+		async function run(manual) {
 			try {
-				let fetched = false;
-				const ran = await withTabLock("script-update", 0, async () => {
-					if (signal.aborted) return;
-					const previous = state();
-					const elapsed = Date.now() - (previous.checkedAt || 0);
-					if (!manual && !enteredPage && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
-					GM_setValue$1(STATE_KEY, {
-						...previous,
-						checkedAt: Date.now()
-					});
-					const version = await requestVersion(signal);
-					if (signal.aborted) return;
-					GM_setValue$1(STATE_KEY, {
-						...state(),
-						version
-					});
-					fetched = true;
-				});
+				const version = await requestVersion(signal);
 				if (signal.aborted) return;
-				if (manual && (!ran || !fetched)) {
-					notify("其他页面正在检查更新，请稍后重试");
-					return;
-				}
-				const version = state().version;
-				if (version && isNewerVersion(version, "26.914.1927")) {
+				GM_setValue$1(STATE_KEY, {
+					...state(),
+					version
+				});
+				if (version && isNewerVersion(version, "26.914.1933")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.914.1927）`);
+				} else if (manual) notify(`当前已是最新版本（v26.914.1933）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
 		}
-		const check = (manual = true, enteredPage = false) => {
+		const check = (manual = true) => {
 			if (signal.aborted) return Promise.resolve();
 			if (pending) return manual ? pending.then(() => check(true)) : pending;
-			pending = run(manual, enteredPage).finally(() => {
+			pending = run(manual).finally(() => {
 				pending = void 0;
 			});
 			return pending;
@@ -769,10 +755,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			if (hasStorage() && !document.hidden) check(false);
 		};
 		const enterPage = () => {
-			if (hasStorage()) check(false, true);
+			if (hasStorage()) check(false);
 		};
 		const startup = setTimeout(enterPage, 0);
-		const timer = setInterval(background, 6e4);
+		const timer = setInterval(background, CHECK_INTERVAL);
 		document.addEventListener("visibilitychange", background, { signal });
 		window.addEventListener("pageshow", (event) => {
 			if (event.persisted) enterPage();
@@ -793,7 +779,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		title.textContent = "NodeSeek++";
 		const version = document.createElement("span");
 		version.className = "about-version";
-		version.textContent = `v26.914.1927`;
+		version.textContent = `v26.914.1933`;
 		const heading = document.createElement("div");
 		heading.className = "about-heading";
 		heading.append(title, version);
@@ -864,7 +850,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.914.1927`));
+		heading.append(title, element$1("small", `v26.914.1933`));
 		const checkUpdate = element$1("button", "检查更新");
 		checkUpdate.type = "button";
 		checkUpdate.className = "check-update";
@@ -4201,6 +4187,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (/^(管理|管理员|admin|administrator)$/i.test(label)) return "admin";
 		if (/^(创建者|站点创建者|founder)$/i.test(label)) return "founder";
 		if (/^(服主|拥有者|所有者|站点拥有者|owner)$/i.test(label)) return "owner";
+		if (/^(代理商|agency)$/i.test(label)) return "agency";
+		if (/^(博主|blog-owner)$/i.test(label)) return "blog-owner";
 		return label;
 	}
 	function renderProfileTags(target, user) {
@@ -4214,7 +4202,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			labels.set(key, {
 				admin: "管理",
 				founder: "创建者",
-				owner: "服主"
+				owner: "服主",
+				agency: "代理商",
+				"blog-owner": "博主"
 			}[key] || label);
 		}
 		target.replaceChildren();

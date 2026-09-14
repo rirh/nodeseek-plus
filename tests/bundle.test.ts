@@ -27,7 +27,7 @@ async function fixture(settings: Record<string, unknown> = {}, html = '', path =
     type RequestOptions = { url: string; onload(response: { status: number; responseText: string }): void };
     const original = (window as unknown as { GM_xmlhttpRequest?: (options: RequestOptions) => unknown }).GM_xmlhttpRequest;
     Object.assign(window, { GM_xmlhttpRequest: (options: RequestOptions) => {
-      if (options.url !== 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js') {
+      if (options.url.split('?')[0] !== 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js') {
         if (!original) throw new Error('No fixture GM response');
         return original(options);
       }
@@ -120,11 +120,11 @@ test('bundle is self-contained, scoped to forum hosts and has no remote require'
 });
 
 test('manual update checks read metadata and open an update link only for a newer release', async () => {
-  const requests: { url: string; anonymous: boolean }[] = [];
+  const requests: { url: string; anonymous: boolean; nocache: boolean; headers: Record<string, string> }[] = [];
   let version = '1.0.0';
   const f = await fixture({}, '', '/', undefined, window => {
     Object.assign(window, {
-      GM_xmlhttpRequest: (options: { url: string; anonymous: boolean; onload(response: { status: number; responseText: string }): void }) => {
+      GM_xmlhttpRequest: (options: typeof requests[number] & { onload(response: { status: number; responseText: string }): void }) => {
         requests.push(options);
         setTimeout(() => options.onload({ status: 200, responseText: `// ==UserScript==\n// @version ${version}\n// ==/UserScript==` }), 0);
         return { abort() {} };
@@ -140,7 +140,11 @@ test('manual update checks read metadata and open an update link only for a newe
     button.click(); button.click();
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].url, 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js');
+    assert.equal(requests[0].url.split('?')[0], 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js');
+    assert.ok(new URL(requests[0].url).searchParams.get('_'));
+    assert.equal(requests[0].nocache, true);
+    assert.match(requests[0].headers['Cache-Control'], /no-store/);
+    assert.equal(requests[0].headers.Pragma, 'no-cache');
     assert.equal(requests[0].anonymous, true);
     const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
     assert.equal(dialog.open, true);
@@ -154,6 +158,7 @@ test('manual update checks read metadata and open an update link only for a newe
     version = '1.0.0'; button.click();
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(requests.length, 2);
+    assert.notEqual(requests[0].url, requests[1].url, 'each manual check bypasses URL caches');
     assert.equal(f.window.document.querySelector('.nspp-confirm-dialog'), null);
     assert.match(root.querySelector('.toast-message')!.textContent!, /当前已是最新版本/);
   } finally { await f.close(); }
@@ -163,6 +168,7 @@ test('page entry always checks updates while system and page reminders are dedup
   const shared = new Map<string, unknown>([
     [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false } }],
     ['nspp:script-update', { checkedAt: Date.now(), version: '1.0.0' }],
+    ['nspp:lock:www.nodeseek.com:script-update', { started: Date.now(), until: Date.now() + 120000, owner: 'another-page' }],
   ]);
   const requests: string[] = [];
   const notifications: { title: string; text: string; url: string }[] = [];
@@ -182,7 +188,7 @@ test('page entry always checks updates while system and page reminders are dedup
   let second: Awaited<ReturnType<typeof fixture>> | undefined;
   try {
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(requests.length, 1, 'page entry bypasses the six-hour cached check');
+    assert.equal(requests.length, 1, 'page entry ignores cached checks and another page checking updates');
     assert.equal(notifications.length, 1, 'a hidden page still sends a system notification');
     assert.match(notifications[0].title, /发现新版本/);
     assert.equal(notifications[0].url, 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js');
@@ -192,15 +198,15 @@ test('page entry always checks updates while system and page reminders are dedup
     await new Promise(resolve => setTimeout(resolve, 10));
     const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
     assert.ok(dialog?.open, 'the page reminder waits until visible');
-    assert.equal(requests.length, 1, 'visibility polling still honors the six-hour interval');
+    assert.equal(requests.length, 2, 'returning to the page requests fresh metadata');
     const firstRestore = new f.window.Event('pageshow'); Object.defineProperty(firstRestore, 'persisted', { value: true });
     f.window.dispatchEvent(firstRestore);
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(requests.length, 2, 'an open automatic reminder must not block a page-entry check');
+    assert.equal(requests.length, 3, 'an open automatic reminder must not block a page-entry check');
     dialog.close('cancel');
     second = await fixture({}, '', '/page-2', shared, setup, true);
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(requests.length, 3, 'each new page requests fresh metadata');
+    assert.equal(requests.length, 4, 'each new page requests fresh metadata');
     assert.equal(notifications.length, 1, 'the same version does not notify again on another page');
     Object.defineProperty(second.window.document, 'hidden', { configurable: true, value: false });
     second.window.document.dispatchEvent(new second.window.Event('visibilitychange'));
@@ -209,12 +215,13 @@ test('page entry always checks updates while system and page reminders are dedup
     const restore = new second.window.Event('pageshow'); Object.defineProperty(restore, 'persisted', { value: true });
     second.window.dispatchEvent(restore);
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(requests.length, 4, 'back-forward cache restoration checks again');
+    assert.equal(requests.length, 6, 'visibility and back-forward cache restoration each check again');
     assert.equal(notifications.length, 1);
     version = '99.999.9999.1';
     second.window.dispatchEvent(restore);
     await new Promise(resolve => setTimeout(resolve, 10));
-    assert.equal(requests.length, 5);
+    assert.equal(requests.length, 7);
+    assert.equal(new Set(requests).size, requests.length, 'every page check uses a unique request URL');
     assert.equal(notifications.length, 2, 'a different new version notifies immediately');
     assert.match(notifications[1].text, /99\.999\.9999\.1/);
     second.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!.close('cancel');

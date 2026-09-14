@@ -4,6 +4,8 @@ export function profileTagKey(label: string): string {
   if (/^(管理|管理员|admin|administrator)$/i.test(label)) return 'admin';
   if (/^(创建者|站点创建者|founder)$/i.test(label)) return 'founder';
   if (/^(服主|拥有者|所有者|站点拥有者|owner)$/i.test(label)) return 'owner';
+  if (/^(代理商|agency)$/i.test(label)) return 'agency';
+  if (/^(博主|blog-owner)$/i.test(label)) return 'blog-owner';
   return label;
 }
 
@@ -14,7 +16,7 @@ export function renderProfileTags(target: HTMLElement, user: UserProfile) {
     const name = typeof role === 'string' ? role : role?.name || role?.title;
     if (typeof name !== 'string' || !name.trim()) continue;
     const label = name.trim(); const key = profileTagKey(label);
-    labels.set(key, ({ admin: '管理', founder: '创建者', owner: '服主' } as Record<string, string>)[key] || label);
+    labels.set(key, ({ admin: '管理', founder: '创建者', owner: '服主', agency: '代理商', 'blog-owner': '博主' } as Record<string, string>)[key] || label);
   }
   target.replaceChildren();
   for (const [key, label] of labels) {

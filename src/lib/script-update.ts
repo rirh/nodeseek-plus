@@ -7,7 +7,7 @@ import { confirmDialog } from '../views/confirm-dialog';
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const REMINDER_INTERVAL = 24 * 60 * 60 * 1000;
 const STATE_KEY = 'nspp:script-update';
-type UpdateState = { checkedAt?: number; version?: string; promptedVersion?: string; promptedAt?: number; notifiedVersion?: string; notifiedAt?: number };
+type UpdateState = { version?: string; promptedVersion?: string; promptedAt?: number; notifiedVersion?: string; notifiedAt?: number };
 
 function requestVersion(signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -15,8 +15,9 @@ function requestVersion(signal: AbortSignal): Promise<string> {
     if (typeof GM_xmlhttpRequest !== 'function') { reject(new Error('更新检查不可用，请确认油猴脚本已正常安装')); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
     const request = GM_xmlhttpRequest({
-      method: 'GET', url: UPDATE_META_URL, anonymous: true, timeout: 20000,
-      headers: { 'Cache-Control': 'no-cache' },
+      method: 'GET', url: `${UPDATE_META_URL}?_=${crypto.randomUUID()}`, anonymous: true, timeout: 20000,
+      nocache: true,
+      headers: { 'Cache-Control': 'no-cache, no-store, max-age=0', Pragma: 'no-cache' },
       onload: response => {
         cleanup();
         if (response.status !== 200) { reject(new Error(`检查更新失败（HTTP ${response.status}）`)); return; }
@@ -60,22 +61,11 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
     } finally { prompting = false; }
   }
 
-  async function run(manual: boolean, enteredPage: boolean) {
+  async function run(manual: boolean) {
     try {
-      let fetched = false;
-      const ran = await withTabLock('script-update', 0, async () => {
-        if (signal.aborted) return;
-        const previous = state();
-        const elapsed = Date.now() - (previous.checkedAt || 0);
-        if (!manual && !enteredPage && elapsed >= 0 && elapsed < CHECK_INTERVAL) return;
-        GM_setValue(STATE_KEY, { ...previous, checkedAt: Date.now() });
-        const version = await requestVersion(signal);
-        if (signal.aborted) return;
-        GM_setValue(STATE_KEY, { ...state(), version }); fetched = true;
-      });
+      const version = await requestVersion(signal);
       if (signal.aborted) return;
-      if (manual && (!ran || !fetched)) { notify('其他页面正在检查更新，请稍后重试'); return; }
-      const version = state().version;
+      GM_setValue(STATE_KEY, { ...state(), version });
       if (version && isNewerVersion(version, __APP_VERSION__)) {
         await notifyUpdate();
         if (manual) await prompt(true);
@@ -87,20 +77,20 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
     }
   }
 
-  const check = (manual = true, enteredPage = false): Promise<void> => {
+  const check = (manual = true): Promise<void> => {
     if (signal.aborted) return Promise.resolve();
     if (pending) return manual ? pending.then(() => check(true)) : pending;
-    pending = run(manual, enteredPage).finally(() => { pending = undefined; });
+    pending = run(manual).finally(() => { pending = undefined; });
     return pending;
   };
   const background = () => {
     if (__APP_ENV__ === 'prod' && hasStorage() && !document.hidden) void check(false);
   };
   const enterPage = () => {
-    if (__APP_ENV__ === 'prod' && hasStorage()) void check(false, true);
+    if (__APP_ENV__ === 'prod' && hasStorage()) void check(false);
   };
   const startup = setTimeout(enterPage, 0);
-  const timer = setInterval(background, 60000);
+  const timer = setInterval(background, CHECK_INTERVAL);
   document.addEventListener('visibilitychange', background, { signal });
   window.addEventListener('pageshow', event => { if (event.persisted) enterPage(); }, { signal });
   return { check, stop: () => { clearTimeout(startup); clearInterval(timer); controller.abort(); } };
