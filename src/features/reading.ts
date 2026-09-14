@@ -135,7 +135,7 @@ const historyFeature: Feature = {
             }).sort((a, b) => b.time - a.time);
             const seen = new Set<string>();
             const entries = clean.filter(entry => { if (seen.has(entry.path)) return false; seen.add(entry.path); return true; }).slice(0, limit);
-            ctx.set(name, entries);
+            if (JSON.stringify(stored) !== JSON.stringify(entries)) ctx.set(name, entries);
             return entries;
         };
         const record = (name: string) => {

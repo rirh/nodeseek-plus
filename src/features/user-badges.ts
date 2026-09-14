@@ -1,4 +1,4 @@
-import { userHover, userHoverSelector, isUserHoverAnchor } from '../views/user-hover';
+import { userHover, userHoverSelector, isUserHoverAnchor, userHoverEnabled } from '../views/user-hover';
 import { renderProfileTags, profileTagKey } from '../views/profile-tags';
 import { format } from 'date-fns';
 import { siteIcon } from './post-interaction-data';
@@ -7,8 +7,9 @@ import { authorId, forumAge, registration, trustScore, type UserProfile } from '
 
 
 export const userBadges: Feature = {
-  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
+  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, hoverPreview: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
   fields: {
+    hoverPreview: { label: '用户资料悬浮预览（默认开启，仅桌面鼠标悬停）', type: 'text' },
     colors: { label: '徽章配色', type: 'select', options: [{ label: '原有彩色（默认）', value: 'original' }, { label: '自定义', value: 'custom' }, { label: '柔和单色', value: 'muted' }] },
     levelColor: { label: '等级与加入天数颜色', type: 'color' }, trustColor: { label: '信任分颜色', type: 'color' }, roleColor: { label: '身份徽章颜色', type: 'color' },
   },
@@ -218,7 +219,7 @@ export const userBadges: Feature = {
         author.after(badge); nodes.set(author, { id, badge, details, release: hover.release });
         if (badge.hidden) {
           let started = false;
-          const start = () => { if (!started) { started = true; void load(author, id, badge); } };
+          const start = () => { if (!started && userHoverEnabled() && innerWidth > 700 && matchMedia('(hover: hover) and (pointer: fine)').matches) { started = true; void load(author, id, badge); } };
           author.addEventListener('mouseenter', start, { signal: ctx.signal });
           author.addEventListener('focus', start, { signal: ctx.signal });
           author.addEventListener('click', start, { signal: ctx.signal });

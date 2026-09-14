@@ -249,6 +249,7 @@ export function mountSettings(features: Feature[]) {
     clearCache.disabled = !hasStorage();
     render();
     if (!dialog.open) dialog.showModal();
+    document.documentElement.setAttribute('data-nspp-settings-open', '');
     close.focus();
   };
   launch.addEventListener("click", open);
@@ -257,7 +258,7 @@ export function mountSettings(features: Feature[]) {
     const box = dialog.getBoundingClientRect();
     if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
   } });
-  dialog.addEventListener("close", () => launch.focus());
+  dialog.addEventListener("close", () => { document.documentElement.removeAttribute('data-nspp-settings-open'); launch.focus(); });
   search.addEventListener("input", render);
   form.addEventListener("submit", event => {
     event.preventDefault();

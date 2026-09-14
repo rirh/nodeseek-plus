@@ -35,7 +35,7 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
   const current = () => !ctx.signal.aborted && !root.hidden && !!category;
   const signal = () => AbortSignal.any([ctx.signal, controller.signal]);
   async function api(path: string, options: RequestInit = {}) {
-    const result = await ctx.request<{ success?: boolean; message?: string; atList?: Notice[]; replyList?: Notice[] }>(path, { ...options, signal: options.signal || signal() });
+    const result = await ctx.request<{ success?: boolean; message?: string; atList?: Notice[]; replyList?: Notice[]; msgArray?: Notice[]; notifications?: Notice[]; list?: Notice[]; data?: unknown }>(path, { ...options, signal: options.signal || signal() });
     if (result?.success !== true) throw new Error(result?.message || '通知读取失败');
     return result;
   }
@@ -64,8 +64,16 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
     try {
       const result = await api(`/api/notification/${routes[kind].endpoint}/list?page=${targetPage}`, { signal: requestSignal });
       if (!current() || requestSignal.aborted) return;
-      const rows = kind === 'atMe' ? result.atList : result.replyList;
-      if (!Array.isArray(rows) || rows.some(item => !Number.isSafeInteger(item.id) || !Number.isSafeInteger(item.post_id))) throw new Error('通知格式已变化，可返回原版页面');
+      const nested = result.data && typeof result.data === 'object' && !Array.isArray(result.data) ? result.data as Record<string, unknown> : {};
+      const raw = [kind === 'atMe' ? result.atList : result.replyList, result.msgArray, result.notifications, result.list, result.data, nested.atList, nested.replyList, nested.msgArray, nested.list].find(Array.isArray);
+      if (!Array.isArray(raw)) throw new Error('通知格式已变化，可返回原版页面');
+      const rows = raw.map(value => {
+        if (!value || typeof value !== 'object') throw new Error('通知格式已变化，可返回原版页面');
+        const item = value as Notice;
+        const id = Number(item.id), postId = Number(item.post_id);
+        if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(postId) || postId <= 0) throw new Error('通知格式已变化，可返回原版页面');
+        return { ...item, id, post_id: postId, viewed: String(item.viewed) === '0' ? false : item.viewed };
+      });
       let added = 0;
       for (const item of rows) { if (!notices.has(item.id)) added++; notices.set(item.id, item); }
       if (next) page = targetPage;

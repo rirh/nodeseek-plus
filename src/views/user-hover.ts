@@ -3,6 +3,11 @@ import { userCardActions } from './user-card-actions';
 import { authorId } from '../features/user-profile';
 import type { Context } from '../core/types';
 import { profileTagKey } from './profile-tags';
+import { GM_getValue } from '../lib/userscript';
+
+export function userHoverEnabled(): boolean {
+  return GM_getValue<Record<string, { hoverPreview?: boolean }>>(`nspp:settings:${location.hostname}`, {})['user-level']?.hoverPreview !== false;
+}
 
 export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
@@ -17,7 +22,7 @@ export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
 export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
   let entry = cards.get(anchor);
   if (!entry) {
-    const title = anchor.getAttribute('title'); anchor.removeAttribute('title');
+    const title = anchor.getAttribute('title'); if (userHoverEnabled()) anchor.removeAttribute('title');
     const element = document.createElement('section'); element.className = 'nspp-user-hover'; element.hidden = true;
     const heading = document.createElement('a'); heading.href = anchor.href; heading.textContent = anchor.textContent?.trim() || anchor.querySelector('img')?.alt || '用户资料'; heading.className = 'nspp-user-hover-name';
     element.setAttribute('aria-label', `${heading.textContent} 的用户详情`);
@@ -52,6 +57,8 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     const close = () => { clearTimeout(timer); element.hidden = true; };
     const open = () => {
       clearTimeout(timer); if (!anchor.isConnected) return;
+      if (!userHoverEnabled() || document.hidden || innerWidth <= 700 || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      if (Array.from(document.querySelectorAll<HTMLElement>('.hover-user-card')).some(card => !card.hidden && card.getClientRects().length > 0)) return;
       syncTags(); element.hidden = false;
       actions?.refresh();
       if (id && !avatar.getAttribute('src')) avatar.src = `/avatar/${id}.png`;
@@ -60,11 +67,10 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
       element.style.top = `${Math.max(8, Math.min(rect.bottom + 6, innerHeight - element.offsetHeight - 8))}px`;
     };
     const leave = () => { clearTimeout(timer); timer = setTimeout(close, 180); };
-    anchor.addEventListener('mouseenter', open, options);
+    anchor.addEventListener('mouseenter', () => { clearTimeout(timer); timer = setTimeout(open, 300); }, options);
     anchor.addEventListener('mouseleave', leave, options);
     anchor.addEventListener('focus', open, options);
     anchor.addEventListener('blur', leave, options);
-    anchor.addEventListener('click', event => { if (matchMedia('(hover: none)').matches && element.hidden) { event.preventDefault(); open(); } }, options);
     element.addEventListener('mouseenter', () => clearTimeout(timer), options);
     element.addEventListener('mouseleave', leave, options);
     element.addEventListener('focusin', () => clearTimeout(timer), options);

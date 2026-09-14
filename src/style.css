@@ -1,4 +1,12 @@
 #nspp-tools { position: fixed; right: calc(1rem - 8px); bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; padding: 8px 8px 0 0; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
+html[data-nspp-settings-open] #nspp-tools, html[data-nspp-settings-open] [data-nspp-ai-launcher] { display: none !important; }
+html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-hover * { animation-play-state: paused !important; }
+@media (max-width: 700px), (hover: none) {
+  .nspp-user-hover { display: none !important; }
+  #nspp-tools { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(50px + env(safe-area-inset-bottom)); max-height: 36dvh; max-width: 44px; padding: 0; gap: 5px; }
+  #nspp-tools .nspp-tool-icon { width: 30px; height: 30px; }
+  body:has(.nspp-messages-container[data-nspp-message-view='new']) #nspp-tools { display: none !important; }
+}
 .discussion-wrapper .discussion-item.nspp-discussion-row > a:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .discussion-wrapper .discussion-item.nspp-discussion-row > :not(a:first-child) { flex: none; margin-right: 0; }
 .discussion-wrapper .nspp-discussion-row > .nspp-discussion-stats { display: inline-flex; flex: none; gap: 10px; margin: 0 0 0 auto; padding-left: 12px; color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -327,6 +335,9 @@
 .nspp-upload-status a:hover { text-decoration: underline; }
 .nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
 .nspp-upload-status button svg { width: 16px; height: 16px; }
+.md-editor .nspp-upload-status .nspp-upload-choose { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 4px 9px; border: 1px solid #07a65a; border-radius: 5px; background: #07a65a; color: #fff; opacity: 1; font-size: 12px; white-space: nowrap; }
+.nspp-upload-choose svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.md-editor .nspp-upload-status { max-width: 100%; min-width: 0; }
 
 .nspp-ai-compose { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; align-items: start; }
 .nspp-ai-compose textarea { flex: 1; min-width: 180px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; padding: 6px; }

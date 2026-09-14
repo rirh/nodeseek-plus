@@ -53,6 +53,7 @@ const monitor: Feature = {
       spin?.kill(); spin = undefined; spinner.style.transform = ''; spinner.hidden = true;
     }
     function syncAnimation() {
+      if (document.hidden) { stopSpin(); return; }
       const active = busy && (!paused || manualCheck) && !cooling();
       if (reducedMotion.matches) { stopSpin(); spinner.hidden = !active; return; }
       if (active) {
@@ -352,10 +353,10 @@ const monitor: Feature = {
     const cached = ctx.get<Snapshot>(snapshotKey); if (cached) display(cached); renderUnread(); void refresh();
     const stopScan = ctx.watch(scan);
     const timer = setInterval(() => {
-      renderState();
+      if (!document.hidden) renderState();
       if (hasWork() && !busy && !paused && !cooling() && Date.now() - last >= interval) void refresh();
     }, 1000);
-    document.addEventListener('visibilitychange', () => { void refresh(); }, { signal: ctx.signal });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopSpin(); else { renderState(); void refresh(); } }, { signal: ctx.signal });
     return () => { configDialog.remove(); spin?.kill(); stopScan(); highlighted.forEach(node => node.removeAttribute('data-nspp-monitor-match')); clearInterval(timer); panel.close(); panel.remove(); launch.remove(); };
   },
 };

@@ -159,6 +159,9 @@ h3 { font-size: 11px; font-weight: 600; border-bottom: 0; padding: 8px 0 3px; }
 }
 
 .launcher { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; }
+@media (max-width: 700px), (hover: none) {
+  .launcher { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); width: 30px; height: 30px; }
+}
 
 /* Separate settings with spacing and soft surfaces instead of dividers. */
 header, .search-bar, .categories, .settings-footer, .settings-workspace article { border: 0; }

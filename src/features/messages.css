@@ -21,6 +21,9 @@
 .nspp-messages-sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--chat-sidebar); border-right: 1px solid var(--chat-border); }
 .nspp-messages-search { display: flex; gap: 6px; padding: 8px; flex: none; }
 .nspp-messages-search input { width: 100%; min-width: 0; border: 0; border-radius: 5px; background: #818b981a; padding: 7px 10px; font-size: 12px; }
+.nspp-messages-search > button { flex: none; white-space: nowrap; min-width: 32px; }
+.nspp-messages-search > input { flex: 1; width: 0; }
+.nspp-messages-peer-title time { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nspp-messages-refresh { display: grid; place-items: center; width: 30px; flex: none; }
 .nspp-messages-contact-list { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
 .nspp-messages-conversations { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }

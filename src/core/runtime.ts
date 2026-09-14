@@ -31,11 +31,27 @@ export function startFeatures(features: Feature[], settings: Settings, notify: (
   const callbacks = new Set<() => void>();
   const cleanups: (() => void)[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let dirty = false;
   const run = (callback: () => void) => { try { callback(); } catch { notify("部分页面增强未能应用，可关闭对应模块后刷新重试"); } };
+  const flush = () => {
+    timer = undefined;
+    if (document.hidden) return;
+    dirty = false; callbacks.forEach(run);
+  };
+  const visibility = () => {
+    document.documentElement.toggleAttribute('data-nspp-background', document.hidden);
+    if (!document.hidden && dirty && !timer) timer = setTimeout(flush, 100);
+  };
+  document.addEventListener('visibilitychange', visibility); visibility();
   const observer = new MutationObserver(records => {
-    if (!records.some(record => record.addedNodes.length || record.removedNodes.length)) return;
-    if (timer) return;
-    timer = setTimeout(() => { timer = undefined; callbacks.forEach(run); }, 100);
+    if (!records.some(record => {
+      if (!record.addedNodes.length && !record.removedNodes.length) return false;
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      return !target?.closest('#nspp-tools, .nspp-monitor, .nspp-user-hover, .nspp-user-badges, .nspp-message-editor, .nspp-compose');
+    })) return;
+    dirty = true;
+    if (timer || document.hidden) return;
+    timer = setTimeout(flush, 100);
   });
   observer.observe(document.body, { childList: true, subtree: true });
   for (const feature of features) {
@@ -79,6 +95,8 @@ export function startFeatures(features: Feature[], settings: Settings, notify: (
   }
   return () => {
     observer.disconnect();
+    document.removeEventListener('visibilitychange', visibility);
+    document.documentElement.removeAttribute('data-nspp-background');
     clearTimeout(timer);
     cleanups.reverse().forEach(cleanup => { try { cleanup(); } catch { /* Continue cleanup. */ } });
     callbacks.clear();

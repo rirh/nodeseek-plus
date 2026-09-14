@@ -1,4 +1,3 @@
-import { siteIcon } from './post-interaction-data';
 import { getNodeImageKey, uploadNodeImage } from './nodeimage-upload';
 import { uploadRequest, uploadResult } from './actions-upload-protocol';
 import type { Feature } from '../core/types';
@@ -84,8 +83,11 @@ export const imageUpload: Feature = {
           event.preventDefault(); event.stopImmediatePropagation();
           if (!uploading) input.click();
         }, { signal: ctx.signal, capture: true });
-        if (!host.querySelector(imageSelector)) {
-          const choose = document.createElement('button'); choose.type = 'button'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title); choose.append(siteIcon('pic'));
+        {
+          const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'nspp-upload-choose'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title);
+          const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
+          const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1'); icon.append(path);
+          choose.append(icon, document.createTextNode('上传图片'));
           choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal }); bar.prepend(choose);
         }
         (toolbar || host).append(bar); bars.push(bar);
