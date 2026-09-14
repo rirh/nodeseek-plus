@@ -107,6 +107,9 @@ html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-
 
 .nspp-post-preview { margin: 0; padding: 0; position: fixed; z-index: 2147483644; width: min(340px, calc(100vw - 24px)); height: auto; max-height: min(320px, calc(100dvh - 24px)); display: flex; flex-direction: column; border: 1px solid var(--border-color, #929a9380); border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 3px 12px #00000018; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; text-align: left; overflow: hidden; }
 .nspp-post-preview[hidden] { display: none; }
+.nspp-post-preview { color-scheme: light; }
+.dark-layout .nspp-post-preview { --bg-color: #262626; --text-color: #dedede; --border-color: #454545; --link-color: #8ab4f8; color-scheme: dark; }
+.nspp-post-preview > header, .nspp-post-preview > footer, .nspp-post-preview > .nspp-preview-content { background: inherit; color: inherit; }
 .nspp-post-preview header { box-shadow: none !important; text-shadow: none !important; position: static; display: flex; flex-shrink: 0; gap: 8px; align-items: center; padding: 5px 8px; font-size: 12px; line-height: 18px; border-bottom: 1px solid #929a9350; }
 .nspp-post-preview header a { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: none !important; box-shadow: none !important; color: inherit; font-weight: 500; text-decoration: none; }
 .nspp-post-preview button { flex: none; width: 20px; height: 20px; min-height: 0; font: 16px/18px Arial, sans-serif; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }

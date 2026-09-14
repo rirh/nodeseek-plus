@@ -376,11 +376,15 @@ const content: Feature = {
         const remove = style('.nspp-callout{border-inline-start:3px solid currentColor;padding:10px 16px;margin:1em 0}.nspp-callout summary{cursor:pointer;font-weight:600}.nspp-image-viewer{max-width:95vw;max-height:95vh;padding:12px}.nspp-image-viewer img{max-width:90vw;max-height:82vh;object-fit:contain}.nspp-image-viewer::backdrop{background:rgb(0 0 0 / .8)}');
         let dialog: HTMLDialogElement | undefined;
         if (ctx.get('images'))
-            document.addEventListener('click', e => {
+            window.addEventListener('click', e => {
+                if (!(e.target instanceof Element) || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
+                    return;
                 const img = (e.target as Element).closest<HTMLImageElement>(`${contentSelector} img`);
                 if (!img)
                     return;
                 e.preventDefault();
+                // Claim the image before the site's document/element viewer handlers.
+                e.stopImmediatePropagation();
                 dialog?.remove();
                 dialog = document.createElement('dialog');
                 dialog.className = 'nspp-image-viewer';
@@ -424,7 +428,7 @@ const content: Feature = {
                 dialog.append(close, previous, count, next, large);
                 document.body.append(dialog);
                 dialog.showModal();
-            }, { signal: ctx.signal });
+            }, { capture: true, signal: ctx.signal });
         return () => { stop(); remove(); dialog?.remove(); undo.reverse().forEach(fn => fn()); };
     },
 };

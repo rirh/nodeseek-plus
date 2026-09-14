@@ -1444,9 +1444,55 @@ test('badge colors retain the original style by default', async () => {
   } finally { await f.close(); }
 });
 
+test('post preview follows the forum theme while open', async () => {
+  const f = await fixture({ 'reading-navigation': { enabled: false } });
+  try {
+    const doc = f.window.document;
+    const preview = doc.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
+    preview.hidden = false;
+    preview.show();
+    const color = () => f.window.getComputedStyle(preview).color;
+    const light = color();
+    doc.body.classList.add('dark-layout');
+    assert.equal(f.window.getComputedStyle(preview).backgroundColor, '#262626');
+    assert.equal(color(), '#dedede');
+    assert.equal(f.window.getComputedStyle(preview).colorScheme, 'dark');
+    doc.body.classList.remove('dark-layout');
+    assert.equal(color(), light);
+    assert.equal(f.window.getComputedStyle(preview).colorScheme, 'light');
+  } finally { await f.close(); }
+});
+
+test('reading image preview claims clicks before native viewers and closes in one click', async () => {
+  let nativeOpens = 0;
+  const f = await fixture({}, '<div class="post-content"><img src="https://example.com/photo.png"></div>', '/post-42-1', undefined, window => {
+    window.document.addEventListener('click', event => {
+      if (event.target instanceof window.HTMLImageElement) nativeOpens++;
+    }, true);
+  });
+  try {
+    const doc = f.window.document;
+    const image = doc.querySelector<HTMLImageElement>('.post-content img')!;
+    image.addEventListener('click', () => { nativeOpens++; });
+    image.click();
+    const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-viewer')!;
+    assert.equal(nativeOpens, 0, 'neither native capture nor image handlers should open a second layer');
+    assert.equal(gallery.open, true);
+    gallery.querySelector<HTMLButtonElement>('button')!.click();
+    assert.equal(doc.querySelectorAll('dialog[open]').length, 0);
+    image.dispatchEvent(new f.window.MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    assert.equal(nativeOpens, 2, 'modified clicks retain native behavior');
+    assert.equal(gallery.open, false);
+  } finally { await f.close(); }
+});
+
 for (const mobile of [false, true]) {
   test(`post preview images open a gallery and preserve the ${mobile ? 'mobile' : 'desktop'} card until closed`, async () => {
+    let nativeOpens = 0;
     const f = await fixture({ 'official-blocklist': { enabled: false }, 'user-level': { enabled: false } }, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Images</a></div></li></ul>', '/', undefined, window => {
+      window.document.addEventListener('click', event => {
+        if (event.target instanceof window.HTMLImageElement) nativeOpens++;
+      }, true);
       window.matchMedia = ((query: string) => ({ matches: query.includes('prefers-reduced-motion') || (query.includes('hover: hover') ? !mobile : mobile) })) as typeof window.matchMedia;
       window.fetch = (async () => new window.Response('<div class="post-content"><a href="https://example.com/photo.png"><img src="https://example.com/photo.png" alt="First image"></a><img src="https://example.com/second.png" alt="Second image"></div>')) as typeof window.fetch;
     });
@@ -1461,6 +1507,7 @@ for (const mobile of [false, true]) {
       const click = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
       images[1].dispatchEvent(click);
       assert.equal(click.defaultPrevented, true, 'image clicks must not navigate');
+      assert.equal(nativeOpens, 0, 'native capture handlers must not open a duplicate viewer');
       const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-preview')!;
       assert.equal(gallery.open, true);
       assert.equal(gallery.querySelector('.viewer-canvas img')?.getAttribute('src'), 'https://example.com/second.png');
@@ -1475,6 +1522,10 @@ for (const mobile of [false, true]) {
       assert.equal(doc.activeElement, images[1]);
       images[0].dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
       assert.equal(doc.querySelector('.viewer-canvas img')?.getAttribute('src'), 'https://example.com/photo.png');
+      assert.equal(nativeOpens, 0, 'keyboard activation must also open only one viewer');
+      doc.querySelector<HTMLButtonElement>('[aria-label="关闭预览"]')!.click();
+      assert.equal(doc.querySelector('.nspp-image-preview'), null, 'one close click removes the gallery');
+      images[0].click();
       f.window.dispatchEvent(new f.window.PageTransitionEvent('pagehide', { persisted: false }));
       assert.equal(doc.querySelector('.nspp-image-preview'), null);
       assert.equal(doc.body.classList.contains('viewer-open'), false);

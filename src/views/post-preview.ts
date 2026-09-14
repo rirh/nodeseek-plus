@@ -72,9 +72,9 @@ export function createPostPreview(ctx: Context) {
   };
   view.addEventListener('mouseenter', keepOpen, { signal: ctx.signal });
   view.addEventListener('mouseleave', scheduleClose, { signal: ctx.signal });
-  content.addEventListener('click', event => {
-    if (!(event.target instanceof HTMLImageElement) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    event.preventDefault(); event.stopPropagation();
+  window.addEventListener('click', event => {
+    if (!(event.target instanceof HTMLImageElement) || !content.contains(event.target) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); event.stopImmediatePropagation();
     if (closeImage) return;
     keepOpen();
     closeImage = openImagePreview(content, event.target, () => { closeImage = undefined; });
