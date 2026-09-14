@@ -42,7 +42,7 @@ const monitor: Feature = {
     const header = document.createElement('header');
     const title = document.createElement('h3'); title.textContent = '帖子监控'; header.append(title, control('关闭', () => panel.close(), ctx)); panel.append(header);
     const launch = control('帖子监控', () => { ctx.set(unreadKey, []); renderUnread(); panel.showModal(); }, ctx);
-    launch.className = 'nspp-tool-icon'; launch.title = '帖子监控'; launch.setAttribute('aria-label', launch.title); launch.replaceChildren(toolIcon('monitor'));
+    launch.className = 'nspp-tool-icon'; launch.dataset.nsppMonitorLauncher = ''; launch.title = '帖子监控'; launch.setAttribute('aria-label', launch.title); launch.replaceChildren(toolIcon('monitor'));
     const badge = document.createElement('span'); badge.className = 'nspp-monitor-badge'; badge.setAttribute('aria-hidden', 'true'); launch.append(badge);
     const status = document.createElement('p'); status.className = 'nspp-monitor-summary'; status.setAttribute('role', 'status');
     const spinner = document.createElement('span'); spinner.className = 'nspp-monitor-spinner'; spinner.hidden = true; spinner.setAttribute('aria-hidden', 'true');

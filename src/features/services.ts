@@ -118,41 +118,24 @@ export const serviceFeatures: Feature[] = [
     defaults: { enabled: true, url: '', apiKey: '', model: '', prompt: '请润色以下 Markdown 文本，保留原意，只输出修改后的文本。' },
     fields: { url: { label: '完整 chat/completions 接口 URL', type: 'text' }, apiKey: { label: 'API Key（仅本机保存）', type: 'text' }, model: { label: '模型', type: 'text' }, prompt: { label: '系统提示词', type: 'textarea' } },
     mount(ctx) {
+      if (!['url', 'model', 'apiKey'].every(key => ctx.get<string>(key).trim())) return;
+      try { if (new URL(ctx.get<string>('url')).protocol !== 'https:') return; } catch { return; }
       type Editor = { getValue(): string; setValue(text: string): void; focus(): void };
       let dialog: HTMLDialogElement | undefined;
       const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.append(toolIcon('ai')); launch.title = 'AI 写作助手'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppAiLauncher = '';
       (document.getElementById('nspp-tools') || document.body).append(launch);
       const compose = document.createElement('dialog'); compose.className = 'nspp-ai-dialog'; document.body.append(compose);
-      const open = (configure = false) => {
-        compose.replaceChildren(); compose.classList.remove('nspp-ai-config');
-        const heading = document.createElement('h2'); heading.textContent = configure ? '配置 AI 写作助手' : 'AI 写作助手';
+      const open = () => {
+        compose.replaceChildren();
+        const heading = document.createElement('h2'); heading.textContent = 'AI 写作助手';
         const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭'; close.addEventListener('click', () => compose.close());
         const header = document.createElement('div'); header.className = 'nspp-ai-header'; header.append(toolIcon('ai'), heading); compose.append(header);
-        if (configure || !ctx.get<string>('url').trim() || !ctx.get<string>('model').trim() || !ctx.get<string>('apiKey').trim()) {
-          heading.textContent = '配置 AI 写作助手';
-          compose.classList.add('nspp-ai-config');
-          const hint = document.createElement('p'); hint.className = 'nspp-ai-hint'; hint.textContent = '连接你的 AI 服务，配置仅保存在本机。'; compose.append(hint);
-          const form = document.createElement('form'); const inputs: Record<string, HTMLInputElement> = {};
-          for (const [key, label] of [['url', '接口地址'], ['apiKey', 'API Key（仅本机保存）'], ['model', '模型']]) {
-            const row = document.createElement('label'); row.textContent = label;
-            const input = document.createElement('input'); input.type = key === 'apiKey' ? 'password' : key === 'url' ? 'url' : 'text'; input.required = true; input.value = ctx.get<string>(key); input.autocomplete = 'off'; input.placeholder = key === 'url' ? 'https://api.example.com/v1/chat/completions' : key === 'apiKey' ? '输入 API Key' : '输入模型名称'; inputs[key] = input; row.append(input); form.append(row);
-          }
-          const save = document.createElement('button'); save.type = 'submit'; save.textContent = '保存配置'; save.className = 'nspp-ai-primary'; const actions = document.createElement('div'); actions.className = 'nspp-ai-actions'; actions.append(close, save); form.append(actions); compose.append(form);
-          form.addEventListener('submit', event => {
-            event.preventDefault();
-            try { if (new URL(inputs.url.value.trim()).protocol !== 'https:') throw new Error(); } catch { ctx.notify('请设置完整 HTTPS API 地址'); return; }
-            if (Object.values(inputs).some(input => !input.value.trim())) { ctx.notify('请填写完整配置'); return; }
-            try { for (const [key, input] of Object.entries(inputs)) ctx.set(key, input.value.trim()); } catch { ctx.notify('配置保存失败，请检查油猴存储'); return; }
-            open();
-          });
-          if (!compose.open) compose.showModal(); return;
-        }
         const nativeEditor = (document.querySelector('.md-editor .CodeMirror') as (HTMLElement & { CodeMirror?: Editor }) | null)?.CodeMirror;
         const source = document.createElement('textarea'); source.rows = 8; source.placeholder = '输入正文或材料，也可以只填写写作要求'; source.setAttribute('aria-label', 'AI 写作正文');
         const editor: Editor = nativeEditor || { getValue: () => source.value, setValue: text => { source.value = text; }, focus: () => source.focus() };
         if (!nativeEditor) compose.append(source);
         const toolbar = document.createElement('div'); toolbar.className = 'nspp-ai-actions';
-        const configureButton = document.createElement('button'); configureButton.type = 'button'; configureButton.textContent = '配置'; configureButton.addEventListener('click', () => open(true)); toolbar.append(configureButton, close);
+        toolbar.append(close);
         compose.append(toolbar);
         const panel = document.createElement('div'); panel.className = 'nspp-ai-compose';
         const mode = document.createElement('select'); mode.setAttribute('aria-label', 'AI 写作方式');

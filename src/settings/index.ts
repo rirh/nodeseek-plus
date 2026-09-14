@@ -22,7 +22,8 @@ export function mountSettings(features: Feature[]) {
   const style = element("style", css + loadingCss);
   const launch = element("button");
   launch.type = "button"; launch.append(toolIcon("settings"));
-  launch.className = "launcher";
+  launch.className = "nspp-tool-icon";
+  launch.dataset.nsppSettingsLauncher = "";
   launch.title = "打开 NodeSeek++ 设置";
   launch.setAttribute("aria-label", launch.title);
   const dialog = element("dialog");
@@ -100,7 +101,8 @@ export function mountSettings(features: Feature[]) {
   toastClose.className = "toast-close";
   toastClose.setAttribute("aria-label", "关闭提示");
   toast.append(toastIcon, toastMessage, toastClose);
-  shadow.append(style, launch, dialog, toast);
+  shadow.append(style, dialog, toast);
+  (document.getElementById("nspp-tools") || document.body).append(launch);
   document.body.append(host);
   let draft: Settings = loadSettings(features);
   let toastTimer: ReturnType<typeof setTimeout>;
@@ -184,9 +186,10 @@ export function mountSettings(features: Feature[]) {
       toggle.addEventListener("change", () => { draft[feature.id].enabled = toggle.checked; });
       label.append(element("strong", feature.title), toggle);
       row.append(label);
+      if (feature.id === 'monitor') row.append(element("p", "开启后显示监控入口并运行监控；关闭后隐藏入口并停止检查。"));
       if (feature.id === 'request-settings') row.append(element("p", feature.description));
       if (["ai-polish", "official-blocklist", "infinite-scroll"].includes(feature.id)) {
-        const hints: Record<string, string> = { "ai-polish": "手动发送编辑器文本，预览后采用。", "official-blocklist": "添加或解除会修改站点黑名单。", "infinite-scroll": "新增评论的回复、评分需打开原页。" };
+        const hints: Record<string, string> = { "ai-polish": "开启并填写完整的 HTTPS 接口、模型和 API Key 后显示 AI 入口；配置在这里管理，写作在独立面板中使用。", "official-blocklist": "添加或解除会修改站点黑名单。", "infinite-scroll": "新增评论的回复、评分需打开原页。" };
         row.append(element("p", hints[feature.id]));
       }
       const options = Object.keys(feature.defaults).filter(key => key !== "enabled");

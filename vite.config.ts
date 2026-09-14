@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       version: packageJson.version,
       description: '模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。',
       match: ['https://www.nodeseek.com/*', 'https://www.deepflood.com/*'],
-      connect: ['api.nodeimage.com', 'rss.nodeseek.com', 'update.greasyfork.org'],
+      connect: ['api.nodeimage.com', 'rss.nodeseek.com', 'api.bimg.eu.org', 'update.greasyfork.org'],
       ...(mode === 'stage' || mode === 'development' ? {} : {
         downloadURL: 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js',
         updateURL: 'https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.meta.js',

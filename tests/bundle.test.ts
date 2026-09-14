@@ -312,7 +312,7 @@ test('missing GM APIs do not abort startup or pretend settings were saved', asyn
   });
   try {
     const root = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
-    (root.querySelector('.launcher') as HTMLElement).click();
+    f.window.document.querySelector<HTMLButtonElement>('[data-nspp-settings-launcher]')!.click();
     assert.equal(root.querySelector('dialog')!.open, true);
     assert.equal((root.querySelector('.primary') as HTMLButtonElement).disabled, true);
     assert.match(root.querySelector('.status')!.textContent!, /油猴存储未就绪/);
@@ -814,7 +814,7 @@ test('attendance reads native page status without extra requests and uses icon c
     assert.equal(control.hidden, true);
     assert.ok(control.querySelector('svg'));
     assert.ok(f.window.document.querySelector('[aria-label="阅读历史"] svg'));
-    assert.ok(f.window.document.querySelector('#nspp-settings')!.shadowRoot!.querySelector('.launcher svg'));
+    assert.ok(f.window.document.querySelector('[data-nspp-settings-launcher] svg'));
   } finally { await f.close(); }
 });
 
@@ -1186,26 +1186,27 @@ test('username uses shared copy control and the card avoids native header stylin
   } finally { await f.close(); }
 });
 
-test('AI launcher defaults visible, opens setup, saves configuration and respects disabled setting', async () => {
-  const f = await fixture();
+test('AI launcher requires complete enabled configuration and keeps configuration in settings', async () => {
+  const configured = { enabled: true, url: 'https://example.com/v1/chat/completions', model: 'test-model', apiKey: 'test-key' };
+  for (const options of [{}, { ...configured, enabled: false }, { ...configured, apiKey: '' }, { ...configured, model: '' }, { ...configured, url: 'http://example.com' }]) {
+    const f = await fixture({ 'ai-polish': options });
+    try {
+      assert.equal(f.window.document.querySelector('[data-nspp-ai-launcher]'), null);
+      f.menus[0]();
+      assert.match(f.window.document.querySelector('#nspp-settings')!.shadowRoot!.textContent!, /AI 写作助手/);
+    } finally { await f.close(); }
+  }
+  const f = await fixture({ 'ai-polish': configured });
   try {
-    const launch = f.window.document.querySelector<HTMLButtonElement>('#nspp-tools [data-nspp-ai-launcher]')!;
-    assert.ok(launch);
-    launch.click();
+    f.window.document.querySelector<HTMLButtonElement>('[data-nspp-ai-launcher]')!.click();
     const panel = f.window.document.querySelector('.nspp-ai-dialog')!;
-    assert.equal(panel.querySelector('h2')!.textContent, '配置 AI 写作助手');
-    const inputs = panel.querySelectorAll('input');
-    inputs[0].value = 'https://example.com/v1/chat/completions'; inputs[1].value = 'test-key'; inputs[2].value = 'test-model';
-    panel.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
     assert.equal(panel.querySelector('h2')!.textContent, 'AI 写作助手');
     assert.ok(panel.querySelector('[data-nspp-ai]'));
     assert.ok(panel.querySelector('[aria-label="AI 写作正文"]'));
-    assert.equal((f.storage.get(key) as Record<string, Record<string, unknown>>)['ai-polish'].model, 'test-model');
+    assert.equal(panel.querySelector('input[type="password"]'), null);
+    assert.equal([...panel.querySelectorAll('button')].some(button => button.textContent === '配置'), false);
     assert.equal(f.requests.length, 0);
   } finally { await f.close(); }
-  const disabled = await fixture({ 'ai-polish': { enabled: false } });
-  try { assert.equal(disabled.window.document.querySelector('[data-nspp-ai-launcher]'), null); }
-  finally { await disabled.close(); }
 });
 
 
@@ -1381,7 +1382,7 @@ test('badge colors retain the original style by default', async () => {
   const f = await fixture({ 'official-blocklist': { enabled: false } });
   try {
     const settings = f.window.document.querySelector('#nspp-settings')!.shadowRoot!;
-    settings.querySelector<HTMLButtonElement>('.launcher')!.click();
+    f.window.document.querySelector<HTMLButtonElement>('[data-nspp-settings-launcher]')!.click();
     const select = [...settings.querySelectorAll('select')].find(control => [...control.options].some(option => option.value === 'original'))!;
     assert.equal(select.value, 'original');
     assert.equal([...f.window.document.querySelectorAll('style')].some(style => style.textContent?.includes('color:var(--nspp-muted, #9198a1)!important')), false);
@@ -1425,3 +1426,102 @@ for (const mobile of [false, true]) {
     } finally { await f.close(); }
   });
 }
+
+test('mobile reply keeps the native editor and draft, cancels comment loading and resumes at the same position', async () => {
+  let intersect!: () => void, complete!: () => void, requestSignal: AbortSignal | undefined;
+  let observing = false, calls = 0, nativeReplies = 0;
+  const html = '<ul class="comments"><li><div class="comment-menu"><button class="menu-item" title="回复"><span>回复</span></button></div></li></ul><div class="nsk-pager"><a class="pager-next" href="/post-1-2">next</a></div><div class="md-editor" style="color:red"><textarea>草稿</textarea><button type="submit">发送</button></div>';
+  const f = await fixture({ 'infinite-scroll': { enabled: true, comments: true }, 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html, '/post-1-1', undefined, window => {
+    window.happyDOM.setWindowSize({ width: 390, height: 844 });
+    window.IntersectionObserver = class {
+      constructor(callback: (entries: unknown[]) => void, options?: { rootMargin?: string }) { if (options?.rootMargin === '150px') intersect = () => callback([{ isIntersecting: true }]); }
+      observe() { observing = true; } disconnect() { observing = false; } unobserve() {}
+    } as unknown as typeof window.IntersectionObserver;
+    window.fetch = (async (_: unknown, options?: RequestInit) => {
+      calls++; requestSignal = options?.signal as AbortSignal;
+      await new Promise<void>(resolve => { complete = resolve; });
+      return new window.Response('<ul class="comments"><li id="next-comment">next comment</li></ul>');
+    }) as typeof window.fetch;
+  });
+  try {
+    const doc = f.window.document;
+    const editor = doc.querySelector('.md-editor')!;
+    doc.querySelector('.menu-item')!.addEventListener('click', () => { nativeReplies++; });
+    f.window.scrollTo(0, 430);
+    intersect(); await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(calls, 1);
+    doc.querySelector<HTMLButtonElement>('.menu-item span')!.click();
+    assert.equal(nativeReplies, 1, 'native reply handler still receives the click');
+    assert.equal(doc.querySelector('.nspp-floating-reply'), editor);
+    assert.equal(doc.documentElement.hasAttribute('data-nspp-reply-open'), true);
+    assert.equal(observing, false);
+    assert.equal(requestSignal?.aborted, true);
+    complete(); await new Promise(resolve => setTimeout(resolve, 15));
+    intersect(); await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(calls, 1);
+    assert.equal(doc.querySelector('#next-comment'), null);
+    doc.querySelector<HTMLButtonElement>('[aria-label="收起回复框"]')!.click();
+    assert.equal(doc.documentElement.hasAttribute('data-nspp-reply-open'), false);
+    assert.equal(observing, true);
+    assert.equal(f.window.scrollY, 430);
+    assert.equal(editor.querySelector('textarea')!.value, '草稿');
+    assert.equal(editor.getAttribute('style'), 'color: red;');
+    const pause = doc.querySelector<HTMLButtonElement>('[aria-label="暂停自动翻页"]')!;
+    pause.click();
+    doc.querySelector<HTMLButtonElement>('.menu-item')!.click();
+    doc.querySelector<HTMLButtonElement>('[aria-label="收起回复框"]')!.click();
+    assert.equal(observing, false, 'closing reply does not override a manual pause');
+  } finally { complete?.(); await f.close(); }
+});
+
+test('floating reply leaves desktop and disabled mobile native replies alone', async () => {
+  for (const mobile of [false, true]) {
+    const f = await fixture({ 'floating-reply': { enabled: !mobile } }, '<div class="comment-menu"><button class="menu-item">引用</button></div><div class="md-editor"><textarea>原文</textarea></div>', '/post-1-1', undefined, window => {
+      window.happyDOM.setWindowSize({ width: mobile ? 390 : 1280, height: 844 });
+    });
+    try {
+      f.window.document.querySelector<HTMLButtonElement>('.menu-item')!.click();
+      assert.equal(f.window.document.querySelector('.nspp-floating-reply'), null);
+      assert.equal(f.window.document.documentElement.hasAttribute('data-nspp-reply-open'), false);
+    } finally { await f.close(); }
+  }
+});
+
+test('hot rankings load lazily, keep tabs independent, cache results and retain data after failure', async () => {
+  type Options = { url: string; anonymous: boolean; onload(response: { status: number; responseText: string }): void; onerror(): void };
+  const calls: Options[] = [];
+  const f = await fixture({}, '', '/', undefined, window => {
+    Object.assign(window, { GM_xmlhttpRequest: (options: Options) => { calls.push(options); return { abort() {} }; } });
+  });
+  const payload = (id: number, title: string) => ({ updated_at: 1789375421, posts: [{ post: { id, title, author: 'Alice', views: 123, comments: 4 }, score: 55.6 }, { post: { id, title: 'duplicate' } }, { post: { id: 'javascript:bad', title: 'bad' } }] });
+  const wait = () => new Promise(resolve => setTimeout(resolve, 5));
+  try {
+    const doc = f.window.document;
+    assert.equal(calls.length, 0);
+    doc.querySelector<HTMLButtonElement>('[data-nspp-hot-launcher]')!.click();
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].anonymous, true);
+    assert.match(calls[0].url, /^https:\/\/api\.bimg\.eu\.org\/hot\.json\?t=\d+$/);
+    doc.querySelector<HTMLButtonElement>('[data-ranking="weekly"]')!.click();
+    calls[1].onload({ status: 200, responseText: JSON.stringify(payload(2, '周榜')) }); await wait();
+    calls[0].onload({ status: 200, responseText: JSON.stringify(payload(1, '<img src=x onerror=bad>')) }); await wait();
+    const panel = doc.querySelector('.nspp-hot-rankings')!;
+    assert.equal(panel.querySelector('li a')!.textContent, '周榜', 'late hot response must not replace weekly');
+    doc.querySelector<HTMLButtonElement>('[data-ranking="hot"]')!.click();
+    assert.equal(calls.length, 2, 'cached hot tab does not fetch again');
+    assert.equal(panel.querySelectorAll('li').length, 1);
+    assert.equal(panel.querySelector('li img'), null);
+    assert.equal(panel.querySelector('li a')!.getAttribute('href'), 'https://www.nodeseek.com/post-1-1');
+    panel.querySelector<HTMLButtonElement>('nav > :last-child')!.click();
+    calls[2].onerror(); await wait();
+    assert.match(panel.querySelector('[role="status"]')!.textContent!, /保留上次结果/);
+    assert.equal(panel.querySelectorAll('li').length, 1);
+    doc.querySelector<HTMLButtonElement>('[data-ranking="daily"]')!.click();
+    assert.match(calls[3].url, /\/daily\.json/);
+    calls[3].onload({ status: 200, responseText: '{"posts":[]}' }); await wait();
+    assert.match(panel.querySelector('[role="status"]')!.textContent!, /0 条/);
+    panel.querySelector<HTMLButtonElement>('nav > :last-child')!.click();
+    calls[4].onload({ status: 200, responseText: '{"posts":[{}]}' }); await wait();
+    assert.match(panel.querySelector('[role="status"]')!.textContent!, /加载失败/);
+  } finally { await f.close(); }
+});

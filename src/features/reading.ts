@@ -18,6 +18,7 @@ function infinite(ctx: Context) {
         return;
     let next = document.querySelector<HTMLAnchorElement>('.nsk-pager a.pager-next')?.href;
     let busy = false, failed = false, paused = false;
+    const replying = () => comments && document.documentElement.hasAttribute('data-nspp-reply-open');
     let loading: AbortController | undefined;
     const visited = new Set([location.href]);
     const button = document.createElement('button');
@@ -39,7 +40,7 @@ function infinite(ctx: Context) {
         else if (next) observer.observe(button);
     }, { signal: ctx.signal });
     const load = async (manual = false) => {
-        if (busy || !next || visited.has(next) || ctx.signal.aborted)
+        if (busy || !next || visited.has(next) || ctx.signal.aborted || replying())
             return;
         const url = new URL(next, location.href);
         if (url.origin !== location.origin)
@@ -51,7 +52,7 @@ function infinite(ctx: Context) {
         button.textContent = '正在加载…';
         try {
             const html = await ctx.request<string>(url.href, { responseType: 'text', signal: AbortSignal.any([ctx.signal, loading.signal]) });
-            if (ctx.signal.aborted || (paused && !manual))
+            if (ctx.signal.aborted || loading.signal.aborted || replying() || (paused && !manual))
                 return;
             const page = new DOMParser().parseFromString(html, 'text/html');
             const source = page.querySelector(selector);
@@ -101,12 +102,17 @@ function infinite(ctx: Context) {
             button.disabled = !next;
             button.removeAttribute('aria-busy');
             if (paused && next) button.textContent = '已暂停，点击加载下一页';
-            if (loading.signal.aborted && !ctx.signal.aborted && !paused && next) { observer.unobserve(button); observer.observe(button); }
+            if (loading.signal.aborted && next) button.textContent = paused ? '已暂停，点击加载下一页' : '加载下一页';
+            if (loading.signal.aborted && !ctx.signal.aborted && !paused && !replying() && next) { observer.unobserve(button); observer.observe(button); }
         }
     };
     button.addEventListener('click', () => { void load(true); }, { signal: ctx.signal });
-    const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting) && !failed && !paused && !document.hidden)
+    const observer = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting) && !failed && !paused && !replying() && !document.hidden)
         void load(); }, { rootMargin: '150px' });
+    document.addEventListener('nspp:reply-state', () => {
+        if (replying()) { observer.disconnect(); loading?.abort(); }
+        else if (next && !paused) observer.observe(button);
+    }, { signal: ctx.signal });
     if (next)
         observer.observe(button);
     else
@@ -425,22 +431,14 @@ const content: Feature = {
 export const readingFeatures: Feature[] = [
     { id: 'infinite-scroll', title: '自动翻页', description: '合并下一页帖子或评论；失败时手动重试。新增评论的互动请通过原始页面链接操作。', group: '阅读', defaults: { enabled: true, posts: true, comments: false }, fields: { posts: { label: '帖子自动翻页', type: 'text' }, comments: { label: '评论自动翻页（仅阅读）', type: 'text' } }, mount: infinite },
     historyFeature, content,
-    { id: 'reading-navigation', title: '夜间模式与阅读导航', description: '返回顶部；Alt + ↑ / ↓ 跳转页首或页尾，不占用编辑器按键。', group: '外观', defaults: { enabled: true, dark: false, keyboard: true }, fields: { dark: { label: '启用夜间模式', type: 'text' }, keyboard: { label: '启用阅读快捷键', type: 'text' } }, mount(ctx) {
+    { id: 'reading-navigation', title: '夜间模式与阅读导航', description: 'Alt + ↑ / ↓ 跳转页首或页尾，不占用编辑器按键。', group: '外观', defaults: { enabled: true, dark: false, keyboard: true }, fields: { dark: { label: '启用夜间模式', type: 'text' }, keyboard: { label: '启用阅读快捷键', type: 'text' } }, mount(ctx) {
             const previous = document.body.classList.contains('dark-layout');
             if (ctx.get('dark'))
                 document.body.classList.add('dark-layout');
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'nspp-tool-icon'; button.title = '返回顶部'; button.setAttribute('aria-label', button.title); button.append(toolIcon('top'));
-            const syncTop = () => { button.hidden = window.scrollY <= 32; };
-            syncTop();
-            window.addEventListener('scroll', syncTop, { passive: true, signal: ctx.signal });
-            document.querySelector('#nspp-tools')?.append(button);
-            button.addEventListener('click', () => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }), { signal: ctx.signal });
             if (ctx.get('keyboard'))
                 document.addEventListener('keydown', e => { if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key) || (e.target as Element).closest('input,textarea,select,[contenteditable="true"]'))
                     return; e.preventDefault(); window.scrollTo(0, e.key === 'ArrowUp' ? 0 : document.documentElement.scrollHeight); }, { signal: ctx.signal });
-            return () => { button.remove(); document.body.classList.toggle('dark-layout', previous); };
+            return () => { document.body.classList.toggle('dark-layout', previous); };
         } },
 ];
 readingFeatures.push({

@@ -10,6 +10,7 @@
 // @match        https://www.deepflood.com/*
 // @connect      api.nodeimage.com
 // @connect      rss.nodeseek.com
+// @connect      api.bimg.eu.org
 // @connect      update.greasyfork.org
 // @grant        GM_addStyle
 // @grant        GM_getValue

@@ -1,9 +1,10 @@
-#nspp-tools { position: fixed; right: calc(1rem - 8px); bottom: 4rem; z-index: 999; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; padding: 8px 8px 0 0; max-height: 55dvh; max-width: min(22rem, 75vw); overflow-y: auto; }
+#nspp-tools { position: fixed; right: 72px; bottom: 16px; z-index: 999; display: flex; flex-direction: column; align-items: center; gap: 2px; box-sizing: border-box; width: 44px; padding: 6px; max-height: 55dvh; overflow-y: auto; border: 1px solid var(--border-color, #d1d9e0); border-radius: 12px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 4px 16px #0000000d; isolation: isolate; }
+#nspp-tools:not(:has(button:not([hidden]))) { display: none; }
 html[data-nspp-settings-open] #nspp-tools, html[data-nspp-settings-open] [data-nspp-ai-launcher] { display: none !important; }
 html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-hover * { animation-play-state: paused !important; }
 @media (max-width: 700px), (hover: none) {
   .nspp-user-hover { display: none !important; }
-  #nspp-tools { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(50px + env(safe-area-inset-bottom)); max-height: 36dvh; max-width: 44px; padding: 0; gap: 5px; }
+  #nspp-tools { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); max-height: 36dvh; width: 44px; max-width: 44px; padding: 6px; gap: 2px; }
   #nspp-tools .nspp-tool-icon { width: 30px; height: 30px; }
   body:has(.nspp-messages-container[data-nspp-message-view='new']) #nspp-tools { display: none !important; }
 }
@@ -214,7 +215,19 @@ html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-
 .nspp-quick-replies .nspp-quick-status { padding: 0 12px 6px; font-size: 11px; opacity: .65; flex: none; }
 @media (max-width: 600px) { .nspp-quick-replies { margin: auto 0 0; width: 100%; max-width: none; max-height: 85dvh; border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); } .nspp-quick-replies button { min-height: 34px; } }
 
-#nspp-tools .nspp-tool-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; flex: none; }
+#nspp-tools .nspp-tool-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; min-height: 30px; margin: 0; padding: 0; flex: none; border: 0; border-radius: 7px; background: transparent; box-shadow: none; }
+#nspp-tools .nspp-tool-icon:hover { background: #818b9818; }
+#nspp-tools [data-nspp-settings-launcher] { order: 10; margin-top: 3px; background: #818b980c; }
+#nspp-tools [data-nspp-settings-launcher] svg { width: 18px; height: 18px; }
+#nspp-tools [data-nspp-hot-launcher] { order: -2; background: linear-gradient(145deg, #fff5e8, #ffe8e8); box-shadow: inset 0 0 0 1px #f9731614; }
+#nspp-tools [data-nspp-hot-launcher]:hover { background: linear-gradient(145deg, #ffebd4, #ffdbdf); }
+#nspp-tools [data-nspp-hot-launcher] svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 2px #ef58332b); }
+#nspp-tools [data-nspp-monitor-launcher] { order: -1; }
+#nspp-tools button[data-nspp-monitor-launcher][data-monitor-state="running"] { background: #2180440d; }
+.dark-layout #nspp-tools [data-nspp-hot-launcher] { background: linear-gradient(145deg, #493023, #45252f); box-shadow: inset 0 0 0 1px #ff965c18; }
+.dark-layout #nspp-tools [data-nspp-hot-launcher]:hover { background: linear-gradient(145deg, #5b3826, #592c39); }
+
+@media (max-width: 700px), (hover: none) { #nspp-tools .nspp-tool-icon { width: 30px; height: 30px; } }
 
 /* Compact membership accents and structured registration details. */
 .nspp-user-badges .nspp-age, .nspp-profile-dialog .nspp-age { color: var(--nspp-age-color, #59636e); }
@@ -335,7 +348,9 @@ html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-
 .nspp-upload-status a:hover { text-decoration: underline; }
 .nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
 .nspp-upload-status button svg { width: 16px; height: 16px; }
-.md-editor .nspp-upload-status .nspp-upload-choose { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 4px 9px; border: 1px solid #07a65a; border-radius: 5px; background: #07a65a; color: #fff; opacity: 1; font-size: 12px; white-space: nowrap; }
+.md-editor .nspp-upload-status .nspp-upload-choose { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 26px; min-height: 26px; padding: 5px; border: 0; border-radius: 4px; background: #818b9818; color: var(--text-color, #59636e); opacity: 1; box-shadow: none; }
+.md-editor .nspp-upload-status .nspp-upload-choose:hover { background: #818b9830; }
+.nspp-upload-status [role="status"]:empty { display: none; }
 .nspp-upload-choose svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .md-editor .nspp-upload-status { max-width: 100%; min-width: 0; }
 
@@ -521,4 +536,64 @@ html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-
 @media (max-width: 480px) {
   .nspp-confirm-dialog { inset: auto 0 0; width: 100%; max-height: 85dvh; margin: 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 14px 14px 0 0; }
   .nspp-confirm-dialog form > :is(button, a) { flex: 1; min-height: 38px; }
+}
+
+.nspp-hot-rankings { box-sizing: border-box; width: min(42rem, calc(100vw - 24px)); max-height: min(82dvh, 760px); padding: 10px 12px 7px; overflow: hidden; }
+.nspp-hot-rankings[open] { display: flex; flex-direction: column; }
+.nspp-hot-rankings .nspp-hot-header { display: flex; flex: none; align-items: center; gap: 12px; margin: 0; padding: 0 0 5px; border: 0; background: transparent; box-shadow: none; }
+.nspp-hot-rankings h2 { flex: none; margin: 0; padding: 0; border: 0; font: 600 14px/24px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; white-space: nowrap; }
+.nspp-hot-rankings nav { display: flex; flex: 1; align-items: center; gap: 3px; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.nspp-hot-rankings button { all: unset; box-sizing: border-box; padding: 3px 7px; border-radius: 4px; color: inherit; cursor: pointer; font: inherit; font-size: 11px; line-height: 18px; white-space: nowrap; text-align: center; }
+.nspp-hot-rankings button:hover { background: #818b9818; }
+.nspp-hot-rankings button:focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.nspp-hot-rankings button:disabled { opacity: .55; cursor: wait; }
+.nspp-hot-rankings button[aria-pressed="true"] { color: #0969da; background: #0969da12; font-weight: 600; }
+.dark-layout .nspp-hot-rankings button[aria-pressed="true"] { color: #79b8ff; background: #79b8ff18; }
+.nspp-hot-rankings nav > :last-child { margin-left: auto; color: var(--text-secondary-color, #818b98); }
+.nspp-hot-rankings .nspp-hot-close { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; color: var(--text-secondary-color, #818b98); }
+.nspp-hot-close svg { width: 16px; height: 16px; }
+.nspp-hot-rankings ol { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 0; }
+.nspp-hot-rankings li { display: flex; align-items: center; gap: 6px; min-height: 28px; box-sizing: border-box; margin: 0; padding: 3px 0; border-bottom: 1px solid #818b9814; }
+.nspp-hot-rankings li:last-child { border-bottom: 0; }
+.nspp-hot-rankings [role="status"].nspp-sweep-shine { border-radius: 4px; background-color: #818b980c; }
+.nspp-hot-skeleton > span { display: block; flex: none; height: 12px; border-radius: 4px; background-color: #818b981c; }
+.nspp-hot-skeleton .nspp-hot-skeleton-rank { width: 20px; height: 20px; }
+.nspp-hot-skeleton .nspp-hot-skeleton-title { flex: 1; margin-right: 8%; }
+.nspp-hot-skeleton:nth-child(even) .nspp-hot-skeleton-title { margin-right: 20%; }
+.nspp-hot-skeleton .nspp-hot-skeleton-heat { width: 40px; margin-left: auto; }
+.nspp-hot-rankings li:hover { background: #818b980a; }
+.nspp-hot-rankings li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; font-size: 12px; line-height: 21px; text-decoration: none; }
+.nspp-hot-rankings li a:hover { text-decoration: underline; }
+.nspp-hot-rank { flex: none; width: 20px; text-align: center; color: #818b98; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nspp-hot-heat { display: inline-flex; flex: none; align-items: center; justify-content: flex-end; gap: 3px; min-width: 58px; color: #818b98; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nspp-hot-heat svg { width: 12px; height: 14px; fill: currentColor; stroke-width: 1; }
+.nspp-hot-rankings [data-rank="1"] { --nspp-rank-color: #ef4444; }
+.nspp-hot-rankings [data-rank="2"] { --nspp-rank-color: #f0782c; }
+.nspp-hot-rankings [data-rank="3"] { --nspp-rank-color: #c89419; }
+.nspp-hot-rankings :is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .nspp-hot-rank { color: var(--nspp-rank-color); background: color-mix(in srgb, var(--nspp-rank-color) 10%, transparent); border-radius: 4px; line-height: 20px; }
+.nspp-hot-rankings :is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .nspp-hot-heat { color: var(--nspp-rank-color); }
+.nspp-hot-rankings [role="status"] { flex: none; margin: 2px 0 4px; padding: 0; font-size: 10px; line-height: 16px; color: var(--text-secondary-color, #818b98); }
+@media (max-width: 700px) {
+  .nspp-hot-rankings { padding: 8px; }
+  .nspp-hot-rankings .nspp-hot-header { gap: 5px; flex-wrap: wrap; }
+  .nspp-hot-rankings h2 { font-size: 13px; }
+  .nspp-hot-rankings button { padding: 3px 5px; }
+  .nspp-hot-rankings li { gap: 4px; }
+  .nspp-hot-heat { min-width: 50px; }
+}
+@media (max-width: 380px) {
+  .nspp-hot-rankings nav { order: 1; flex-basis: 100%; }
+  .nspp-hot-rankings .nspp-hot-close { margin-left: auto; }
+}
+[data-nspp-reply-launcher] { display: none !important; }
+@media (max-width: 700px), (hover: none) {
+  [data-nspp-reply-launcher]:not([hidden]) { display: inline-flex !important; }
+  html[data-nspp-reply-open] { overflow: hidden !important; scroll-behavior: auto !important; }
+  html[data-nspp-reply-open] body { position: fixed !important; top: var(--nspp-reply-scroll) !important; left: 0; right: 0; width: 100%; overflow: hidden !important; }
+  html[data-nspp-reply-open] #nspp-tools { visibility: hidden; }
+  .md-editor.nspp-floating-reply { position: fixed !important; inset: auto 0 var(--nspp-reply-bottom, 0px) !important; z-index: 1001 !important; box-sizing: border-box !important; width: 100% !important; max-width: none !important; max-height: min(70dvh, var(--nspp-reply-height, 70dvh)) !important; margin: 0 !important; padding-bottom: env(safe-area-inset-bottom); overflow: auto; overscroll-behavior: contain; border-radius: 12px 12px 0 0; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 -6px 30px #0003; }
+  .nspp-floating-reply .CodeMirror { height: clamp(80px, calc(var(--nspp-reply-height, 100dvh) * .32), 240px) !important; }
+  .nspp-floating-reply textarea { max-height: 30dvh; font-size: 16px; }
+  .nspp-floating-reply-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; font-size: 12px; }
+  .nspp-floating-reply-header button { flex: none; padding: 5px 10px; border: 0; border-radius: 4px; font: inherit; color: inherit; background: #818b9818; cursor: pointer; }
 }

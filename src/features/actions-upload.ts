@@ -22,7 +22,7 @@ export const imageUpload: Feature = {
     const checkLogin = () => {
       if (ctx.get<string>('provider') !== 'NodeImage' || apiKey || !bars.length || Date.now() - lastCheck < 3000) return;
       lastCheck = Date.now();
-      void ensureKey().then(() => { if (!ctx.signal.aborted) bars.forEach(bar => { bar.querySelector<HTMLElement>('[role="status"]')!.textContent = 'NodeImage 已连接'; bar.querySelector<HTMLElement>('a')!.hidden = true; }); }).catch(() => { /* The login link remains available. */ });
+      void ensureKey().then(() => { if (!ctx.signal.aborted) bars.forEach(bar => { const status = bar.querySelector<HTMLElement>('[role="status"]')!; if (!status.hasAttribute('aria-busy')) status.textContent = ''; bar.querySelector<HTMLElement>('a')!.hidden = true; }); }).catch(() => { /* The login link remains available. */ });
     };
     window.addEventListener('focus', checkLogin, { signal: ctx.signal });
     function scan() {
@@ -71,7 +71,7 @@ export const imageUpload: Feature = {
             const markdown = `![image](<${url.href.replace(/>/g, '%3E')}>)`;
             if (cm) { cm.replaceSelection(markdown); cm.focus(); }
             else { ta!.setRangeText(markdown, ta!.selectionStart, ta!.selectionEnd, 'end'); ta!.dispatchEvent(new Event('input', { bubbles: true })); }
-            status.textContent = '上传完成'; if (nodeImage) official.hidden = true; return true;
+            status.textContent = ''; if (nodeImage) official.hidden = true; return true;
           } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; official.hidden = false; } if (!ctx.signal.aborted) status.textContent = ctx.get<string>('provider') === 'NodeImage' && error instanceof Error ? error.message : '上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持'; return false; }
           finally { input.disabled = false; key.disabled = false; input.value = ''; status.removeAttribute('aria-busy'); }
         }
@@ -87,7 +87,7 @@ export const imageUpload: Feature = {
           const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'nspp-upload-choose'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title);
           const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
           const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1'); icon.append(path);
-          choose.append(icon, document.createTextNode('上传图片'));
+          choose.append(icon);
           choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal }); bar.prepend(choose);
         }
         (toolbar || host).append(bar); bars.push(bar);

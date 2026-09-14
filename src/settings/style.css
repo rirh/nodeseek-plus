@@ -30,7 +30,6 @@ button {
 button:hover { background: var(--line); }
 button:disabled { opacity: .6; cursor: wait; }
 :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-.launcher { position: fixed; right: 16px; bottom: 16px; z-index: 2147483645; min-height: 32px; background: var(--surface); font-weight: 600; box-shadow: 0 2px 6px #1f232826; }
 dialog {
   margin: auto;
   padding: 0;
@@ -158,10 +157,6 @@ h3 { font-size: 11px; font-weight: 600; border-bottom: 0; padding: 8px 0 3px; }
   .settings-footer button { padding: 5px 6px; }
 }
 
-.launcher { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; }
-@media (max-width: 700px), (hover: none) {
-  .launcher { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); width: 30px; height: 30px; }
-}
 
 /* Separate settings with spacing and soft surfaces instead of dividers. */
 header, .search-bar, .categories, .settings-footer, .settings-workspace article { border: 0; }
