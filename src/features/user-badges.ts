@@ -20,8 +20,8 @@ export const userBadges: Feature = {
     }
     let scoreDialog: HTMLDialogElement | undefined;
     const roles = new Map<Element, string | null>();
-    type CachedProfile = { time: number; user: UserProfile; withSignature?: boolean };
-    const fresh = (entry: CachedProfile | undefined): entry is CachedProfile => !!entry && entry.withSignature === true && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 24 * 60 * 60 * 1000;
+    type CachedProfile = { time: number; user: UserProfile };
+    const fresh = (entry: CachedProfile | undefined): entry is CachedProfile => !!entry && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 24 * 60 * 60 * 1000;
     const cache = new Map<string, CachedProfile>();
     const inflight = new Map<string, Promise<UserProfile>>();
     const nodes = new Map<Element, { id: string; badge: HTMLElement; details: HTMLElement; release(): void }>();
@@ -35,9 +35,9 @@ export const userBadges: Feature = {
         cache.set(id, stored[id]);
         return Promise.resolve(stored[id].user);
       }
-      const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}?signature=1`).then(result => {
+      const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}`).then(result => {
         if (!result?.success || !result.detail || typeof result.detail !== 'object') throw new Error('资料不可用');
-        const entry = { time: Date.now(), user: result.detail, withSignature: true };
+        const entry = { time: Date.now(), user: result.detail };
         cache.set(id, entry);
         const latest = ctx.get<typeof stored>('profiles') || {};
         latest[id] = entry;

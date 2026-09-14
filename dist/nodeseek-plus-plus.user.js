@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.914.1112
+// @version      26.914.1121
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @match        https://www.nodeseek.com/*
@@ -492,7 +492,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element("small", `v26.914.1112`));
+		heading.append(title, element("small", `v26.914.1121`));
 		const close = element("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
@@ -4025,7 +4025,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			}
 			let scoreDialog;
 			const roles = new Map();
-			const fresh = (entry) => !!entry && entry.withSignature === true && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 864e5;
+			const fresh = (entry) => !!entry && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 864e5;
 			const cache = new Map();
 			const inflight = new Map();
 			const nodes = new Map();
@@ -4039,12 +4039,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					cache.set(id, stored[id]);
 					return Promise.resolve(stored[id].user);
 				}
-				const request = ctx.request(`/api/account/getInfo/${id}?signature=1`).then((result) => {
+				const request = ctx.request(`/api/account/getInfo/${id}`).then((result) => {
 					if (!result?.success || !result.detail || typeof result.detail !== "object") throw new Error("资料不可用");
 					const entry = {
 						time: Date.now(),
-						user: result.detail,
-						withSignature: true
+						user: result.detail
 					};
 					cache.set(id, entry);
 					const latest = ctx.get("profiles") || {};

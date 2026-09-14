@@ -303,7 +303,7 @@ test('user profiles persist across pages for one day and refresh after expiry', 
   let calls = 0;
   for (const age of [null, 12, 25]) {
     storage.delete('nspp:profile-completed:www.nodeseek.com');
-    if (age !== null) storage.set(stateKey, { profiles: { '123': { time: Date.now() - age * 3600000, user, withSignature: true } } });
+    if (age !== null) storage.set(stateKey, { profiles: { '123': { time: Date.now() - age * 3600000, user } } });
     const f = await fixture({}, '<div class="author-info"><a href="/space/123">Alice</a></div>', '/', storage, window => {
       window.fetch = (async () => {
         calls++;
@@ -324,8 +324,8 @@ test('user profiles persist across pages for one day and refresh after expiry', 
 test('profile cache keeps more than 200 fresh users across pages and removes expired entries', async () => {
   const stateKey = 'nspp:state:www.nodeseek.com:user-level';
   const user = { rank: 3 };
-  const profiles = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i + 1), { time: Date.now() - 3600000, user, withSignature: true }]));
-  profiles['999'] = { time: Date.now() - 86400000, user, withSignature: true };
+  const profiles = Object.fromEntries(Array.from({ length: 201 }, (_, i) => [String(i + 1), { time: Date.now() - 3600000, user }]));
+  profiles['999'] = { time: Date.now() - 86400000, user };
   const storage = new Map<string, unknown>([
     [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'official-blocklist': { enabled: false } }],
     [stateKey, { profiles }],
@@ -374,7 +374,7 @@ test('avatar and last-commenter profiles load only on interaction and share cach
       const target = new URL(String(url));
       if (target.pathname === '/api/fans/follow') return new window.Response(JSON.stringify({ success: true, memberList: [] }));
       assert.equal(target.pathname, '/api/account/getInfo/123');
-      assert.equal(target.searchParams.get('signature'), '1');
+      assert.equal(target.search, '', 'profile endpoint rejects the signature query parameter');
       calls++;
       return new window.Response(JSON.stringify({ success: true, detail: { rank: 3 } }));
     }) as typeof window.fetch;
