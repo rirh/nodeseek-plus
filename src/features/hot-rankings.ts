@@ -72,7 +72,10 @@ export const hotRankings: Feature = {
     const refresh = document.createElement('button'); refresh.type = 'button'; refresh.textContent = '刷新'; refresh.addEventListener('click', () => { void load(true); }, { signal: ctx.signal }); toolbar.append(refresh);
     const status = document.createElement('p'); status.setAttribute('role', 'status');
     const list = document.createElement('ol');
-    head.replaceChildren(title, toolbar, close); panel.append(head, status, list); document.body.append(panel); (document.getElementById('nspp-tools') || document.body).prepend(launch);
+    head.replaceChildren(title, toolbar, close); panel.append(head, status, list); document.body.append(panel);
+    const tools = document.getElementById('nspp-tools') || document.body;
+    const monitor = tools.querySelector('[data-nspp-monitor-launcher]');
+    if (monitor) monitor.after(launch); else tools.prepend(launch);
     const render = () => {
       if (ctx.signal.aborted) return;
       const snapshot = cache.get(active), busy = pending.has(active);

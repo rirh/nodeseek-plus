@@ -607,7 +607,7 @@ test('history dialog searches, deletes and restores entries', async () => {
   const f = await fixture({}, '', '/', storage);
   try {
     [...f.window.document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === '阅读历史')!.click();
-    const dialog = f.window.document.querySelector<HTMLDialogElement>('.nspp-history')!;
+    const dialog = f.window.document.querySelector<HTMLDialogElement>('dialog[aria-label="阅读历史"]')!;
     assert.ok(dialog.open); assert.equal(dialog.querySelectorAll('ol a').length, 2);
     const search = dialog.querySelector('input')!; search.value = 'Alpha'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(dialog.querySelectorAll('ol a').length, 1);
@@ -638,7 +638,7 @@ test('history records actual visits, prunes old entries and tracks recently clos
     f.window.dispatchEvent(new f.window.Event('beforeunload'));
     assert.equal(state().recent[0].path, '/post-12-1');
     f.window.document.querySelector<HTMLButtonElement>('[aria-label="阅读历史"]')!.click();
-    const dialog = f.window.document.querySelector('.nspp-history')!;
+    const dialog = f.window.document.querySelector('dialog[aria-label="阅读历史"]')!;
     dialog.querySelector<HTMLButtonElement>('[data-tab="recent"]')!.click();
     assert.equal(dialog.querySelector('a')!.getAttribute('href'), '/post-12-1');
     assert.ok([...dialog.querySelectorAll('button')].some(button => button.textContent === '恢复'));
