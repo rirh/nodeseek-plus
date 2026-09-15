@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Window } from 'happy-dom';
@@ -40,6 +40,19 @@ async function fixture(settings: Record<string, unknown> = {}, html = '', path =
   await new Promise(resolve => setTimeout(resolve, 5));
   window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
   return { window, storage, requests, menus, close: () => window.happyDOM.abort() };
+}
+
+const realSetTimeout = setTimeout;
+async function waitFor(check: () => boolean) {
+  const deadline = Date.now() + 300;
+  while (!check() && Date.now() < deadline) await new Promise(resolve => realSetTimeout(resolve, 5));
+  assert.ok(check(), 'expected DOM state did not become ready within 300ms');
+}
+
+function mockWindowTimers(t: TestContext, window: Window) {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(window, 'setTimeout', (callback: (...args: unknown[]) => void, delay = 0, ...args: unknown[]) => setTimeout(callback, delay, ...args));
+  t.mock.method(window, 'clearTimeout', (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer));
 }
 
 test('profile discussion stats load visible rows, reuse cached counts and leave other tabs alone', async () => {
@@ -1159,7 +1172,7 @@ test('notification categories reuse native typography, badge and bell markup', a
   } finally { await f.close(); }
 });
 
-test('all usernames show rich hover cards while latest replier has no visible badges', async () => {
+test('all usernames show rich hover cards while latest replier has no visible badges', async t => {
   const calls: string[] = [];
   const f = await fixture({}, '<div class="post-info"><span class="info-author"><a href="/space/123">Alice</a><span class="role-tag">管理员</span></span><span class="info-last-commenter"><a href="/space/456">Bob</a></span></div>', '/', undefined, window => {
     Object.defineProperty(window.document, 'hidden', { value: false });
@@ -1176,7 +1189,8 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await waitFor(() => !!f.window.document.querySelector('.nspp-user-hover-rich') && !!f.window.document.querySelector('.nspp-user-hover .nspp-block-toggle'));
+    mockWindowTimers(t, f.window);
     const doc = f.window.document;
     const card = doc.querySelector<HTMLElement>('.nspp-user-hover')!;
     assert.equal(card.hidden, true);
@@ -1185,7 +1199,9 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     assert.equal(calls.includes('/api/account/getInfo/456'), false);
     doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
     assert.equal(card.hidden, true, 'brief hover does not immediately open a card');
-    await new Promise(resolve => setTimeout(resolve, 350));
+    t.mock.timers.tick(299);
+    assert.equal(card.hidden, true, 'the card stays hidden until the 300ms hover delay');
+    t.mock.timers.tick(1);
     assert.equal(card.hidden, false);
     assert.match(card.textContent!, /注册 2024-01-01/);
     assert.match(card.textContent!, /信任分/);
@@ -1200,19 +1216,19 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     assert.ok(card.querySelector('.nspp-block-toggle'));
     doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseleave'));
     card.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 220));
+    t.mock.timers.tick(220);
     assert.equal(card.hidden, false);
     doc.dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Escape' }));
     assert.equal(card.hidden, true);
     doc.querySelector('.info-last-commenter a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 350));
+    t.mock.timers.tick(300);
+    await waitFor(() => [...doc.querySelectorAll<HTMLElement>('.nspp-user-hover')].some(el => !el.hidden && el.querySelectorAll('dl > div').length === 6 && !!el.querySelector('.nspp-block-toggle')));
     const visibleCards = Array.from(doc.querySelectorAll<HTMLElement>('.nspp-user-hover')).filter(el => !el.hidden);
     assert.equal(visibleCards.length, 1);
     assert.equal(visibleCards[0]!.querySelector('.nspp-user-hover-name')?.textContent, 'Bob');
     assert.ok(visibleCards[0]!.querySelector('.nspp-block-toggle'));
-    await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(calls.filter(path => path === '/api/account/getInfo/456').length, 1);
-  } finally { await f.close(); }
+  } finally { t.mock.restoreAll(); t.mock.timers.reset(); await f.close(); }
 });
 
 test('quick reply shares a layout group with the native category', async () => {
@@ -1675,7 +1691,7 @@ test('chat profile preserves the original card and links discussions comments an
   } finally { await f.close(); }
 });
 
-test('system messages use compact rows and lazily open rich cards for inline usernames after rendering', async () => {
+test('system messages use compact rows and lazily open rich cards for inline usernames after rendering', async t => {
   const calls: string[] = [];
   const f = await fixture({}, notificationPanel, '/notification#/message?mode=talk&to=1', undefined, window => {
     Object.defineProperty(window.document, 'hidden', { value: false });
@@ -1697,7 +1713,8 @@ test('system messages use compact rows and lazily open rich cards for inline use
     }) as typeof window.fetch;
   });
   try {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await waitFor(() => !!f.window.document.querySelector('.nspp-messages-bubble a[href$="/space/123"] + .nspp-user-badges'));
+    mockWindowTimers(t, f.window);
     const doc = f.window.document;
     const rows = [...doc.querySelectorAll('.nspp-messages-message')];
     assert.equal(rows.length, 2);
@@ -1711,7 +1728,8 @@ test('system messages use compact rows and lazily open rich cards for inline use
     assert.equal((actor.nextElementSibling as HTMLElement).hidden, true, 'inline names do not gain visible badges');
     assert.equal(calls.includes('/api/account/getInfo/123'), false, 'rendering does not request every actor profile');
     actor.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 400));
+    t.mock.timers.tick(300);
+    await waitFor(() => [...doc.querySelectorAll<HTMLElement>('.nspp-user-hover')].some(el => !el.hidden && el.querySelectorAll('dl > div').length === 6));
     const card = [...doc.querySelectorAll<HTMLElement>('.nspp-user-hover')].find(card => !card.hidden)!;
     assert.equal(card.querySelector('.nspp-user-hover-name')!.textContent, 'Alice');
     assert.equal(card.querySelectorAll('dl > div').length, 6);
@@ -1719,11 +1737,11 @@ test('system messages use compact rows and lazily open rich cards for inline use
     assert.equal(calls.includes('/api/account/getInfo/456'), false);
     actor.dispatchEvent(new f.window.MouseEvent('mouseleave'));
     card.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    await new Promise(resolve => setTimeout(resolve, 220));
+    t.mock.timers.tick(220);
     assert.equal(card.hidden, false, 'moving from the name into the card keeps it open');
     doc.dispatchEvent(new f.window.KeyboardEvent('keydown', { key: 'Escape' }));
     assert.equal(card.hidden, true);
-  } finally { await f.close(); }
+  } finally { t.mock.restoreAll(); t.mock.timers.reset(); await f.close(); }
 });
 
 test('notification inbox loads visible exact replies once per page, links posts and formats dates without marking previews read', async () => {
