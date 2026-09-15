@@ -58,8 +58,9 @@ export function createChatProfile(ctx: Context) {
       meta.textContent = `UID ${id}${info.days === null ? '' : ` · 加入 ${info.days} 天`}`;
       trust.hidden = !score; points.textContent = score ? String(score.score) : ''; trust.dataset.tone = score && score.score >= 70 ? 'good' : 'normal';
       data.replaceChildren();
-      for (const [label, value] of [['主题', user.nPost], ['评论', user.nComment], ['鸡腿', user.coin], ['星辰', user.stardust], ['粉丝', user.fans]] as const) {
-        const item = document.createElement('span'); item.className = 'nspp-chat-profile-stat';
+      for (const [label, value, href] of [['主题帖', user.nPost, `/space/${id}#/discussions`], ['评论', user.nComment, `/space/${id}#/comments`], ['鸡腿', user.coin], ['星辰', user.stardust, `/stardust/list?member_id=${id}`], ['粉丝', user.fans]] as const) {
+        const item = document.createElement(href ? 'a' : 'span'); item.className = 'nspp-chat-profile-stat';
+        if (item instanceof HTMLAnchorElement && href) { item.href = href; item.target = '_blank'; item.rel = 'noopener noreferrer'; item.setAttribute('aria-label', `查看${label}：${value ?? '—'}`); }
         const term = document.createElement('small'); term.textContent = label;
         const count = document.createElement('strong'); count.textContent = value === undefined ? '—' : String(value);
         item.append(term, count); data.append(item);

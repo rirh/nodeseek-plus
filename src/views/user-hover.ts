@@ -9,7 +9,7 @@ export function userHoverEnabled(): boolean {
   return GM_getValue<Record<string, { hoverPreview?: boolean }>>(`nspp:settings:${location.hostname}`, {})['user-level']?.hoverPreview !== false;
 }
 
-export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
+export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], .nspp-messages-bubble a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
 const cards = new WeakMap<HTMLAnchorElement, { element: HTMLElement; users: number; dispose(): void }>();
 

@@ -1,6 +1,7 @@
 import { GM_xmlhttpRequest } from '$';
 import type { Feature } from '../core/types';
 import { toolIcon } from '../lib/tool-icon';
+import burningFlame from '../assets/hot-flame.svg?raw';
 
 const rankings = { daily: '日榜', weekly: '周榜', hot: '实时热榜' };
 type Ranking = keyof typeof rankings;
@@ -52,15 +53,8 @@ export const hotRankings: Feature = {
     const cache = new Map<Ranking, Snapshot>();
     const pending = new Map<Ranking, Promise<void>>();
     const errors = new Set<Ranking>();
-    const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.title = 'NodeSeek 热榜'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppHotLauncher = ''; const flame = toolIcon('hot');
-    const defs = document.createElementNS(flame.namespaceURI, 'defs');
-    const gradient = document.createElementNS(flame.namespaceURI, 'linearGradient'); gradient.id = 'nspp-hot-flame'; gradient.setAttribute('x1', '0'); gradient.setAttribute('y1', '0'); gradient.setAttribute('x2', '0.7'); gradient.setAttribute('y2', '1');
-    for (const [offset, color] of [['0%', '#ffbd54'], ['50%', '#ff743d'], ['100%', '#ed3650']]) {
-      const stop = document.createElementNS(flame.namespaceURI, 'stop'); stop.setAttribute('offset', offset); stop.setAttribute('stop-color', color); gradient.append(stop);
-    }
-    defs.append(gradient); flame.prepend(defs);
-    flame.querySelector('path')!.setAttribute('fill', 'url(#nspp-hot-flame)'); flame.setAttribute('stroke', 'none');
-    const core = document.createElementNS(flame.namespaceURI, 'path'); core.setAttribute('d', 'M12 11c1 3-3 4-2 7a2.6 2.6 0 0 0 5-1c0-2-2-3-3-6Z'); core.setAttribute('fill', '#fff1bd'); flame.append(core); launch.append(flame);
+    const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.title = 'NodeSeek 热榜'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppHotLauncher = '';
+    launch.append(document.importNode(new DOMParser().parseFromString(burningFlame, 'image/svg+xml').documentElement, true));
     const panel = document.createElement('dialog'); panel.className = 'nspp-monitor nspp-hot-rankings'; panel.setAttribute('aria-label', 'NodeSeek 热榜');
     const head = document.createElement('div'); head.className = 'nspp-hot-header'; const title = document.createElement('h2'); title.textContent = 'NodeSeek 热榜';
     const close = document.createElement('button'); close.type = 'button'; close.className = 'nspp-hot-close'; close.title = '关闭热榜'; close.setAttribute('aria-label', close.title); close.append(toolIcon('close')); close.addEventListener('click', () => panel.close(), { signal: ctx.signal }); head.append(title, close);

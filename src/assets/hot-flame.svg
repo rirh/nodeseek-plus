@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 36" width="28" height="28" fill="none" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="nspp-burning-outer" x1="16" y1="5" x2="16" y2="33" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb43b"/>
+      <stop offset=".5" stop-color="#ff7026"/>
+      <stop offset="1" stop-color="#ed3546"/>
+    </linearGradient>
+    <linearGradient id="nspp-burning-inner" x1="16" y1="15" x2="16" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe47a"/>
+      <stop offset="1" stop-color="#ff9e37"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .nspp-fire-still { display: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .nspp-fire-motion { display: none; }
+      .nspp-fire-still { display: inline; }
+    }
+  </style>
+  <g class="nspp-fire-motion">
+    <path fill="url(#nspp-burning-outer)" d="M16 33C8 33 4 28 5 22C6 18 10 16 10 11C13 13 13 16 12 19C19 15 15 9 19 5C19 12 28 17 27 24C27 29 22 33 16 33Z">
+      <animate attributeName="d" dur=".8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".42 0 .58 1;.42 0 .58 1" values="M16 33C8 33 4 28 5 22C6 18 10 16 10 11C13 13 13 16 12 19C19 15 15 9 19 5C19 12 28 17 27 24C27 29 22 33 16 33Z;M16 33C5 33 2 26 5 19C7 15 7 12 6 7C13 10 16 16 12 21C22 16 12 10 12 1C22 8 30 17 29 25C28 32 22 33 16 33Z;M16 33C8 33 4 28 5 22C6 18 10 16 10 11C13 13 13 16 12 19C19 15 15 9 19 5C19 12 28 17 27 24C27 29 22 33 16 33Z"/>
+    </path>
+    <path fill="url(#nspp-burning-inner)" d="M16 31C11 31 8 27 10 23C11 21 14 19 15 15C16 19 20 20 21 23C24 28 20 31 16 31Z">
+      <animate attributeName="d" dur=".65s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".42 0 .58 1;.42 0 .58 1" values="M16 31C11 31 8 27 10 23C11 21 14 19 15 15C16 19 20 20 21 23C24 28 20 31 16 31Z;M16 31C8 31 7 26 11 21C15 17 17 15 22 9C17 20 25 20 24 26C23 31 20 31 16 31Z;M16 31C11 31 8 27 10 23C11 21 14 19 15 15C16 19 20 20 21 23C24 28 20 31 16 31Z"/>
+    </path>
+    <path fill="#fff4cb" d="M16 31C12 31 11 28 13 25C14 24 16 22 16 20C20 24 22 31 16 31Z">
+      <animate attributeName="d" dur=".5s" repeatCount="indefinite" values="M16 31C12 31 11 28 13 25C14 24 16 22 16 20C20 24 22 31 16 31Z;M16 31C10 31 9 27 12 22C15 20 15 17 14 14C23 21 24 31 16 31Z;M16 31C12 31 11 28 13 25C14 24 16 22 16 20C20 24 22 31 16 31Z"/>
+    </path>
+    <ellipse cx="10" cy="12" rx="1.1" ry="2" fill="#ffb942" opacity="0">
+      <animateTransform attributeName="transform" type="translate" values="0 5;-3 -9" dur=".85s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;0" keyTimes="0;.25;1" dur=".85s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="23" cy="12" rx="1" ry="1.7" fill="#ff7c35" opacity="0">
+      <animateTransform attributeName="transform" type="translate" values="0 5;3 -9" dur="1.1s" begin="-.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;0" keyTimes="0;.25;1" dur="1.1s" begin="-.5s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="17" cy="13" rx=".9" ry="1.7" fill="#ffe7a0" opacity="0">
+      <animateTransform attributeName="transform" type="translate" values="0 3;2 -11" dur="1.3s" begin="-.9s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;0" keyTimes="0;.25;1" dur="1.3s" begin="-.9s" repeatCount="indefinite"/>
+    </ellipse>
+  </g>
+  <g class="nspp-fire-still">
+    <path fill="url(#nspp-burning-outer)" d="M16 33C8 33 4 28 5 22C6 18 10 16 10 11C13 13 13 16 12 19C19 15 15 9 19 5C19 12 28 17 27 24C27 29 22 33 16 33Z"/>
+    <path fill="url(#nspp-burning-inner)" d="M16 31C11 31 8 27 10 23C11 21 14 19 15 15C16 19 20 20 21 23C24 28 20 31 16 31Z"/>
+    <path fill="#fff4cb" d="M16 31C12 31 11 28 13 25C14 24 16 22 16 20C20 24 22 31 16 31Z"/>
+  </g>
+</svg>

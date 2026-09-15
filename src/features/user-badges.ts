@@ -68,14 +68,19 @@ export const userBadges: Feature = {
           tags.hidden = !tags.querySelector('.role-tag');
         }
         profileDetails.replaceChildren();
-        for (const [label, value, icon] of [
-          ['等级', info.level === null ? '—' : `Lv ${info.level}`, 'level'], ['主题帖', String(user.nPost ?? '—'), 'write-6ncdp62p'],
-          ['鸡腿', String(user.coin ?? '—'), 'chicken-leg'], ['评论数', String(user.nComment ?? '—'), 'comments-6ncdh3ka'],
-          ['星辰', String(user.stardust ?? '—'), 'wallet'], ['粉丝', String(user.fans ?? '—'), 'concern'],
+        for (const [label, value, icon, href] of [
+          ['等级', info.level === null ? '—' : `Lv ${info.level}`, 'level'], ['主题帖', String(user.nPost ?? '—'), 'write-6ncdp62p', `/space/${id}#/discussions`],
+          ['鸡腿', String(user.coin ?? '—'), 'chicken-leg'], ['评论数', String(user.nComment ?? '—'), 'comments-6ncdh3ka', `/space/${id}#/comments`],
+          ['星辰', String(user.stardust ?? '—'), 'wallet', `/stardust/list?member_id=${id}`], ['粉丝', String(user.fans ?? '—'), 'concern'],
         ]) {
           const cell = document.createElement('div');
           const term = document.createElement('dt'); term.textContent = label; term.prepend(siteIcon(icon));
           const valueNode = document.createElement('dd'); valueNode.textContent = value;
+          if (href) {
+            const link = document.createElement('a'); link.href = href; link.textContent = value;
+            link.target = '_blank'; link.rel = 'noopener noreferrer'; link.setAttribute('aria-label', `查看${label}：${value}`);
+            valueNode.replaceChildren(link);
+          }
           if (label === '等级') {
             valueNode.className = 'nspp-user-badges';
             const badgeValue = document.createElement('span'); badgeValue.className = 'nspp-level'; badgeValue.dataset.level = String(info.level ?? 'unknown');

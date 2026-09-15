@@ -3,6 +3,7 @@ import { unsafeWindow } from '../lib/userscript';
 import { toolIcon } from '../lib/tool-icon';
 import { createNotificationInbox } from './notification-inbox';
 import { notificationAvatar } from '../views/notification-avatar';
+import { forumTime } from '../lib/forum-time';
 import { createMessageArchive, mergeMessages, type Message, type Conversation } from './messages-storage';
 import { renderMessageMarkdown } from '../views/message-markdown';
 import { createMessageEditor } from '../views/message-editor';
@@ -48,8 +49,8 @@ function mountChat(ctx: Context, account: number) {
   const conversations = element('div', 'nspp-messages-conversations'); conversations.setAttribute('aria-label', '会话列表');
   const listStatus = element('p', 'nspp-messages-list-status'); listStatus.setAttribute('role', 'status');
   const more = button('加载更多会话', 'nspp-messages-more');
-  const contactList = element('div', 'nspp-messages-contact-list'); contactList.append(navigation, conversations);
-  sidebar.append(searchBar, contactList, listStatus, more);
+  const contactList = element('div', 'nspp-messages-contact-list'); contactList.append(navigation, conversations, more);
+  sidebar.append(searchBar, contactList, listStatus);
   const chat = element('section', 'nspp-messages-chat');
   const userCard = createChatProfile(ctx);
   const avatarLink = (avatar: HTMLImageElement, id: number) => {
@@ -111,6 +112,14 @@ function mountChat(ctx: Context, account: number) {
   const panelValid = () => !ctx.signal.aborted && !root.hidden && owner() === account;
   const valid = () => panelValid() && category === 'message';
   const signal = () => AbortSignal.any([ctx.signal, routeController.signal]);
+  let autoPaused = false;
+  const moreObserver = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting) && panelValid() && listReady && !listBusy && !autoPaused && !more.hidden && !search.value.trim() && !document.hidden) void loadList(true);
+  }, { root: contactList, rootMargin: '150px' }) : undefined;
+  const observeMore = () => {
+    moreObserver?.disconnect();
+    if (panelValid() && listReady && !listBusy && !autoPaused && !more.hidden && !search.value.trim()) moreObserver?.observe(more);
+  };
   const inbox = createNotificationInbox(ctx, () => { void refreshCounts(); }, () => navigate()); workspace.append(inbox.element);
   top.insertBefore(inbox.heading, topActions);
   const editor = createMessageEditor(ctx, input, markdown, {
@@ -168,14 +177,15 @@ function mountChat(ctx: Context, account: number) {
       const details = element('span', 'nspp-messages-peer-details');
       const title = element('span', 'nspp-messages-peer-title'); title.append(element('strong', '', peer.name === '系统通知' ? '系统消息' : peer.name));
       const date = element('time'); date.dateTime = peer.latest.created_at;
-      date.textContent = time(peer.latest.created_at) ? new Date(peer.latest.created_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '';
+      const formatted = forumTime(peer.latest.created_at); date.textContent = formatted?.text || ''; date.title = formatted?.full || '';
       title.append(date);
       const snippet = element('span', 'nspp-messages-snippet', `${peer.latest.sender_id === account ? '我：' : ''}${preview(peer.latest.content)}`);
       details.append(title, snippet); avatar.alt = peer.name; row.append(peer.name === '系统通知' ? avatar : avatarLink(avatar, peer.id), details);
       if (peer.unread) { const dot = element('span', 'nspp-messages-unread'); dot.setAttribute('aria-label', '有未读消息'); row.append(dot); }
       row.addEventListener('click', () => navigate(peer.id), { signal: ctx.signal }); conversations.append(row);
     }
-    if (!conversations.childElementCount && listReady) conversations.append(element('p', 'nspp-messages-list-status', query ? '没有匹配的会话' : '暂无私信'));
+    if (!conversations.childElementCount && listReady && !listBusy && !listStatus.textContent) conversations.append(element('p', 'nspp-messages-list-status', query ? '没有匹配的会话' : '还没有私信会话'));
+    observeMore();
   }
   function restoreContacts(contacts: Conversation[]) {
     for (const peer of contacts) {
@@ -187,11 +197,12 @@ function mountChat(ctx: Context, account: number) {
   }
   void archive.contacts().then(contacts => {
     if (!ctx.signal.aborted && owner() === account) restoreContacts(contacts);
-  }).catch(error => { if (!ctx.signal.aborted) listStatus.textContent = error instanceof Error ? error.message : '本地存档读取失败'; });
+  }).catch(error => { if (!ctx.signal.aborted && !listBusy) listStatus.textContent = error instanceof Error ? error.message : '本地存档读取失败'; });
   async function loadList(next = false) {
     if (!panelValid() || listBusy) return;
     const requestSignal = signal(); listBusy = true; refresh.disabled = true; more.disabled = true;
-    const targetPage = next ? page + 1 : 1; listStatus.textContent = next ? '正在加载更多…' : listReady ? '' : '正在读取会话…';
+    const targetPage = next ? page + 1 : 1; listStatus.textContent = next ? '正在加载更多会话…' : listReady ? '正在刷新会话…' : '正在加载私信会话…';
+    listStatus.classList.add('nspp-sweep-shine'); listStatus.setAttribute('aria-busy', 'true'); renderList();
     try {
       const messages = rows(await api(`/list?page=${targetPage}`, { signal: requestSignal }));
       if (!panelValid() || requestSignal.aborted) return;
@@ -209,17 +220,18 @@ function mountChat(ctx: Context, account: number) {
         const contacts = await archive.mergeList(messages);
         if (panelValid() && !requestSignal.aborted) restoreContacts(contacts);
       } catch (error) { if (panelValid() && !requestSignal.aborted) listStatus.textContent = error instanceof Error ? error.message : '本地存档保存失败'; }
-    } catch (error) { if (panelValid() && !requestSignal.aborted) listStatus.textContent = error instanceof Error ? error.message : '会话读取失败'; }
-    finally { if (!requestSignal.aborted) { listBusy = false; refresh.disabled = false; more.disabled = false; } }
+    } catch (error) { if (panelValid() && !requestSignal.aborted) { autoPaused = true; listStatus.textContent = error instanceof Error ? error.message : '会话读取失败'; } }
+    finally { if (!requestSignal.aborted) { listBusy = false; listStatus.classList.remove('nspp-sweep-shine'); listStatus.removeAttribute('aria-busy'); refresh.disabled = false; more.disabled = false; renderList(); } }
   }
   function renderThread(id: number, peerName: string, messages: Message[], first: boolean) {
     if (!valid() || active !== id) return;
+    const system = peerName === '系统通知';
     name.textContent = peerName === '系统通知' ? '系统消息' : peerName; profile.href = `/space/${id}`; profile.hidden = false;
     void userCard.show(peerName === '系统通知' ? undefined : id, peerName);
     composer.hidden = peerName === '系统通知'; updateSend();
     const limit = visibleHistory.get(id) || 200;
     const visible = messages.slice(-limit);
-    const key = JSON.stringify([limit, messages.length, visible.map(row => [row.id, row.max_id, row.local_id, row.content, row.created_at, row.is_markdown])]);
+    const key = JSON.stringify([system, limit, messages.length, visible.map(row => [row.id, row.max_id, row.local_id, row.content, row.created_at, row.is_markdown])]);
     if (key === threadKey && !first) return;
     const nearBottom = first || thread.scrollHeight - thread.scrollTop - thread.clientHeight < 100;
     const scrollTop = thread.scrollTop; thread.replaceChildren(); let previous = 0;
@@ -233,15 +245,19 @@ function mountChat(ctx: Context, account: number) {
     }
     for (const message of visible) {
       const timestamp = time(message.created_at);
-      if (timestamp && (!previous || timestamp - previous > 5 * 60000)) {
-        const stamp = element('time', 'nspp-messages-stamp', new Date(timestamp).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })); stamp.dateTime = message.created_at; thread.append(stamp);
+      if (!system && timestamp && (!previous || timestamp - previous > 5 * 60000)) {
+        const stamp = element('time', 'nspp-messages-stamp', forumTime(message.created_at)?.full || ''); stamp.dateTime = message.created_at; thread.append(stamp);
       }
       previous = timestamp; const mine = message.sender_id === account;
-      const row = element('div', `nspp-messages-message${mine ? ' is-mine' : ''}`);
+      const row = element('div', `nspp-messages-message${mine ? ' is-mine' : system ? ' is-system' : ''}`);
       const avatar = element('img', 'nspp-messages-avatar'); avatar.src = !mine && peerName === '系统通知' ? notificationAvatar('system') : `/avatar/${message.sender_id}.png`; avatar.alt = mine ? '我' : peerName; avatar.loading = 'lazy';
       const bubble = element('div', 'nspp-messages-bubble');
       const isMarkdown = message.is_markdown !== false && message.is_markdown !== 0; bubble.classList.toggle('is-markdown', isMarkdown);
       bubble.append(renderMessageMarkdown(message.content, isMarkdown)); row.append(!mine && peerName === '系统通知' ? avatar : avatarLink(avatar, message.sender_id), bubble); thread.append(row);
+      if (system && !mine) {
+        const date = forumTime(message.created_at);
+        if (date) { const stamp = element('time', 'nspp-messages-system-time', date.text); stamp.dateTime = message.created_at; stamp.title = date.full; row.append(stamp); }
+      }
     }
     if (!messages.length) thread.append(element('div', 'nspp-messages-empty', '还没有聊天记录，发送第一条消息吧'));
     threadKey = key; thread.scrollTop = nearBottom ? thread.scrollHeight : scrollTop;
@@ -255,7 +271,7 @@ function mountChat(ctx: Context, account: number) {
     if (first) {
       const known = histories.get(id);
       if (known?.length) renderThread(id, peerName, known, true);
-      else thread.replaceChildren(element('div', 'nspp-messages-empty', '正在读取聊天记录…'));
+      else { const loading = element('div', 'nspp-messages-empty nspp-sweep-shine', '正在加载聊天记录…'); loading.setAttribute('aria-busy', 'true'); thread.replaceChildren(loading); }
       status.textContent = '';
     }
     try {
@@ -380,8 +396,8 @@ function mountChat(ctx: Context, account: number) {
   }, { signal: ctx.signal });
   search.addEventListener('input', renderList, { signal: ctx.signal });
   retrySync.addEventListener('click', () => { if (!retrySync.disabled) void loadThread(); }, { signal: ctx.signal });
-  refresh.addEventListener('click', () => { void loadList(); if (active) void loadThread(); }, { signal: ctx.signal });
-  more.addEventListener('click', () => { void loadList(true); }, { signal: ctx.signal });
+  refresh.addEventListener('click', () => { autoPaused = false; void loadList(); if (active) void loadThread(); }, { signal: ctx.signal });
+  more.addEventListener('click', () => { autoPaused = false; void loadList(true); }, { signal: ctx.signal });
   back.addEventListener('click', () => navigate(), { signal: ctx.signal });
   original.addEventListener('click', () => {
     suppressed = true; const params = new URLSearchParams(location.hash.split('?')[1] || ''); params.set('native', '1');
@@ -436,7 +452,7 @@ function mountChat(ctx: Context, account: number) {
   });
   syncRoute();
   return () => {
-    stopMount(); lifetime.abort(); clearInterval(timer); routeController.abort(); threadController.abort(); inbox.stop(); archive.close();
+    stopMount(); lifetime.abort(); clearInterval(timer); moreObserver?.disconnect(); routeController.abort(); threadController.abort(); inbox.stop(); archive.close();
     userCard.stop(); root.remove(); nativeToolbar.remove(); nativeContainer?.classList.remove('nspp-messages-container'); nativeContainer?.removeAttribute('data-nspp-message-view');
     drafts.clear(); histories.clear(); visibleHistory.clear();
   };
