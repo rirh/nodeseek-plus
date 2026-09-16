@@ -83,14 +83,23 @@ export const imageUpload: Feature = {
           event.preventDefault(); event.stopImmediatePropagation();
           if (!uploading) input.click();
         }, { signal: ctx.signal, capture: true });
-        {
+        if (!host.querySelector(imageSelector)) {
           const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'nspp-upload-choose'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title);
           const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
           const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1'); icon.append(path);
           choose.append(icon);
-          choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal }); bar.prepend(choose);
+          choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal });
+          if (toolbar) {
+            const emoji = Array.from(toolbar.querySelectorAll<HTMLElement>('.toolbar-item')).find(item => /表情|emoji|emotion|face|smile/i.test(`${item.title} ${item.getAttribute('aria-label') || ''} ${item.textContent || ''}`));
+            const right = toolbar.querySelector<HTMLElement>('.toolbar-item.right');
+            if (emoji) emoji.after(choose); else if (right) toolbar.insertBefore(choose, right); else toolbar.append(choose);
+          } else bar.prepend(choose);
         }
-        (toolbar || host).append(bar); bars.push(bar);
+        if (toolbar) {
+          const right = toolbar.querySelector<HTMLElement>('.toolbar-item.right');
+          if (right) toolbar.insertBefore(bar, right); else toolbar.append(bar);
+        } else host.append(bar);
+        bars.push(bar);
       });
     }
     scan(); checkLogin(); const unwatch = ctx.watch(() => { const count = bars.length; scan(); if (bars.length > count) checkLogin(); });

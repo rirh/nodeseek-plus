@@ -157,6 +157,20 @@ h3 { font-size: 11px; font-weight: 600; border-bottom: 0; padding: 8px 0 3px; }
   .settings-footer button { padding: 5px 6px; }
 }
 
+@media (max-width: 700px), (hover: none) {
+  dialog { inset: auto 0 0; width: 100%; max-width: none; max-height: 92dvh; margin: 0; border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  header { padding: 8px 12px; }
+  .search-bar { flex: 1 1 100%; order: 2; margin-left: 0; }
+  .settings-workspace { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: min(62dvh, 520px); }
+  .categories { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 6px 12px; }
+  .categories a { flex: none; margin: 0; padding: 6px 8px; white-space: nowrap; }
+  .settings-workspace .content { padding: 0 12px 8px; }
+  .settings-footer { padding: 8px 12px; }
+  .settings-footer .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; gap: 4px; }
+  .settings-footer .actions button { width: 100%; min-width: 0; padding: 5px 4px; }
+  .settings-footer .settings-close { margin-left: 0; }
+}
+
 
 /* Separate settings with spacing and soft surfaces instead of dividers. */
 header, .search-bar, .categories, .settings-footer, .settings-workspace article { border: 0; }

@@ -1085,6 +1085,24 @@ test('NodeImage upload uses the official privileged endpoint and inserts the ret
   } finally { await f.close(); }
 });
 
+test('image picker reuses the native toolbar control and keeps the fallback beside emoji actions', async () => {
+  const native = await fixture({}, '<div class="md-editor"><div class="mde-toolbar"><span class="toolbar-item" title="表情"></span><span class="toolbar-item i-icon i-icon-pic" title="图片"></span><span class="toolbar-item right" title="发表评论"></span></div><textarea></textarea></div>');
+  try {
+    const toolbar = native.window.document.querySelector('.mde-toolbar')!;
+    assert.equal(toolbar.querySelector('.nspp-upload-choose'), null, 'do not duplicate the native image control');
+  } finally { await native.close(); }
+  const fallback = await fixture({}, '<div class="md-editor"><div class="mde-toolbar"><span class="toolbar-item" title="表情"></span><span class="toolbar-item right" title="发表评论"></span></div><textarea></textarea></div>');
+  try {
+    const toolbar = fallback.window.document.querySelector('.mde-toolbar')!;
+    const emoji = toolbar.querySelector<HTMLElement>('[title="表情"]')!;
+    const choose = toolbar.querySelector<HTMLElement>('.nspp-upload-choose')!;
+    const right = toolbar.querySelector<HTMLElement>('.toolbar-item.right')!;
+    assert.equal(choose.previousElementSibling, emoji);
+    assert.equal(choose.nextElementSibling?.classList.contains('nspp-upload-status'), true);
+    assert.equal(choose.nextElementSibling?.nextElementSibling, right);
+  } finally { await fallback.close(); }
+});
+
 test('notification categories replace the sidebar notification entry and preserve unrelated links', async () => {
   const f = await fixture({ 'notification-categories': { enabled: true } }, '<div class="user-card"><div class="user-stat"><div class="stat-block"><a href="/notification">通知</a><a href="/board">签到</a></div><div class="stat-block">收藏 2</div></div></div>', '/', undefined, window => {
     Object.assign(window, { fetch: async () => new Response(JSON.stringify({ success: true, unreadCount: { reply: 2, atMe: 0, message: 3 } }), { headers: { 'Content-Type': 'application/json' } }) });

@@ -26,7 +26,7 @@ export const floatingReply: Feature = {
       editor.classList.remove('nspp-floating-reply');
       editor.style.removeProperty('--nspp-reply-height'); editor.style.removeProperty('--nspp-reply-bottom');
       header?.remove(); placeholder?.remove(); editor = undefined;
-      root.removeAttribute('data-nspp-reply-open'); root.style.removeProperty('--nspp-reply-scroll');
+      root.removeAttribute('data-nspp-reply-open');
       window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
       previousFocus?.focus({ preventScroll: true });
       signalState();
@@ -38,7 +38,6 @@ export const floatingReply: Feature = {
       editor = host; previousFocus = document.activeElement as HTMLElement | null;
       scrollX = window.scrollX; scrollY = window.scrollY;
       placeholder = document.createElement('div'); placeholder.style.height = `${host.getBoundingClientRect().height}px`; placeholder.setAttribute('aria-hidden', 'true'); host.before(placeholder);
-      root.style.setProperty('--nspp-reply-scroll', `${-scrollY}px`);
       root.setAttribute('data-nspp-reply-open', '');
       host.classList.add('nspp-floating-reply');
       header = document.createElement('div'); header.className = 'nspp-floating-reply-header';

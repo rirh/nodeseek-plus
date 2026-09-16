@@ -3,7 +3,7 @@ import type { Feature } from '../core/types';
 import { toolIcon } from '../lib/tool-icon';
 import burningFlame from '../assets/hot-flame.svg?raw';
 
-const rankings = { daily: '日榜', weekly: '周榜', hot: '实时热榜' };
+const rankings = { hot: '实时热榜', daily: '日榜', weekly: '周榜' };
 type Ranking = keyof typeof rankings;
 type Post = { id: number; title: string; author: string; views: number; comments: number; score: number };
 type Snapshot = { posts: Post[]; updated: number; fetched: number };
