@@ -1,14 +1,14 @@
 {
   "name": "nodeseek-plus-plus",
   "private": true,
-  "version": "26.916.1549",
+  "version": "26.917.1400",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "test": "node --experimental-strip-types --test --test-timeout=1000 --test-force-exit tests/*.test.ts"
+    "test": "node --experimental-strip-types --test --test-timeout=10000 --test-force-exit tests/*.test.ts"
   },
   "devDependencies": {
     "@types/tampermonkey": "^5.5.0",

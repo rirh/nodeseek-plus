@@ -157,6 +157,14 @@ function mountChat(ctx: Context, account: number) {
     input.disabled = busy; markdown.disabled = busy;
     editor.setDisabled(busy);
   };
+  const refocusComposer = (id: number) => {
+    if (active !== id || !valid() || composer.hidden || input.disabled) return;
+    queueMicrotask(() => {
+      if (active !== id || !valid() || composer.hidden || input.disabled) return;
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+  };
   async function api(path: string, options: RequestInit = {}) {
     const result = await ctx.request<Result>(`${endpoint}${path}`, { ...options, signal: options.signal || signal() });
     if (result?.success !== true) throw new Error(result?.message || '私信请求未成功，请重试');
@@ -384,7 +392,11 @@ function mountChat(ctx: Context, account: number) {
       if (!ctx.signal.aborted && owner() === account) { uncertain.add(id); deliveryStatus.set(id, '发送结果未确认，草稿已保留。请刷新聊天记录核对后，再编辑草稿发送，避免重复。'); }
     } finally {
       sending.delete(id);
-      if (active === id && valid()) { if (deliveryStatus.has(id)) status.textContent = deliveryStatus.get(id)!; updateSend(); }
+      if (active === id && valid()) {
+        if (deliveryStatus.has(id)) status.textContent = deliveryStatus.get(id)!;
+        updateSend();
+        refocusComposer(id);
+      }
     }
   }, { signal: ctx.signal });
   input.addEventListener('input', () => { if (active) { uncertain.delete(active); deliveryStatus.delete(active); } saveDraft(); status.textContent = ''; updateSend(); }, { signal: ctx.signal });

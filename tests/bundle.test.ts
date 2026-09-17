@@ -39,7 +39,15 @@ async function fixture(settings: Record<string, unknown> = {}, html = '', path =
   window.eval(bundle);
   await new Promise(resolve => setTimeout(resolve, 5));
   window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
-  return { window, storage, requests, menus, close: () => window.happyDOM.abort() };
+  let stopped = false;
+  window.addEventListener('pagehide', event => { if (!event.persisted) stopped = true; });
+  return {
+    window, storage, requests, menus,
+    close: () => {
+      if (!stopped) window.dispatchEvent(new window.PageTransitionEvent('pagehide', { persisted: false }));
+      window.happyDOM.abort();
+    },
+  };
 }
 
 const realSetTimeout = setTimeout;
@@ -802,22 +810,16 @@ test('preview footer shares list actions while block control stays immediately a
   } finally { await f.close(); }
 });
 
-test('mobile title tap opens a dialog and retains the original post link', async () => {
+test('mobile title tap follows the original post link without opening a preview', async () => {
   const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Mobile post</a></div></li></ul>', '/', undefined, window => {
     window.matchMedia = ((query: string) => ({ matches: query.includes('hover: none') })) as typeof window.matchMedia;
-    window.fetch = (async () => new window.Response('<div class="post-content">Mobile body</div>')) as typeof window.fetch;
   });
   try {
     const link = f.window.document.querySelector('.post-title a')!;
     const event = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
     link.dispatchEvent(event);
     const view = f.window.document.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
-    assert.equal(event.defaultPrevented, true);
-    assert.equal(view.open, true);
-    assert.equal(view.hidden, false);
-    assert.equal(view.querySelector<HTMLAnchorElement>('footer a')!.href, 'https://www.nodeseek.com/post-42-1');
-    assert.equal(view.querySelector('header button'), null);
-    view.dispatchEvent(new f.window.MouseEvent('click', { clientX: -1, clientY: -1, bubbles: true }));
+    assert.equal(event.defaultPrevented, false);
     assert.equal(view.open, false);
     assert.equal(view.hidden, true);
   } finally { await f.close(); }
@@ -919,7 +921,7 @@ test('monitor establishes a baseline and notifies once for a new matching post',
     const originalInterval = window.setInterval.bind(window);
     window.setInterval = ((callback: () => void, delay?: number) => {
       if (delay === 1000) poll = callback;
-      return originalInterval(callback, delay);
+      return delay === 1000 ? 0 : originalInterval(callback, delay);
     }) as typeof window.setInterval;
     Object.assign(window, { GM_xmlhttpRequest: (options: { url: string; onload: (response: unknown) => void }) => {
       assert.equal(options.url, 'https://rss.nodeseek.com/');
@@ -1549,6 +1551,11 @@ for (const mobile of [false, true]) {
       if (mobile) link.click(); else link.dispatchEvent(new f.window.MouseEvent('mouseenter'));
       await new Promise(resolve => setTimeout(resolve, mobile ? 40 : 450));
       const preview = doc.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
+      if (mobile) {
+        assert.equal(preview.open, false);
+        assert.equal(preview.hidden, true);
+        return;
+      }
       const images = preview.querySelectorAll<HTMLImageElement>('article img');
       assert.equal(images.length, 2);
       const click = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
@@ -1706,6 +1713,33 @@ test('chat profile preserves the original card and links discussions comments an
     assert.deepEqual(links.map(link => link.textContent), ['主题帖10', '评论20', '星辰10']);
     assert.ok(links.every(link => link.target === '_blank' && link.rel === 'noopener noreferrer'));
     assert.equal(card.querySelectorAll('.nspp-chat-profile-data > span').length, 2);
+  } finally { await f.close(); }
+});
+
+test('chat composer restores focus after sending a message', async () => {
+  let sent = 0;
+  const f = await fixture({ 'user-level': { enabled: false } }, notificationPanel, '/notification#/message?mode=talk&to=123', undefined, window => {
+    Object.defineProperty(window.document, 'hidden', { configurable: true, value: false });
+    window.fetch = (async (url: unknown, options?: RequestInit) => {
+      const path = new URL(String(url)).pathname;
+      if (path === '/api/notification/message/send') {
+        sent++;
+        assert.equal(options?.method, 'POST');
+        return new window.Response(JSON.stringify({ success: true, data: { id: 99, created_at: '2026-09-17T10:00:00Z' } }));
+      }
+      if (path === '/api/notification/message/with/123') return new window.Response(JSON.stringify({ success: true, talkTo: { member_id: 123, member_name: 'Alice' }, msgArray: [] }));
+      if (path === '/api/notification/message/list') return new window.Response(JSON.stringify({ success: true, msgArray: [] }));
+      if (path === '/api/notification/unread-count') return new window.Response(JSON.stringify({ success: true, unreadCount: {} }));
+      if (path === '/api/account/getInfo/123') return new window.Response(JSON.stringify({ success: true, detail: { rank: 4, created_at: '2024-01-01', nPost: 1, nComment: 1, coin: 1, stardust: 1, fans: 1 } }));
+      return new window.Response(JSON.stringify({ success: true, msgArray: [] }));
+    }) as typeof window.fetch;
+  });
+  try {
+    await waitFor(() => !!f.window.document.querySelector('.nspp-messages-composer textarea'));
+    const input = f.window.document.querySelector<HTMLTextAreaElement>('.nspp-messages-composer textarea')!;
+    input.value = '发送测试'; input.dispatchEvent(new f.window.Event('input', { bubbles: true })); input.blur();
+    f.window.document.querySelector<HTMLButtonElement>('.nspp-messages-send')!.click();
+    await waitFor(() => sent === 1 && input.value === '' && f.window.document.activeElement === input);
   } finally { await f.close(); }
 });
 

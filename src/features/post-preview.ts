@@ -3,7 +3,7 @@ import { createPostPreview } from '../views/post-preview';
 
 export const postPreview: Feature = {
   id: 'post-preview', title: '帖子卡片预览', group: '阅读',
-  description: '桌面悬停打开卡片，移动端点击标题打开弹窗；点击图片放大，支持缩放和切换，可从卡片进入原帖。',
+  description: '桌面悬停打开卡片，移动端点击标题直接进入详情；点击图片放大，支持缩放和切换，可从卡片进入原帖。',
   defaults: { enabled: true },
   mount(ctx) {
     const preview = createPostPreview(ctx);
@@ -23,7 +23,7 @@ export const postPreview: Feature = {
         }, { signal: ctx.signal });
         link.addEventListener('mouseleave', () => { clearTimeout(timer); preview.scheduleClose(); }, { signal: ctx.signal });
         link.addEventListener('click', event => {
-          if (!matchMedia('(max-width: 600px), (hover: none)').matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+          if (matchMedia('(max-width: 600px), (hover: none)').matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
           event.preventDefault();
           clearTimeout(timer);
           preview.open(link, 'preview');

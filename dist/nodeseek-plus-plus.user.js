@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.916.1549
+// @version      26.917.1400
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @downloadURL  https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js
@@ -698,9 +698,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.916.1549")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.917.1400")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.916.1549。点击前往更新。`, "https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.917.1400。点击前往更新。`, "https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -709,7 +709,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.916.1549")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.917.1400")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -718,7 +718,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				promptedAt: Date.now()
 			});
 			try {
-				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.916.1549，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
+				await confirmDialog("发现 NodeSeek++ 新版本", `当前版本 v26.917.1400，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, "前往更新", signal, {
 					href: UPDATE_URL,
 					cancelLabel: "稍后提醒"
 				});
@@ -734,11 +734,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					...state(),
 					version
 				});
-				if (version && isNewerVersion(version, "26.916.1549")) {
+				if (version && isNewerVersion(version, "26.917.1400")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.916.1549）`);
+				} else if (manual) notify(`当前已是最新版本（v26.917.1400）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -779,7 +779,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		title.textContent = "NodeSeek++";
 		const version = document.createElement("span");
 		version.className = "about-version";
-		version.textContent = `v26.916.1549`;
+		version.textContent = `v26.917.1400`;
 		const heading = document.createElement("div");
 		heading.className = "about-heading";
 		heading.append(title, version);
@@ -850,7 +850,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.916.1549`));
+		heading.append(title, element$1("small", `v26.917.1400`));
 		const checkUpdate = element$1("button", "检查更新");
 		checkUpdate.type = "button";
 		checkUpdate.className = "check-update";
@@ -19029,7 +19029,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		id: "post-preview",
 		title: "帖子卡片预览",
 		group: "阅读",
-		description: "桌面悬停打开卡片，移动端点击标题打开弹窗；点击图片放大，支持缩放和切换，可从卡片进入原帖。",
+		description: "桌面悬停打开卡片，移动端点击标题直接进入详情；点击图片放大，支持缩放和切换，可从卡片进入原帖。",
 		defaults: { enabled: true },
 		mount(ctx) {
 			const preview = createPostPreview(ctx);
@@ -19054,7 +19054,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						preview.scheduleClose();
 					}, { signal: ctx.signal });
 					link.addEventListener("click", (event) => {
-						if (!matchMedia("(max-width: 600px), (hover: none)").matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+						if (matchMedia("(max-width: 600px), (hover: none)").matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 						event.preventDefault();
 						clearTimeout(timer);
 						preview.open(link, "preview");
@@ -23059,6 +23059,14 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 			markdown.disabled = busy;
 			editor.setDisabled(busy);
 		};
+		const refocusComposer = (id) => {
+			if (active !== id || !valid() || composer.hidden || input.disabled) return;
+			queueMicrotask(() => {
+				if (active !== id || !valid() || composer.hidden || input.disabled) return;
+				input.focus({ preventScroll: true });
+				input.setSelectionRange(input.value.length, input.value.length);
+			});
+		};
 		async function api(path, options = {}) {
 			const result = await ctx.request(`${endpoint}${path}`, {
 				...options,
@@ -23504,6 +23512,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 				if (active === id && valid()) {
 					if (deliveryStatus.has(id)) status.textContent = deliveryStatus.get(id);
 					updateSend();
+					refocusComposer(id);
 				}
 			}
 		}, { signal: ctx.signal });
