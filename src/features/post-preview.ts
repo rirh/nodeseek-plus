@@ -22,12 +22,6 @@ export const postPreview: Feature = {
           clearTimeout(timer); timer = setTimeout(() => preview.open(link, 'preview'), 400);
         }, { signal: ctx.signal });
         link.addEventListener('mouseleave', () => { clearTimeout(timer); preview.scheduleClose(); }, { signal: ctx.signal });
-        link.addEventListener('click', event => {
-          if (matchMedia('(max-width: 600px), (hover: none)').matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-          event.preventDefault();
-          clearTimeout(timer);
-          preview.open(link, 'preview');
-        }, { signal: ctx.signal });
       });
     });
     return () => { stop(); clearTimeout(timer); bound.forEach((title, link) => { if (title !== null) link.setAttribute('title', title); }); bound.clear(); preview.destroy(); };

@@ -729,6 +729,23 @@ test('hover preview preserves the native list and extracts safe reading content 
   } finally { await f.close(); }
 });
 
+test('desktop hover preview keeps the title link navigable', async () => {
+  const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Desktop post</a></div></li></ul>', '/', undefined, window => {
+    window.matchMedia = ((query: string) => ({ matches: query === '(hover: hover)' })) as typeof window.matchMedia;
+    window.fetch = (async () => new window.Response('<div class="post-content">Desktop body</div>')) as typeof window.fetch;
+  });
+  try {
+    const doc = f.window.document;
+    const link = doc.querySelector<HTMLAnchorElement>('.post-title a')!;
+    link.dispatchEvent(new f.window.MouseEvent('mouseenter'));
+    await new Promise(resolve => setTimeout(resolve, 450));
+    assert.equal(doc.querySelector<HTMLElement>('.nspp-post-preview')!.hidden, false);
+    const event = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, false);
+  } finally { await f.close(); }
+});
+
 test('native rows retain layout and metadata while preview actions remain available', async () => {
   const html = '<ul class="post-list"><li class="post-list-item"><div class="post-list-content"><div class="post-title"><a href="/post-42-1">Post</a></div><div class="post-info"><span class="info-author"><a href="/space/8">Alice</a></span><span class="info-views">12</span><span class="info-comments-count">3</span><span class="info-last-commenter">Bob</span><a class="info-last-comment-time" href="/post-42-1#3">now</a></div></div></li></ul>';
   const f = await fixture({ 'user-level': { enabled: false }, 'official-blocklist': { enabled: false } }, html);
