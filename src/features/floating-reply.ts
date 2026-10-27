@@ -1,3 +1,4 @@
+import { gsap } from 'gsap';
 import type { Feature } from '../core/types';
 import { toolIcon } from '../lib/tool-icon';
 
@@ -31,9 +32,12 @@ export const floatingReply: Feature = {
       const step = () => { viewport(); frame = editor && performance.now() < settleUntil ? requestAnimationFrame(step) : 0; };
       if (!frame) step();
     };
-    const close = () => {
+    const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let closing: gsap.core.Tween | undefined;
+    const finish = () => {
       if (!editor) return;
-      (document.activeElement as HTMLElement | null)?.blur();
+      closing?.kill(); closing = undefined;
+      gsap.killTweensOf(editor); gsap.set(editor, { clearProps: 'transform' });
       editor.classList.remove('nspp-floating-reply');
       editor.style.removeProperty('--nspp-reply-height'); editor.style.removeProperty('--nspp-reply-top');
       resizer.disconnect(); cancelAnimationFrame(frame); frame = 0;
@@ -43,7 +47,15 @@ export const floatingReply: Feature = {
       previousFocus?.focus({ preventScroll: true });
       signalState();
     };
+    // Slide the sheet away before restoring the page; `instant` skips the animation for teardown and breakpoint changes.
+    const close = (instant = false) => {
+      if (!editor || closing) return;
+      (document.activeElement as HTMLElement | null)?.blur();
+      if (instant || still()) { finish(); return; }
+      closing = gsap.to(editor, { yPercent: 100, duration: .24, ease: 'power2.in', onComplete: finish });
+    };
     const open = () => {
+      if (closing) finish();
       if (!mobile.matches || editor) return;
       const host = document.querySelector<HTMLElement>('.md-editor');
       if (!host) return;
@@ -55,8 +67,9 @@ export const floatingReply: Feature = {
       header = document.createElement('div'); header.className = 'nspp-floating-reply-header';
       const label = document.createElement('span'); label.textContent = '回复 · 收起后保留草稿';
       const hide = document.createElement('button'); hide.type = 'button'; hide.textContent = '收起'; hide.setAttribute('aria-label', '收起回复框');
-      hide.addEventListener('click', close, { signal: ctx.signal }); header.append(label, hide); host.prepend(header);
+      hide.addEventListener('click', () => close(), { signal: ctx.signal }); header.append(label, hide); host.prepend(header);
       resizer.observe(host); settle(); signalState();
+      if (!still()) gsap.fromTo(host, { yPercent: 100 }, { yPercent: 0, duration: .32, ease: 'power3.out', clearProps: 'transform' });
       (host.querySelector('.CodeMirror') as (HTMLElement & { CodeMirror?: { refresh(): void } }) | null)?.CodeMirror?.refresh();
     };
     document.addEventListener('click', event => {
@@ -67,8 +80,22 @@ export const floatingReply: Feature = {
       // Leave native reply/quote/edit handlers intact; only suppress anchor navigation.
       if (editor) event.preventDefault();
     }, { capture: true, signal: ctx.signal });
+    // The native 内容/预览/对照 tabs toggle panes with v-show; tween the pane area's height and fade in what became visible.
+    document.addEventListener('click', event => {
+      const tab = event.target instanceof Element ? event.target.closest('.tab-option') : null;
+      const panes = tab && editor?.contains(tab) && !closing && !still() ? editor.querySelector<HTMLElement>('#cm-editor-wrapper')?.parentElement : null;
+      if (!panes) return;
+      const from = panes.offsetHeight;
+      requestAnimationFrame(() => {
+        if (!panes.isConnected) return;
+        const shown = Array.from(panes.children).filter((pane): pane is HTMLElement => pane instanceof HTMLElement && getComputedStyle(pane).display !== 'none');
+        gsap.killTweensOf([panes, ...shown]);
+        gsap.fromTo(panes, { height: from, overflow: 'hidden' }, { height: panes.scrollHeight, duration: .26, ease: 'power2.out', clearProps: 'height,overflow' });
+        gsap.fromTo(shown, { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power2.out', clearProps: 'opacity,visibility,transform' });
+      });
+    }, { signal: ctx.signal });
     document.addEventListener('keydown', event => { if (editor && event.key === 'Escape' && !document.querySelector('dialog[open]')) close(); }, { signal: ctx.signal });
-    mobile.addEventListener('change', () => { if (!mobile.matches) close(); }, { signal: ctx.signal });
+    mobile.addEventListener('change', () => { if (!mobile.matches) close(true); }, { signal: ctx.signal });
     window.visualViewport?.addEventListener('resize', settle, { signal: ctx.signal });
     window.visualViewport?.addEventListener('scroll', viewport, { signal: ctx.signal });
     window.addEventListener('resize', settle, { signal: ctx.signal });
@@ -77,6 +104,6 @@ export const floatingReply: Feature = {
     launch.addEventListener('click', () => { open(); editor?.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true }); }, { signal: ctx.signal });
     const stop = ctx.watch(() => { launch.hidden = !document.querySelector('.md-editor'); });
     (document.getElementById('nspp-tools') || document.body).append(launch);
-    return () => { stop(); close(); launch.remove(); };
+    return () => { stop(); close(true); launch.remove(); };
   },
 };

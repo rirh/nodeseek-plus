@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1027.1452
+// @version      26.1027.1512
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
@@ -652,7 +652,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			title.append(Object.assign(document.createElement("strong"), { textContent: "新版本已发布" }));
 			const message = document.createElement("p");
 			message.className = "nspp-update-message";
-			message.textContent = `当前版本：26.1027.1452　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
+			message.textContent = `当前版本：26.1027.1512　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
 			const actions = document.createElement("div");
 			actions.className = "nspp-update-actions";
 			const link = (className, href, text) => Object.assign(document.createElement("a"), {
@@ -752,9 +752,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1452")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1512")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1452。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1512。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -763,7 +763,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1452")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1512")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -785,11 +785,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					...state(),
 					version
 				});
-				if (version && isNewerVersion(version, "26.1027.1452")) {
+				if (version && isNewerVersion(version, "26.1027.1512")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.1027.1452）`);
+				} else if (manual) notify(`当前已是最新版本（v26.1027.1512）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -860,7 +860,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		});
 		heading.append(title, button);
 		const summary = document.createElement("p");
-		summary.textContent = `v26.1027.1452 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
+		summary.textContent = `v26.1027.1512 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
 		const links = document.createElement("div");
 		links.className = "about-links";
 		for (const [label, href] of [
@@ -931,7 +931,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.1027.1452`));
+		heading.append(title, element$1("small", `v26.1027.1512`));
 		const close = element$1("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
@@ -19232,7 +19232,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		id: "post-preview",
 		title: "帖子卡片预览",
 		group: "阅读",
-		description: "桌面悬停打开卡片，移动端点击标题直接进入详情；点击图片放大，支持缩放和切换，可从卡片进入原帖。",
+		description: "桌面悬停打开卡片，移动端点击标题打开预览弹窗；点击图片放大，支持缩放和切换，可从卡片进入原帖。",
 		defaults: { enabled: true },
 		mount(ctx) {
 			const preview = createPostPreview(ctx);
@@ -19255,6 +19255,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					link.addEventListener("mouseleave", () => {
 						clearTimeout(timer);
 						preview.scheduleClose();
+					}, { signal: ctx.signal });
+					link.addEventListener("click", (event) => {
+						if (!matchMedia("(max-width: 700px), (hover: none)").matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+						event.preventDefault();
+						clearTimeout(timer);
+						preview.open(link, "preview");
 					}, { signal: ctx.signal });
 				});
 			});
@@ -23912,9 +23918,14 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 				};
 				if (!frame) step();
 			};
-			const close = () => {
+			const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+			let closing;
+			const finish = () => {
 				if (!editor) return;
-				document.activeElement?.blur();
+				closing?.kill();
+				closing = void 0;
+				gsapWithCSS.killTweensOf(editor);
+				gsapWithCSS.set(editor, { clearProps: "transform" });
 				editor.classList.remove("nspp-floating-reply");
 				editor.style.removeProperty("--nspp-reply-height");
 				editor.style.removeProperty("--nspp-reply-top");
@@ -23933,7 +23944,22 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 				previousFocus?.focus({ preventScroll: true });
 				signalState();
 			};
+			const close = (instant = false) => {
+				if (!editor || closing) return;
+				document.activeElement?.blur();
+				if (instant || still()) {
+					finish();
+					return;
+				}
+				closing = gsapWithCSS.to(editor, {
+					yPercent: 100,
+					duration: .24,
+					ease: "power2.in",
+					onComplete: finish
+				});
+			};
 			const open = () => {
+				if (closing) finish();
 				if (!mobile.matches || editor) return;
 				const host = document.querySelector(".md-editor");
 				if (!host) return;
@@ -23955,12 +23981,18 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 				hide.type = "button";
 				hide.textContent = "收起";
 				hide.setAttribute("aria-label", "收起回复框");
-				hide.addEventListener("click", close, { signal: ctx.signal });
+				hide.addEventListener("click", () => close(), { signal: ctx.signal });
 				header.append(label, hide);
 				host.prepend(header);
 				resizer.observe(host);
 				settle();
 				signalState();
+				if (!still()) gsapWithCSS.fromTo(host, { yPercent: 100 }, {
+					yPercent: 0,
+					duration: .32,
+					ease: "power3.out",
+					clearProps: "transform"
+				});
 				host.querySelector(".CodeMirror")?.CodeMirror?.refresh();
 			};
 			document.addEventListener("click", (event) => {
@@ -23976,11 +24008,41 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 				capture: true,
 				signal: ctx.signal
 			});
+			document.addEventListener("click", (event) => {
+				const tab = event.target instanceof Element ? event.target.closest(".tab-option") : null;
+				const panes = tab && editor?.contains(tab) && !closing && !still() ? editor.querySelector("#cm-editor-wrapper")?.parentElement : null;
+				if (!panes) return;
+				const from = panes.offsetHeight;
+				requestAnimationFrame(() => {
+					if (!panes.isConnected) return;
+					const shown = Array.from(panes.children).filter((pane) => pane instanceof HTMLElement && getComputedStyle(pane).display !== "none");
+					gsapWithCSS.killTweensOf([panes, ...shown]);
+					gsapWithCSS.fromTo(panes, {
+						height: from,
+						overflow: "hidden"
+					}, {
+						height: panes.scrollHeight,
+						duration: .26,
+						ease: "power2.out",
+						clearProps: "height,overflow"
+					});
+					gsapWithCSS.fromTo(shown, {
+						autoAlpha: 0,
+						y: 6
+					}, {
+						autoAlpha: 1,
+						y: 0,
+						duration: .22,
+						ease: "power2.out",
+						clearProps: "opacity,visibility,transform"
+					});
+				});
+			}, { signal: ctx.signal });
 			document.addEventListener("keydown", (event) => {
 				if (editor && event.key === "Escape" && !document.querySelector("dialog[open]")) close();
 			}, { signal: ctx.signal });
 			mobile.addEventListener("change", () => {
-				if (!mobile.matches) close();
+				if (!mobile.matches) close(true);
 			}, { signal: ctx.signal });
 			window.visualViewport?.addEventListener("resize", settle, { signal: ctx.signal });
 			window.visualViewport?.addEventListener("scroll", viewport, { signal: ctx.signal });
@@ -24005,7 +24067,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 			(document.getElementById("nspp-tools") || document.body).append(launch);
 			return () => {
 				stop();
-				close();
+				close(true);
 				launch.remove();
 			};
 		}
