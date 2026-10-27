@@ -75,7 +75,7 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     } else {
       document.body.append(element);
       let timer: ReturnType<typeof setTimeout> | undefined;
-      const close = () => { clearTimeout(timer); element.hidden = true; };
+      const close = () => { clearTimeout(timer); if (!element.hidden) element.hidden = true; };
       const open = () => {
         clearTimeout(timer); if (!anchor.isConnected) return;
         if (!userHoverEnabled() || document.hidden || innerWidth <= 700 || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;

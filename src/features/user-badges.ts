@@ -7,6 +7,15 @@ import { authorId, forumAge, registration, trustScore, type UserProfile } from '
 import { createSheet } from '../views/sheet';
 
 
+const PROFILE_LIMIT = 3000;
+const profileFields = ['member_name', 'isAdmin', 'roles', 'signature', 'bio', 'introduction', 'signature_text', 'coin', 'stardust', 'fans', 'rank', 'created_at', 'nPost', 'nComment'] as const;
+/** Keep only the fields the badges and cards read, so the persisted cache stays small. */
+function compactProfile(user: UserProfile): UserProfile {
+  const result: Record<string, unknown> = {};
+  for (const key of profileFields) if (user[key] !== undefined && user[key] !== null) result[key] = user[key];
+  return result as UserProfile;
+}
+
 export const userBadges: Feature = {
   id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, hoverPreview: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
   fields: {
@@ -25,30 +34,37 @@ export const userBadges: Feature = {
     const roles = new Map<Element, string | null>();
     type CachedProfile = { time: number; user: UserProfile };
     const fresh = (entry: CachedProfile | undefined): entry is CachedProfile => !!entry && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 24 * 60 * 60 * 1000;
-    const cache = new Map<string, CachedProfile>();
+    // Read the persisted cache once; writing it per profile re-serialized the whole store on the main thread.
+    const cache = new Map<string, CachedProfile>(Object.entries(ctx.get<Record<string, CachedProfile>>('profiles') || {}).filter(([, entry]) => fresh(entry)));
     const inflight = new Map<string, Promise<UserProfile>>();
     const nodes = new Map<Element, { id: string; badge: HTMLElement; details: HTMLElement; release(): void }>();
+    const unsaved = new Map<string, CachedProfile>();
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    const persist = () => {
+      clearTimeout(saveTimer); saveTimer = undefined;
+      if (!unsaved.size) return;
+      // Merge with what other tabs saved meanwhile, keep only fresh entries and the most recent ones.
+      const merged = { ...(ctx.get<Record<string, CachedProfile>>('profiles') || {}), ...Object.fromEntries(unsaved) };
+      unsaved.clear();
+      ctx.set('profiles', Object.fromEntries(Object.entries(merged).filter(([, entry]) => fresh(entry)).sort((a, b) => b[1].time - a[1].time).slice(0, PROFILE_LIMIT)));
+    };
+    const schedulePersist = () => { if (!saveTimer) saveTimer = setTimeout(persist, 2000); };
+    addEventListener('pagehide', persist, { signal: ctx.signal });
     const getProfile = (id: string): Promise<UserProfile> => {
       const cached = cache.get(id);
       if (fresh(cached)) return Promise.resolve(cached.user);
       cache.delete(id);
       if (inflight.has(id)) return inflight.get(id)!;
-      const stored = ctx.get<Record<string, CachedProfile>>('profiles') || {};
-      if (fresh(stored[id])) {
-        cache.set(id, stored[id]);
-        return Promise.resolve(stored[id].user);
-      }
       const request = ctx.request<{ success?: boolean; detail?: UserProfile }>(`/api/account/getInfo/${id}`).then(result => {
         if (!result?.success || !result.detail || typeof result.detail !== 'object') throw new Error('资料不可用');
-        const entry = { time: Date.now(), user: result.detail };
-        cache.set(id, entry);
-        const latest = ctx.get<typeof stored>('profiles') || {};
-        latest[id] = entry;
-        ctx.set('profiles', Object.fromEntries(Object.entries(latest).filter(([, value]) => fresh(value))));
-        return result.detail;
+        const entry = { time: Date.now(), user: compactProfile(result.detail) };
+        cache.set(id, entry); unsaved.set(id, entry); schedulePersist();
+        return entry.user;
       });
       inflight.set(id, request);
-      void request.then(() => inflight.delete(id), () => inflight.delete(id));
+      // Save once a wave of requests settles instead of after every profile.
+      const settle = () => { inflight.delete(id); if (!inflight.size) persist(); };
+      void request.then(settle, settle);
       return request;
     };
     const load = async (author: Element, id: string, badge: HTMLElement) => {
@@ -192,6 +208,7 @@ export const userBadges: Feature = {
       }
     }, { rootMargin: '200px' }) : null;
     const scan = () => {
+      const pending: [HTMLAnchorElement, string, HTMLElement][] = [];
       document.querySelectorAll('.role-tag:not(.user-level)').forEach(tag => {
         const text = tag.textContent?.trim();
         const role = text === '管理员' || text === '管理' ? 'admin' : text === '站点创建者' || text === '创建者' ? 'founder' : text === '服主' || text === '拥有者' || text === '所有者' || text === '站点拥有者' ? 'owner' : undefined;
@@ -230,13 +247,14 @@ export const userBadges: Feature = {
           author.addEventListener('click', start, { signal: ctx.signal });
           return;
         }
-        // Start visible names immediately, even if the observer callback is delayed.
-        const rect = author.getBoundingClientRect();
-        if (!observer || (rect.bottom >= 0 && rect.top <= innerHeight + 200)) void load(author, id, badge);
-        else observer.observe(author);
+        pending.push([author, id, badge]);
       });
+      // Measure after all badges are inserted so the page lays out once, not once per author.
+      // Visible names start immediately, even if the observer callback is delayed.
+      const visible = pending.map(([author]) => { if (!observer) return true; const rect = author.getBoundingClientRect(); return rect.bottom >= 0 && rect.top <= innerHeight + 200; });
+      pending.forEach(([author, id, badge], index) => { if (visible[index]) void load(author, id, badge); else observer!.observe(author); });
     };
     const stop = ctx.watch(scan);
-    return () => { stop(); colorStyle.remove(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); nodes.forEach(({ badge, details, release }) => { badge.remove(); details.remove(); release(); }); };
+    return () => { persist(); stop(); colorStyle.remove(); scoreDialog?.remove(); roles.forEach((original, tag) => { if (original === null) tag.removeAttribute('data-nspp-role'); else tag.setAttribute('data-nspp-role', original); }); observer?.disconnect(); nodes.forEach(({ badge, details, release }) => { badge.remove(); details.remove(); release(); }); };
   },
 };

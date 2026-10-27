@@ -395,3 +395,28 @@ test('fans page replaces native user cards with the profile card and drops them 
     await waitFor(() => !doc.querySelector('.nspp-user-hover-inline'));
   } finally { await f.close(); }
 });
+
+test('a page of authors reads the profile cache once and saves it once, keeping only used fields', async () => {
+  const stateKey = 'nspp:state:www.nodeseek.com:user-level';
+  const ids = Array.from({ length: 12 }, (_, i) => String(100 + i));
+  const html = ids.map(id => `<div class="author-info"><a href="/space/${id}">u${id}</a></div>`).join('');
+  let reads = 0, writes = 0;
+  const f = await fixture({ 'official-blocklist': { enabled: false } }, html, '/', undefined, window => {
+    const get = window.GM_getValue as (key: string, fallback: unknown) => unknown;
+    const set = window.GM_setValue as (key: string, value: unknown) => void;
+    Object.assign(window, {
+      GM_getValue: (name: string, fallback: unknown) => { if (name === stateKey) reads++; return get(name, fallback); },
+      GM_setValue: (name: string, value: unknown) => { if (name === stateKey) writes++; set(name, value); },
+    });
+    window.fetch = (async () => new window.Response(JSON.stringify({ success: true, detail: { rank: 2, coin: 400, created_at: '2024-01-01', email: 'hidden@example.com', avatar_frames: Array(50).fill('x') } }))) as typeof window.fetch;
+  });
+  try {
+    await waitFor(() => f.window.document.querySelectorAll('.author-info .nspp-level').length === ids.length);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(writes, 1, 'profiles are saved in one batch');
+    assert.ok(reads <= 4, `cache is not re-read per author (${reads} reads)`);
+    const saved = (f.storage.get(stateKey) as { profiles: Record<string, { user: Record<string, unknown> }> }).profiles;
+    assert.equal(Object.keys(saved).length, ids.length);
+    assert.deepEqual(saved['100'].user, { rank: 2, coin: 400, created_at: '2024-01-01' });
+  } finally { await f.close(); }
+});

@@ -9658,7 +9658,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				let timer;
 				const close = () => {
 					clearTimeout(timer);
-					element.hidden = true;
+					if (!element.hidden) element.hidden = true;
 				};
 				const open = () => {
 					clearTimeout(timer);
@@ -9777,6 +9777,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		svg.append(use);
 		return svg;
 	}
+	var PROFILE_LIMIT = 3e3;
+	var profileFields = [
+		"member_name",
+		"isAdmin",
+		"roles",
+		"signature",
+		"bio",
+		"introduction",
+		"signature_text",
+		"coin",
+		"stardust",
+		"fans",
+		"rank",
+		"created_at",
+		"nPost",
+		"nComment"
+	];
+	function compactProfile(user) {
+		const result = {};
+		for (const key of profileFields) if (user[key] !== void 0 && user[key] !== null) result[key] = user[key];
+		return result;
+	}
 	var userBadges = {
 		id: "user-level",
 		title: "等级、信任分与身份徽章",
@@ -9836,33 +9858,48 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			let scoreDialog;
 			const roles = new Map();
 			const fresh = (entry) => !!entry && Number.isFinite(entry.time) && Date.now() >= entry.time && Date.now() - entry.time < 864e5;
-			const cache = new Map();
+			const cache = new Map(Object.entries(ctx.get("profiles") || {}).filter(([, entry]) => fresh(entry)));
 			const inflight = new Map();
 			const nodes = new Map();
+			const unsaved = new Map();
+			let saveTimer;
+			const persist = () => {
+				clearTimeout(saveTimer);
+				saveTimer = void 0;
+				if (!unsaved.size) return;
+				const merged = {
+					...ctx.get("profiles") || {},
+					...Object.fromEntries(unsaved)
+				};
+				unsaved.clear();
+				ctx.set("profiles", Object.fromEntries(Object.entries(merged).filter(([, entry]) => fresh(entry)).sort((a, b) => b[1].time - a[1].time).slice(0, PROFILE_LIMIT)));
+			};
+			const schedulePersist = () => {
+				if (!saveTimer) saveTimer = setTimeout(persist, 2e3);
+			};
+			addEventListener("pagehide", persist, { signal: ctx.signal });
 			const getProfile = (id) => {
 				const cached = cache.get(id);
 				if (fresh(cached)) return Promise.resolve(cached.user);
 				cache.delete(id);
 				if (inflight.has(id)) return inflight.get(id);
-				const stored = ctx.get("profiles") || {};
-				if (fresh(stored[id])) {
-					cache.set(id, stored[id]);
-					return Promise.resolve(stored[id].user);
-				}
 				const request = ctx.request(`/api/account/getInfo/${id}`).then((result) => {
 					if (!result?.success || !result.detail || typeof result.detail !== "object") throw new Error("资料不可用");
 					const entry = {
 						time: Date.now(),
-						user: result.detail
+						user: compactProfile(result.detail)
 					};
 					cache.set(id, entry);
-					const latest = ctx.get("profiles") || {};
-					latest[id] = entry;
-					ctx.set("profiles", Object.fromEntries(Object.entries(latest).filter(([, value]) => fresh(value))));
-					return result.detail;
+					unsaved.set(id, entry);
+					schedulePersist();
+					return entry.user;
 				});
 				inflight.set(id, request);
-				request.then(() => inflight.delete(id), () => inflight.delete(id));
+				const settle = () => {
+					inflight.delete(id);
+					if (!inflight.size) persist();
+				};
+				request.then(settle, settle);
 				return request;
 			};
 			const load = async (author, id, badge) => {
@@ -10094,6 +10131,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				}
 			}, { rootMargin: "200px" }) : null;
 			const scan = () => {
+				const pending = [];
 				document.querySelectorAll(".role-tag:not(.user-level)").forEach((tag) => {
 					const text = tag.textContent?.trim();
 					const role = text === "管理员" || text === "管理" ? "admin" : text === "站点创建者" || text === "创建者" ? "founder" : text === "服主" || text === "拥有者" || text === "所有者" || text === "站点拥有者" ? "owner" : void 0;
@@ -10158,13 +10196,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						author.addEventListener("click", start, { signal: ctx.signal });
 						return;
 					}
+					pending.push([
+						author,
+						id,
+						badge
+					]);
+				});
+				const visible = pending.map(([author]) => {
+					if (!observer) return true;
 					const rect = author.getBoundingClientRect();
-					if (!observer || rect.bottom >= 0 && rect.top <= innerHeight + 200) load(author, id, badge);
+					return rect.bottom >= 0 && rect.top <= innerHeight + 200;
+				});
+				pending.forEach(([author, id, badge], index) => {
+					if (visible[index]) load(author, id, badge);
 					else observer.observe(author);
 				});
 			};
 			const stop = ctx.watch(scan);
 			return () => {
+				persist();
 				stop();
 				colorStyle.remove();
 				scoreDialog?.remove();
