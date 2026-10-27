@@ -7,7 +7,16 @@ export const bundle = readFileSync(process.env.NSPP_TEST_BUNDLE || new URL('../.
 export const key = 'nspp:settings:www.nodeseek.com';
 export async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void, testUpdates = false) {
   // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
-  const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: { enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true } });
+  // Tests must stay offline: link clicks only update the URL, and any other internal happy-dom fetch gets a local 503
+  // instead of reaching the real forum (a reset connection there would crash the whole test process).
+  const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: {
+    enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true,
+    navigation: { disableMainFrameNavigation: true, disableChildFrameNavigation: true, disableChildPageNavigation: true },
+    fetch: { interceptor: {
+      beforeAsyncRequest: async ({ window }) => new window.Response('', { status: 503 }),
+      beforeSyncRequest: ({ window }) => ({ status: 503, statusText: 'Offline test', ok: false, url: '', redirected: false, headers: new window.Headers(), body: null }),
+    } },
+  } });
   const storage = shared || new Map<string, unknown>([[key, { attendance: { enabled: true, automatic: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false }, 'request-settings': { enabled: true, requestInterval: 0 }, ...settings }]]);
   const requests: string[] = [];
   const menus: (() => void)[] = []; const menuLabels: string[] = [];
