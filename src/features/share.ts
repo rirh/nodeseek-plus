@@ -27,6 +27,13 @@ const icons = {
   telegram: () => svgIcon('M21 4 3 11l7 2 2 7 3-5 5 4 1-15ZM10 13l11-9'),
 };
 
+function qrSvg(): Element {
+  const qr = qrcode(0, 'M'); qr.addData(REPOSITORY_URL); qr.make();
+  const svg = new DOMParser().parseFromString(qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true }), 'image/svg+xml').documentElement;
+  svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'NodeSeek++ 项目主页二维码');
+  return document.importNode(svg, true);
+}
+
 /** QR code for the project page drawn into a labelled card, so a saved image explains itself. */
 function shareCard(): HTMLCanvasElement {
   const qr = qrcode(0, 'M'); qr.addData(REPOSITORY_URL); qr.make();
@@ -50,14 +57,22 @@ export const share: Feature = {
   id: 'share', title: '分享入口', description: '工具栏显示分享按钮：保存二维码，或分享到 X、Telegram 和系统分享。', group: '操作辅助', defaults: { enabled: true },
   mount(ctx) {
     const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.title = '分享 NodeSeek++'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppShareLauncher = '';
-    launch.append(icons.share());
+    launch.append(toolIcon('share'));
     const panel = createSheet('nspp-share', '分享 NodeSeek++');
-    const head = document.createElement('header'); const title = document.createElement('h2'); title.textContent = '分享 NodeSeek++';
+    const head = document.createElement('div'); head.className = 'nspp-share-head';
+    const title = document.createElement('strong'); title.textContent = '分享 NodeSeek++';
     const close = document.createElement('button'); close.type = 'button'; close.className = 'nspp-share-close'; close.title = '关闭'; close.setAttribute('aria-label', close.title); close.append(toolIcon('close'));
     close.addEventListener('click', () => panel.close(), { signal: ctx.signal }); head.append(title, close);
-    const card = document.createElement('div'); card.className = 'nspp-share-card';
+    const intro = document.createElement('div'); intro.className = 'nspp-share-intro';
+    const qr = document.createElement('div'); qr.className = 'nspp-share-qr';
+    const about = document.createElement('div');
     const pitch = document.createElement('p'); pitch.textContent = SHARE_PITCH;
-    card.append(pitch);
+    const hint = document.createElement('small'); hint.textContent = '扫码打开项目主页，查看截图和安装方法';
+    about.append(pitch, hint); intro.append(qr, about);
+    const textBox = document.createElement('div'); textBox.className = 'nspp-share-text';
+    const text = document.createElement('pre'); text.textContent = SHARE_TEXT;
+    const copyText = document.createElement('button'); copyText.type = 'button'; copyText.textContent = '复制文案';
+    textBox.append(text, copyText);
     const actions = document.createElement('div'); actions.className = 'nspp-share-actions';
     const action = (label: string, icon: SVGElement, run: () => void) => {
       const button = document.createElement('button'); button.type = 'button';
@@ -85,13 +100,13 @@ export const share: Feature = {
       if (typeof navigator.share === 'function') navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT }).catch(error => { if (error?.name !== 'AbortError') void copy(); });
       else void copy();
     });
-    const qr = document.createElement('div'); qr.className = 'nspp-share-qr';
-    panel.append(head, card, qr, actions); document.body.append(panel);
+    copyText.addEventListener('click', () => { void copy(); }, { signal: ctx.signal });
+    panel.append(head, intro, textBox, actions); document.body.append(panel);
     const tools = document.getElementById('nspp-tools') || document.body;
     const settings = tools.querySelector('[data-nspp-settings-launcher]');
     if (settings) settings.before(launch); else tools.append(launch);
     launch.addEventListener('click', () => {
-      if (!qr.firstChild) { canvas ||= shareCard(); const image = document.createElement('img'); image.alt = 'NodeSeek++ 项目二维码'; image.src = canvas.toDataURL('image/png'); qr.append(image); }
+      if (!qr.firstChild) qr.append(qrSvg());
       panel.showModal();
     }, { signal: ctx.signal });
     return () => { panel.remove(); launch.remove(); };
