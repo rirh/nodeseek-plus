@@ -17,8 +17,9 @@ function compactProfile(user: UserProfile): UserProfile {
 }
 
 export const userBadges: Feature = {
-  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, hoverPreview: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
+  id: 'user-level', title: '等级、信任分与身份徽章', description: '显示等级、加入天数与可查看明细的本地信任参考分，并突出管理员、站点创建者与拥有者身份。', group: '用户', defaults: { enabled: true, listBadges: true, hoverPreview: true, colors: 'original', levelColor: '#9198a1', trustColor: '#9198a1', roleColor: '#9198a1' },
   fields: {
+    listBadges: { label: '帖子列表显示等级与信任分（关闭可减少卡顿）', type: 'text' },
     hoverPreview: { label: '用户资料悬浮预览（默认开启，仅桌面鼠标悬停）', type: 'text' },
     colors: { label: '徽章配色', type: 'select', options: [{ label: '原有彩色（默认）', value: 'original' }, { label: '自定义', value: 'custom' }, { label: '柔和单色', value: 'muted' }] },
     levelColor: { label: '等级与加入天数颜色', type: 'color' }, trustColor: { label: '信任分颜色', type: 'color' }, roleColor: { label: '身份徽章颜色', type: 'color' },
@@ -207,6 +208,7 @@ export const userBadges: Feature = {
         if (state) void load(entry.target, state.id, state.badge);
       }
     }, { rootMargin: '200px' }) : null;
+    const listBadges = ctx.get('listBadges') !== false;
     const scan = () => {
       const pending: [HTMLAnchorElement, string, HTMLElement][] = [];
       document.querySelectorAll('.role-tag:not(.user-level)').forEach(tag => {
@@ -234,7 +236,7 @@ export const userBadges: Feature = {
         previous?.badge.remove(); previous?.details.remove(); previous?.release();
         const badge = document.createElement('span'); badge.className = 'nspp-user-badges';
         badge.setAttribute('aria-label', '用户资料');
-        badge.hidden = !!author.closest('.info-last-commenter') || !!author.querySelector('img') || !author.matches('.author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a');
+        badge.hidden = !!author.closest('.info-last-commenter') || (!listBadges && !!author.closest('.post-list-item')) || !!author.querySelector('img') || !author.matches('.author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a');
         const hover = userHover(author, ctx);
         const details = document.createElement('dl'); details.textContent = '正在读取用户资料…'; hover.element.insertBefore(details, hover.element.querySelector('.nspp-user-hover-actions, :scope > .nspp-block-toggle'));
         author.after(badge); nodes.set(author, { id, badge, details, release: hover.release });

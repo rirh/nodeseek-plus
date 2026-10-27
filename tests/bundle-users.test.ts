@@ -420,3 +420,17 @@ test('a page of authors reads the profile cache once and saves it once, keeping 
     assert.deepEqual(saved['100'].user, { rank: 2, coin: 400, created_at: '2024-01-01' });
   } finally { await f.close(); }
 });
+
+test('list badges can be turned off so the post list sends no profile requests', async () => {
+  const html = '<ul class="post-list"><li class="post-list-item"><div class="post-info"><span class="info-author"><a href="/space/123">Alice</a></span></div></li></ul><div class="author-info"><a href="/space/456">Bob</a></div>';
+  const fetched: string[] = [];
+  const f = await fixture({ 'official-blocklist': { enabled: false }, 'user-level': { enabled: true, listBadges: false } }, html, '/', undefined, window => {
+    window.fetch = (async (url: unknown) => { fetched.push(String(url)); return new window.Response(JSON.stringify({ success: true, detail: { rank: 2 } })); }) as typeof window.fetch;
+  });
+  try {
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.deepEqual(fetched.map(url => new URL(url).pathname), ['/api/account/getInfo/456'], 'only the post author outside the list is loaded');
+    const listBadge = f.window.document.querySelector('.post-list-item .nspp-user-badges') as HTMLElement;
+    assert.equal(listBadge.hidden, true);
+  } finally { await f.close(); }
+});

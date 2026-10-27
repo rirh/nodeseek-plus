@@ -9806,6 +9806,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		group: "用户",
 		defaults: {
 			enabled: true,
+			listBadges: true,
 			hoverPreview: true,
 			colors: "original",
 			levelColor: "#9198a1",
@@ -9813,6 +9814,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			roleColor: "#9198a1"
 		},
 		fields: {
+			listBadges: {
+				label: "帖子列表显示等级与信任分（关闭可减少卡顿）",
+				type: "text"
+			},
 			hoverPreview: {
 				label: "用户资料悬浮预览（默认开启，仅桌面鼠标悬停）",
 				type: "text"
@@ -10130,6 +10135,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					if (state) load(entry.target, state.id, state.badge);
 				}
 			}, { rootMargin: "200px" }) : null;
+			const listBadges = ctx.get("listBadges") !== false;
 			const scan = () => {
 				const pending = [];
 				document.querySelectorAll(".role-tag:not(.user-level)").forEach((tag) => {
@@ -10167,7 +10173,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					const badge = document.createElement("span");
 					badge.className = "nspp-user-badges";
 					badge.setAttribute("aria-label", "用户资料");
-					badge.hidden = !!author.closest(".info-last-commenter") || !!author.querySelector("img") || !author.matches(".author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a");
+					badge.hidden = !!author.closest(".info-last-commenter") || !listBadges && !!author.closest(".post-list-item") || !!author.querySelector("img") || !author.matches(".author-info a, a.info-author, .info-author a, a.post-author, .post-author a, .nsk-content-meta-info a");
 					const hover = userHover(author, ctx);
 					const details = document.createElement("dl");
 					details.textContent = "正在读取用户资料…";
