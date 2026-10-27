@@ -1,5 +1,6 @@
 import type { Context } from '../core/types';
-import { openImagePreview } from './image-preview';
+import { linksElsewhere, openImagePreview } from './image-preview';
+import { setShine } from './sweep-shine';
 
 export type PreviewAction = 'preview' | 'interact' | 'quote' | 'reply';
 // Copy only reading content; remote markup never supplies executable attributes or UI.
@@ -33,12 +34,12 @@ export function readingContent(source: Element, base: string): DocumentFragment 
 
 export function createPostPreview(ctx: Context) {
   const view = document.createElement('dialog');
-  view.className = 'nspp-post-preview'; view.hidden = true;
+  view.className = 'nspp-sheet nspp-post-preview'; view.hidden = true;
   view.setAttribute('role', 'dialog'); view.setAttribute('aria-label', '帖子预览');
   const header = document.createElement('header');
   const title = document.createElement('a'); title.target = '_blank'; title.rel = 'noopener noreferrer';
   const status = document.createElement('p'); status.setAttribute('role', 'status');
-  const content = document.createElement('div'); content.className = 'nspp-preview-content';
+  const content = document.createElement('div'); content.className = 'nspp-preview-content nspp-sheet-body';
   const footer = document.createElement('footer');
   const original = document.createElement('a'); original.textContent = '查看原帖与回复 ↗'; original.target = '_blank'; original.rel = 'noopener noreferrer';
   footer.append(original); header.append(title); view.append(header, status, content, footer); document.body.append(view);
@@ -61,7 +62,7 @@ export function createPostPreview(ctx: Context) {
     footer.append(original);
   };
   let request: AbortController | undefined;
-  const mobile = () => matchMedia('(max-width: 600px), (hover: none)').matches;
+  const mobile = () => matchMedia('(max-width: 700px), (hover: none)').matches;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
   let closeImage: (() => void) | undefined;
   const keepOpen = () => clearTimeout(closeTimer);
@@ -73,7 +74,7 @@ export function createPostPreview(ctx: Context) {
   view.addEventListener('mouseenter', keepOpen, { signal: ctx.signal });
   view.addEventListener('mouseleave', scheduleClose, { signal: ctx.signal });
   window.addEventListener('click', event => {
-    if (!(event.target instanceof HTMLImageElement) || !content.contains(event.target) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (!(event.target instanceof HTMLImageElement) || !content.contains(event.target) || linksElsewhere(event.target) || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault(); event.stopImmediatePropagation();
     if (closeImage) return;
     keepOpen();
@@ -109,7 +110,7 @@ export function createPostPreview(ctx: Context) {
   async function load(url: URL) {
     request?.abort();
     const controller = new AbortController(); request = controller;
-    status.textContent = '正在加载帖子…'; status.setAttribute('aria-busy', 'true'); content.replaceChildren();
+    status.textContent = '正在加载帖子…'; setShine(status, true); content.replaceChildren();
     try {
       const html = await ctx.request<string>(url.href, { responseType: 'text', signal: AbortSignal.any([ctx.signal, controller.signal]) });
       if (controller.signal.aborted || ctx.signal.aborted) return;
@@ -134,7 +135,7 @@ export function createPostPreview(ctx: Context) {
     } catch {
       if (controller.signal.aborted || ctx.signal.aborted) return;
       current = ''; status.textContent = '暂时无法读取正文，请打开原帖查看或完成登录验证。';
-    } finally { if (!controller.signal.aborted) { status.removeAttribute('aria-busy'); position(); } }
+    } finally { if (!controller.signal.aborted) { setShine(status, false); position(); } }
   }
   return {
     open(link: HTMLAnchorElement, action: PreviewAction) {

@@ -107,7 +107,7 @@ export const listInteractions: Feature = {
           }
           category.before(group); group.append(category, shortcut); categoryGroups.push({ group, category, style });
         }
-        const loading = document.createElement('span'); loading.className = 'nspp-count-loading'; loading.textContent = '加载中'; loading.setAttribute('role', 'status'); loading.hidden = true; bar.append(loading);
+        const loading = document.createElement('span'); loading.className = 'nspp-count-loading nspp-sweep-shine'; loading.textContent = '加载中'; loading.setAttribute('role', 'status'); loading.hidden = true; bar.append(loading);
         content.append(bar); rows.set(row, { url: url.href, bar, counts });
         if (visible) visible.observe(row);
         row.addEventListener('mouseenter', () => { clearTimeout(hoverTimer); hoverTimer = setTimeout(() => load(url.href, bar), 500); }, { signal: ctx.signal });

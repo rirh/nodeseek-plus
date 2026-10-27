@@ -1,8 +1,7 @@
-import { GM_xmlhttpRequest } from '$';
-import { GM_getValue, GM_setValue, hasStorage, systemNotify } from './userscript';
+import { GM_getValue, GM_setValue, gmRequest, hasRequest, hasStorage, systemNotify } from './userscript';
 import { withTabLock } from './tab-lock';
 import { isNewerVersion, readUpdateVersion, UPDATE_META_URL, UPDATE_URL } from './update-version';
-import { confirmDialog } from '../views/confirm-dialog';
+import { updateNotice } from '../views/update-notice';
 
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 const REMINDER_INTERVAL = 24 * 60 * 60 * 1000;
@@ -12,9 +11,9 @@ type UpdateState = { version?: string; promptedVersion?: string; promptedAt?: nu
 function requestVersion(signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('已取消')); return; }
-    if (typeof GM_xmlhttpRequest !== 'function') { reject(new Error('更新检查不可用，请确认油猴脚本已正常安装')); return; }
+    if (!hasRequest()) { reject(new Error('更新检查不可用，请确认油猴脚本已正常安装')); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
-    const request = GM_xmlhttpRequest({
+    const request = gmRequest({
       method: 'GET', url: `${UPDATE_META_URL}?_=${crypto.randomUUID()}`, anonymous: true, timeout: 20000,
       nocache: true,
       headers: { 'Cache-Control': 'no-cache, no-store, max-age=0', Pragma: 'no-cache' },
@@ -44,7 +43,7 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
       const latest = state();
       if (signal.aborted || !latest.version || !isNewerVersion(latest.version, __APP_VERSION__)) return;
       if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-      if (systemNotify(`发现新版本 v${latest.version}，当前 v${__APP_VERSION__}。点击前往更新。`, UPDATE_URL, 'nspp:script-update', '发现新版本')) {
+      if (systemNotify(`发现新版本 v${latest.version}，当前 v${__APP_VERSION__}。点击从 GitHub 安装更新。`, UPDATE_URL, 'nspp:script-update', '发现新版本')) {
         GM_setValue(STATE_KEY, { ...state(), notifiedVersion: latest.version, notifiedAt: Date.now() });
       }
     });
@@ -57,7 +56,7 @@ export function createUpdateChecker(notify: (message: string) => void, canPrompt
     prompting = true;
     GM_setValue(STATE_KEY, { ...latest, promptedVersion: latest.version, promptedAt: Date.now() });
     try {
-      await confirmDialog('发现 NodeSeek++ 新版本', `当前版本 v${__APP_VERSION__}，最新版本 v${latest.version}。更新后刷新论坛页面即可使用。`, '前往更新', signal, { href: UPDATE_URL, cancelLabel: '稍后提醒' });
+      await updateNotice(latest.version, manual, signal);
     } finally { prompting = false; }
   }
 

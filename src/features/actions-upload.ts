@@ -1,6 +1,7 @@
 import { getNodeImageKey, uploadNodeImage } from './nodeimage-upload';
 import { uploadRequest, uploadResult } from './actions-upload-protocol';
 import type { Feature } from '../core/types';
+import { setShine } from '../views/sweep-shine';
 
 type Editor = { replaceSelection(text: string): void; focus(): void };
 export const imageUpload: Feature = {
@@ -12,7 +13,7 @@ export const imageUpload: Feature = {
     base: { label: '其他图床地址（NodeImage 固定使用官方地址）', type: 'text' },
   },
   mount(ctx) {
-    const bound = new WeakSet<Element>(); const bars: HTMLElement[] = []; let apiKey = '';
+    const bound = new WeakSet<Element>(); const bars: HTMLElement[] = []; const placements: (() => void)[] = []; let apiKey = '';
     let auth: Promise<string> | undefined;
     let lastCheck = 0;
     const ensureKey = () => {
@@ -59,7 +60,7 @@ export const imageUpload: Feature = {
         async function upload(file: File): Promise<boolean> {
           if (input.disabled) return false;
           if (!file.type.startsWith('image/')) { status.textContent = '请选择图片文件'; input.value = ''; return false; }
-          input.disabled = true; key.disabled = true; status.setAttribute('aria-busy', 'true'); status.textContent = '上传中…';
+          input.disabled = true; key.disabled = true; setShine(status, true); status.textContent = '上传中…';
           try {
             if (ctx.get<string>('provider') === 'NodeImage' && !apiKey) { status.textContent = '正在获取 NodeImage 登录状态…'; await ensureKey(); status.textContent = '上传中…'; }
             const request = uploadRequest(ctx.get<string>('provider'), ctx.get<string>('base'), apiKey, file);
@@ -73,36 +74,39 @@ export const imageUpload: Feature = {
             else { ta!.setRangeText(markdown, ta!.selectionStart, ta!.selectionEnd, 'end'); ta!.dispatchEvent(new Event('input', { bubbles: true })); }
             status.textContent = ''; if (nodeImage) official.hidden = true; return true;
           } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; official.hidden = false; } if (!ctx.signal.aborted) status.textContent = ctx.get<string>('provider') === 'NodeImage' && error instanceof Error ? error.message : '上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持'; return false; }
-          finally { input.disabled = false; key.disabled = false; input.value = ''; status.removeAttribute('aria-busy'); }
+          finally { input.disabled = false; key.disabled = false; input.value = ''; setShine(status, false); }
         }
         bar.append(official); if (!nodeImage) bar.append(key); bar.append(input, status);
-        const toolbar = host.querySelector<HTMLElement>('.mde-toolbar');
         const imageSelector = '.toolbar-item.i-icon.i-icon-pic[title="图片"]';
         host.addEventListener('click', event => {
           if (!(event.target instanceof Element) || !event.target.closest(imageSelector)) return;
           event.preventDefault(); event.stopImmediatePropagation();
           if (!uploading) input.click();
         }, { signal: ctx.signal, capture: true });
-        if (!host.querySelector(imageSelector)) {
-          const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'nspp-upload-choose'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title);
-          const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
-          const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1'); icon.append(path);
-          choose.append(icon);
-          choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal });
-          if (toolbar) {
-            const emoji = Array.from(toolbar.querySelectorAll<HTMLElement>('.toolbar-item')).find(item => /表情|emoji|emotion|face|smile/i.test(`${item.title} ${item.getAttribute('aria-label') || ''} ${item.textContent || ''}`));
-            const right = toolbar.querySelector<HTMLElement>('.toolbar-item.right');
-            if (emoji) emoji.after(choose); else if (right) toolbar.insertBefore(choose, right); else toolbar.append(choose);
-          } else bar.prepend(choose);
-        }
-        if (toolbar) {
-          const right = toolbar.querySelector<HTMLElement>('.toolbar-item.right');
-          if (right) toolbar.insertBefore(bar, right); else toolbar.append(bar);
-        } else host.append(bar);
+        const choose = document.createElement('button'); choose.type = 'button'; choose.className = 'nspp-upload-choose'; choose.title = '上传图片'; choose.setAttribute('aria-label', choose.title);
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
+        const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M16 8h.1'); icon.append(path);
+        choose.append(icon);
+        choose.addEventListener('click', () => { if (!uploading) input.click(); }, { signal: ctx.signal });
+        // The site renders .mde-toolbar late and hides it on phones, so anchor to the always-present header row
+        // (内容/预览 tabs + 行号/工具栏/全屏 buttons). Re-run on DOM changes because Vue may re-render it.
+        const place = () => {
+          if (!host.isConnected) return;
+          const topButton = host.querySelector<HTMLElement>('.editor-top-button');
+          const top = topButton?.parentElement;
+          if (top && topButton) {
+            if (choose.parentElement !== top) top.insertBefore(choose, topButton);
+            if (bar.previousElementSibling !== top) top.after(bar);
+            return;
+          }
+          if (!choose.isConnected) bar.prepend(choose);
+          if (!bar.isConnected) host.append(bar);
+        };
+        place(); placements.push(place);
         bars.push(bar);
       });
     }
-    scan(); checkLogin(); const unwatch = ctx.watch(() => { const count = bars.length; scan(); if (bars.length > count) checkLogin(); });
-    return () => { unwatch(); apiKey = ''; bars.forEach(bar => bar.remove()); };
+    scan(); checkLogin(); const unwatch = ctx.watch(() => { const count = bars.length; placements.forEach(place => place()); scan(); if (bars.length > count) checkLogin(); });
+    return () => { unwatch(); apiKey = ''; bars.forEach(bar => bar.remove()); document.querySelectorAll('.nspp-upload-choose').forEach(button => button.remove()); };
   },
 };

@@ -142,7 +142,7 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
       const date = forumTime(item.created_at || '');
       if (date) { const stamp = node('time', '', date.text); stamp.dateTime = item.created_at!; stamp.title = date.full; heading.append(stamp); }
       const subjectLink = node('a', 'nspp-notice-subject', subject); subjectLink.href = noticeHref(item); subjectLink.target = '_blank'; subjectLink.rel = 'noopener noreferrer'; subjectLink.title = subject;
-      subjectLink.addEventListener('click', event => event.stopPropagation());
+      subjectLink.addEventListener('click', event => { event.stopPropagation(); void markRead(item).catch(() => {}); });
       const excerpt = node('span', 'nspp-notice-excerpt', preview ? (preview.available ? preview.snippet : '') : '正在加载回复…');
       excerpt.hidden = !!preview && !excerpt.textContent;
       if (!preview) { excerpt.classList.add('nspp-sweep-shine'); excerpt.setAttribute('aria-busy', 'true'); }
@@ -189,7 +189,7 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
     previewController.abort(); previewController = new AbortController();
     const requestSignal = AbortSignal.any([signal(), previewController.signal]);
     title.textContent = routes[kind].label;
-    original.href = noticeHref(item); original.hidden = false;
+    original.href = noticeHref(item); original.hidden = false; original.onclick = () => { void markRead(item).catch(() => {}); };
     const floor = noticeFloor(item);
     const summary = node('div', 'nspp-notice-summary');
     const postTitle = node('a', '', previews.get(item.id)?.title || item.post_title || item.title || `帖子 ${item.post_id}`); postTitle.href = original.href; postTitle.target = '_blank'; postTitle.rel = 'noopener noreferrer';
@@ -198,6 +198,8 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
     summary.append(heading, node('p', '', `${item.commenter_name || '用户'} ${kind === 'atMe' ? '@了你' : '回复了你的主题'}${floor === null ? '' : ` · #${floor}`}${date ? ` · ${date.full}` : ''}`));
     content.replaceChildren(summary);
     const body = node('div', 'nspp-notice-body nspp-sweep-shine', '正在加载回复内容…'); body.setAttribute('aria-busy', 'true'); content.append(body);
+    // Opening a notice marks it read right away, like the native list; a missing or deleted reply must not keep the dot lit.
+    const reading = markRead(item, requestSignal).then(() => true, () => false);
     try {
       const preview = await getPreview(item);
       if (!current() || requestSignal.aborted) return;
@@ -205,16 +207,24 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
       if (!preview.available) throw new Error('未找到对应回复，可能已删除或不可见，请打开原帖查看。');
       body.replaceChildren(preview.body.cloneNode(true));
       body.classList.remove('nspp-sweep-shine'); body.removeAttribute('aria-busy');
-      if (unread(item) && !document.hidden) {
-        await api(`/api/notification/${routes[kind].endpoint}/markViewed`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [routes[kind].field]: [item.id] }), signal: requestSignal });
-        if (!requestSignal.aborted) { item.viewed = true; notices.set(item.id, item); render(); onRead(); }
-      }
+      if (!await reading && !requestSignal.aborted) body.append(node('p', 'nspp-notice-hint', '内容已加载，已读状态同步失败'));
     } catch (error) {
       if (!current() || requestSignal.aborted) return;
       const message = error instanceof Error ? error.message : '内容加载失败';
-      if (body.getAttribute('aria-busy') === 'true') body.textContent = message;
-      else body.append(node('p', 'nspp-notice-hint', '内容已加载，已读状态同步失败'));
+      body.textContent = message;
     } finally { body.classList.remove('nspp-sweep-shine'); body.removeAttribute('aria-busy'); }
+  }
+  const marking = new Map<number, Promise<void>>();
+  function markRead(item: Notice, requestSignal = signal()): Promise<void> {
+    const kind = category;
+    if (!kind || !unread(item)) return Promise.resolve();
+    const pending = marking.get(item.id);
+    if (pending) return pending;
+    const promise = (async () => {
+      await api(`/api/notification/${routes[kind].endpoint}/markViewed`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [routes[kind].field]: [item.id] }), signal: requestSignal });
+      if (!requestSignal.aborted) { item.viewed = true; notices.set(item.id, item); render(); onRead(); }
+    })().finally(() => marking.delete(item.id));
+    marking.set(item.id, promise); return promise;
   }
   async function markAll() {
     if (!current()) return;

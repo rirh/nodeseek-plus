@@ -7,6 +7,7 @@ import { toolIcon } from '../lib/tool-icon';
 import { withTabLock } from '../lib/tab-lock';
 import type { Context, Feature } from '../core/types';
 import { currentUser } from './actions';
+import { createSheet } from '../views/sheet';
 
 type Post = { id: string; title: string; url: string };
 type Tracked = Post & { added: number; checked?: number; signal?: string };
@@ -38,7 +39,7 @@ const monitor: Feature = {
   },
   mount(ctx) {
     if (location.hostname !== 'www.nodeseek.com') return;
-    const panel = document.createElement('dialog'); panel.className = 'nspp-monitor'; panel.setAttribute('aria-label', '帖子监控');
+    const panel = createSheet('nspp-monitor', '帖子监控');
     const header = document.createElement('header');
     const title = document.createElement('h3'); title.textContent = '帖子监控'; header.append(title, control('关闭', () => panel.close(), ctx)); panel.append(header);
     const launch = control('帖子监控', () => { ctx.set(unreadKey, []); renderUnread(); panel.showModal(); }, ctx);
@@ -66,7 +67,7 @@ const monitor: Feature = {
     }
     reducedMotion.addEventListener('change', syncAnimation, { signal: ctx.signal });
     const stats = document.createElement('span'); stats.textContent = '0 轮 · 累计 0 帖 · 符合 0 · 不符合 0'; status.append(stats);
-    const output = document.createElement('div'); output.className = 'nspp-monitor-results'; panel.append(output);
+    const output = document.createElement('div'); output.className = 'nspp-monitor-results nspp-sheet-body'; panel.append(output);
     const user = currentUser()?.member_id; const trackKey = `tracked:${user}`;
     const unreadKey = `unread-posts:${user || 'guest'}`;
     const readUnread = () => (ctx.get<(Post & { found: number })[]>(unreadKey) || []).filter(post => match(post));
@@ -168,7 +169,7 @@ const monitor: Feature = {
     let keywordText = ctx.get<string | undefined>('match-keywords') ?? legacy.monitor?.keywords ?? '';
     ctx.set('match-keywords', keywordText);
     let { rules, errors } = compileMonitorRules(keywordText);
-    const editor = document.createElement('form'); editor.className = 'nspp-monitor-editor';
+    const editor = document.createElement('form'); editor.className = 'nspp-monitor-editor nspp-sheet-body';
     const label = document.createElement('label'); label.textContent = '监控正则';
     const input = document.createElement('textarea'); input.rows = 2; input.value = keywordText; input.placeholder = '每行一个正则，如 vmiss|搬瓦工 或 /香港.*年付/i';
     const help = document.createElement('a'); help.className = 'nspp-regex-help'; help.href = 'https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Regular_expressions'; help.target = '_blank'; help.rel = 'noopener noreferrer'; help.textContent = '?'; help.title = '正则怎么写？查看 MDN 文档（新标签页）'; help.setAttribute('aria-label', help.title);
@@ -176,7 +177,7 @@ const monitor: Feature = {
     const apply = control('更新', () => {}, ctx); apply.type = 'submit';
     const feedback = document.createElement('span'); feedback.setAttribute('role', 'status');
     const explanation = document.createElement('small'); explanation.textContent = '每行一个正则，任意命中RSS 标题即收录。默认忽略大小写；例如 vmiss|搬瓦工，或 /香港.*年付/i。更新会清空旧结果并重新检查。';
-    const configDialog = document.createElement('dialog'); configDialog.className = 'nspp-monitor nspp-monitor-config'; configDialog.setAttribute('aria-label', '监控配置');
+    const configDialog = createSheet('nspp-monitor nspp-monitor-config', '监控配置', { dismissible: false });
     const configHeader = document.createElement('header'); const configTitle = document.createElement('h3'); configTitle.textContent = '监控配置';
     configHeader.append(configTitle, control('关闭', () => configDialog.close(), ctx));
     const frequencyLabel = document.createElement('label'); frequencyLabel.textContent = '刷新间隔（秒）';

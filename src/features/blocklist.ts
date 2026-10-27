@@ -52,7 +52,8 @@ export const officialBlocklist: Feature = {
         if (anchor.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
         const id = authorId(anchor, location.origin);
         const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).find(candidate => !candidate.closest('.nspp-user-hover, .nspp-profile-dialog') && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector('img')?.alt.trim();
-        if (!id || id === String(ownId) || !name || buttons.has(anchor)) return;
+        if (!id || id === String(ownId) || !name || buttons.get(anchor)?.id === id) return;
+        const previous = buttons.get(anchor); if (previous) { previous.button.remove(); previous.release(); buttons.delete(anchor); }
         const button = document.createElement('button'); button.type = 'button'; button.className = 'nspp-block-toggle';
         const hover = userHover(anchor, ctx); (hover.element.querySelector('.nspp-user-hover-actions') || hover.element).append(button);
         buttons.set(anchor, { id, name, button, release: hover.release });

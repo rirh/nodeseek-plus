@@ -1,0 +1,172 @@
+#nspp-tools .nspp-tool-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; min-height: 30px; margin: 0; padding: 0; flex: none; border: 0; border-radius: 7px; background: transparent; box-shadow: none; }
+#nspp-tools .nspp-tool-icon:hover { background: #818b9818; }
+#nspp-tools [data-nspp-settings-launcher] { order: 10; margin-top: 3px; background: #818b980c; }
+#nspp-tools [data-nspp-settings-launcher] svg { width: 18px; height: 18px; }
+#nspp-tools [data-nspp-hot-launcher] { order: -1; background: linear-gradient(145deg, #fff5e8, #ffe8e8); box-shadow: inset 0 0 0 1px #f9731614; }
+#nspp-tools [data-nspp-hot-launcher]:hover { background: linear-gradient(145deg, #ffebd4, #ffdbdf); }
+#nspp-tools [data-nspp-hot-launcher] svg { width: 28px; height: 28px; filter: drop-shadow(0 0 3px #ff6a3280); }
+#nspp-tools [data-nspp-monitor-launcher] { order: -2; }
+/* Site fast-nav (top / parent / bottom) leads the toolbar; the native floating group is hidden. */
+html[data-nspp-fast-nav] #fast-nav-button-group { display: none !important; }
+#nspp-tools .nspp-fast-nav { order: -10; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 3px; padding-bottom: 4px; border-bottom: 1px solid var(--border-color, #d1d9e0); }
+#nspp-tools .nspp-fast-nav:not(:has(button:not([hidden]))) { display: none; }
+#nspp-tools .nspp-fast-nav svg { width: 20px; height: 20px; }
+#nspp-tools .nspp-fast-nav button { overflow: hidden; }
+#nspp-tools button[data-nspp-monitor-launcher][data-monitor-state="running"] { background: #2180440d; }
+.dark-layout #nspp-tools [data-nspp-hot-launcher] { background: linear-gradient(145deg, #493023, #45252f); box-shadow: inset 0 0 0 1px #ff965c18; }
+.dark-layout #nspp-tools [data-nspp-hot-launcher]:hover { background: linear-gradient(145deg, #5b3826, #592c39); }
+.dark-layout #nspp-tools button[data-nspp-monitor-launcher][data-monitor-state="running"] { background: #70cf9114; }
+
+@media (max-width: 700px), (hover: none) { #nspp-tools .nspp-tool-icon { width: 30px; height: 30px; } }
+
+/* Compact membership accents and structured registration details. */
+.nspp-user-badges .nspp-age, .nspp-profile-dialog .nspp-age { color: var(--nspp-age-color, #59636e); }
+.nspp-age[data-tone="new"] { --nspp-age-color: #cf3434; }
+.nspp-age[data-tone="recent"] { --nspp-age-color: #a66b08; }
+.nspp-age[data-tone="member"] { --nspp-age-color: #0969da; }
+.nspp-age[data-tone="longtime"] { --nspp-age-color: #218044; }
+.dark-layout .nspp-age[data-tone="new"] { --nspp-age-color: #ff8585; }
+.dark-layout .nspp-age[data-tone="recent"] { --nspp-age-color: #dfb653; }
+.dark-layout .nspp-age[data-tone="member"] { --nspp-age-color: #79b8ff; }
+.dark-layout .nspp-age[data-tone="longtime"] { --nspp-age-color: #70cf91; }
+.dark-layout .nspp-user-badges .nspp-age, .dark-layout .nspp-profile-dialog .nspp-age { color: var(--nspp-age-color, #9198a1); }
+.nspp-user-badges button.nspp-age { cursor: pointer; }
+.nspp-user-badges button.nspp-age:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-profile-dialog { width: min(320px, calc(100vw - 24px)); }
+.nspp-profile-dialog header { justify-content: space-between; padding: 10px 12px; }
+.nspp-profile-summary { display: flex; align-items: baseline; gap: 8px; padding: 4px 12px 10px; }
+.nspp-profile-summary strong { font-size: 22px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.nspp-profile-summary span { font-size: 11px; }
+.nspp-profile-dialog dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; padding: 10px 12px; border-top: 1px solid #818b9830; }
+.nspp-profile-dialog dt { opacity: .65; }
+.nspp-profile-dialog dd { margin: 0; font-variant-numeric: tabular-nums; }
+.nspp-profile-dialog > p { margin: 0; padding: 0 12px 12px; font-size: 11px; opacity: .75; }
+
+.post-title .nspp-readonly { display: inline-flex !important; flex: none; align-items: center; vertical-align: middle; margin-left: 5px !important; padding: 0 4px !important; border: 0 !important; border-radius: 3px; background: #cf343410 !important; color: #b52b32 !important; font: 500 10px/17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; box-shadow: none !important; }
+.post-title .nspp-pinned { width: 13px !important; height: 13px !important; flex: none; margin-left: 4px; padding: 0 !important; background: transparent !important; color: #768390 !important; border: 0 !important; border-radius: 0 !important; vertical-align: middle; }
+.post-title .nspp-pin-wrap { display: inline-flex; align-items: center; background: transparent !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+.dark-layout .post-title .nspp-readonly { color: #ff8585 !important; background: #ff858514 !important; }
+.dark-layout .post-title .nspp-pinned { color: #9198a1 !important; }
+.nspp-monitor { width: min(560px, calc(100vw - 24px)); max-height: 80dvh; padding: 0; border: 1px solid #818b9840; border-radius: 10px; background: #fff; color: #1f2328; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+.nspp-monitor[open] { display: flex; flex-direction: column; }
+.nspp-monitor * { box-sizing: border-box; }
+.nspp-monitor header, .nspp-monitor footer { display: flex; flex: none; align-items: center; gap: 8px; padding: 8px 12px; }
+.nspp-monitor header { border-bottom: 1px solid #818b9828; justify-content: space-between; }
+.nspp-monitor h3 { margin: 0; font-size: 14px; }
+.nspp-monitor button { padding: 3px 8px; min-height: 28px; border: 1px solid #818b9838; border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+.nspp-monitor button:hover { background: #818b9814; }
+.nspp-monitor button:disabled { opacity: 1; cursor: wait; }
+.nspp-monitor > p { margin: 0; padding: 6px 12px; font-size: 11px; opacity: .65; }
+.nspp-monitor-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.nspp-monitor-results:empty { display: none; }
+.nspp-monitor-results { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 0 12px 8px; }
+.nspp-monitor-results section + section { border-top: 1px solid #818b9828; margin-top: 8px; padding-top: 4px; }
+.nspp-monitor h4 { display: flex; align-items: center; gap: 6px; margin: 5px 0; font-size: 11px; color: #768390; }
+.nspp-monitor h4 small { padding: 0 5px; border-radius: 8px; background: #818b9814; font-size: 10px; }
+.nspp-monitor ul { list-style: none; margin: 0; padding: 0; }
+.nspp-monitor li { margin: 0; padding: 4px 0; }
+.nspp-monitor a { color: inherit; text-decoration: none; }
+.nspp-monitor a:hover { color: #0969da; text-decoration: underline; }
+.nspp-monitor section > p { margin: 6px 0; font-size: 11px; opacity: .55; }
+.nspp-monitor footer { border-top: 1px solid #818b9828; flex-wrap: wrap; }
+.nspp-monitor footer span { flex: 1; font-size: 10px; opacity: .6; }
+.nspp-monitor-tracked { padding: 0 12px 8px; overflow: auto; max-height: 25dvh; flex-shrink: 0; }
+.nspp-monitor-tracked[hidden] { display: none; }
+.nspp-monitor-tracked > div { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.nspp-monitor-tracked a { flex: 1; min-width: 0; }
+#nspp-tools button[data-unread="true"] { border-color: #cf3434; color: #cf3434; background: #fff0f0; }
+.dark-layout #nspp-tools button[data-unread="true"] { border-color: #ff8585; color: #ff8585; background: #3b2525; }
+.dark-layout .nspp-monitor { background: #161b22; color: #e6edf3; }
+
+[data-nspp-monitor-match="0"] { background-color: #fff2c9 !important; }
+[data-nspp-monitor-match="1"] { background-color: #dff3e7 !important; }
+[data-nspp-monitor-match="2"] { background-color: #e2efff !important; }
+[data-nspp-monitor-match="3"] { background-color: #ffe8dc !important; }
+.dark-layout [data-nspp-monitor-match="0"] { background-color: #3c3420 !important; }
+.dark-layout [data-nspp-monitor-match="1"] { background-color: #203a2c !important; }
+.dark-layout [data-nspp-monitor-match="2"] { background-color: #23344c !important; }
+.dark-layout [data-nspp-monitor-match="3"] { background-color: #432f26 !important; }
+
+.nspp-monitor header, .nspp-monitor footer, .nspp-monitor-results section + section { border: 0; }
+.nspp-monitor-results section + section { margin-top: 12px; }
+.nspp-monitor footer { background: #818b980a; }
+
+#nspp-tools button[data-monitor-state] { position: relative; }
+.nspp-monitor-badge { position: absolute; top: -6px; right: -6px; min-width: 16px; padding: 0 3px; box-sizing: border-box; border: 1px solid var(--bg-color, Canvas); border-radius: 999px; background: #cf3434; color: #fff; text-align: center; font: 600 9px/14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; pointer-events: none; }
+.nspp-monitor-badge[hidden] { display: none; }
+#nspp-tools button[data-monitor-state="running"] { color: #218044; border-color: #218044; background: var(--bg-color, Canvas); }
+.dark-layout #nspp-tools button[data-monitor-state="running"] { color: #70cf91; }
+.nspp-monitor-editor { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; padding: 4px 12px 8px; flex: none; }
+.nspp-monitor-editor label { flex: 1; min-width: 180px; font-size: 11px; color: inherit; }
+.nspp-monitor-editor textarea { display: block; width: 100%; margin-top: 4px; padding: 6px 8px; border: 0; border-radius: 6px; background: #818b9810; color: inherit; font: inherit; resize: vertical; max-height: 18dvh; }
+.nspp-monitor-editor > span { flex-basis: 100%; font-size: 10px; opacity: .65; }
+.nspp-monitor-editor > span:empty { display: none; }
+@media (prefers-reduced-motion: reduce) { .nspp-monitor[data-checking="true"] > p::before { animation: none; } }
+
+.nspp-monitor-spinner { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid #0969da30; border-top-color: #0969da; border-radius: 50%; vertical-align: -2px; }
+.nspp-monitor-spinner[hidden] { display: none; }
+.nspp-regex-help { display: inline-flex; justify-content: center; align-items: center; width: 16px; height: 16px; margin-left: 6px; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; opacity: .65; text-decoration: none !important; }
+.nspp-regex-help:hover { opacity: 1; }
+.nspp-monitor button, .nspp-footprints-dialog button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.nspp-monitor button svg, .nspp-footprints-dialog button svg { width: 13px; height: 13px; flex: none; }
+.nspp-monitor-editor > small { flex-basis: 100%; font-size: 10px; line-height: 1.6; opacity: .65; }
+.nspp-monitor-editor textarea { min-height: 56px; }
+.nspp-footprints-dialog { width: min(600px, calc(100vw - 24px)); padding: 8px; border-radius: 10px; }
+.nspp-footprints-dialog header { padding: 4px 4px 10px; }
+.nspp-footprints-toolbar { display: flex; align-items: center; gap: 6px; padding: 4px; flex-wrap: wrap; }
+.nspp-footprints-toolbar [role="status"] { margin-left: auto; font-size: 11px; opacity: .6; }
+.nspp-footprints-dialog > div:last-child { padding: 8px 4px; }
+.nspp-footprints-dialog a { color: inherit; text-decoration: none; padding: 4px 6px; border-radius: 4px; }
+.nspp-footprints-dialog a:hover { background: #818b9810; }
+.nspp-footprints-list { max-height: min(55dvh, 400px); overflow: auto; display: grid; gap: 4px; }
+.nspp-footprints-list > a { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.nspp-footprint-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.nspp-footprints-list small { flex: none; font-size: 11px; opacity: .6; white-space: nowrap; }
+.nspp-monitor > header h3 { margin-right: auto; }
+.nspp-monitor-config { width: min(420px, calc(100vw - 24px)); }
+.nspp-monitor-config .nspp-monitor-editor { display: flex; flex-direction: column; align-items: stretch; padding: 8px 14px 14px; gap: 8px; overflow: auto; }
+.nspp-monitor-config .nspp-monitor-editor label { flex: none; min-width: 0; }
+.nspp-monitor-config .nspp-monitor-editor textarea { min-height: 88px; }
+.nspp-monitor-config input { display: block; margin-top: 5px; width: 100%; padding: 7px 8px; font: inherit; color: inherit; border: 0; border-radius: 6px; background: #818b9810; }
+.nspp-monitor-config .nspp-monitor-editor > small, .nspp-monitor-config .nspp-monitor-editor > span { flex-basis: auto; }
+.nspp-monitor-config .nspp-monitor-editor > button { align-self: flex-end; min-width: 72px; }
+.md-editor .nspp-upload-status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px 10px; border: 0; border-bottom: 1px solid #818b9820; background: transparent; font-size: 11px; line-height: 24px; }
+/* Collapse the status row while it has nothing to show (picker lives in the header row). */
+.md-editor .nspp-upload-status:not(:has(> :is(a:not([hidden]), input[type="password"], [role="status"]:not(:empty), .nspp-upload-choose))) { display: none; }
+.nspp-upload-status [hidden] { display: none !important; }
+.nspp-upload-status [role="status"] { font-size: 11px; opacity: .7; overflow-wrap: anywhere; }
+.nspp-upload-status a { color: inherit; font-size: 11px; text-decoration: none; }
+.nspp-upload-status a:hover { text-decoration: underline; }
+.nspp-upload-status button { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 4px; }
+.nspp-upload-status button svg { width: 16px; height: 16px; }
+.md-editor .nspp-upload-choose { display: inline-flex; align-items: center; justify-content: center; flex: none; align-self: center; width: 28px; height: 28px; min-height: 28px; margin: 0 2px; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; opacity: 1; box-shadow: none; cursor: pointer; }
+.md-editor .nspp-upload-choose svg { width: 16px; height: 16px; }
+.md-editor .nspp-upload-choose:hover { background: #818b9818; }
+.nspp-upload-status [role="status"]:empty { display: none; }
+.nspp-upload-choose svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.md-editor .nspp-upload-status { max-width: 100%; min-width: 0; }
+@media (max-width: 700px), (hover: none) {
+  .md-editor .mde-toolbar { display: flex !important; flex-wrap: wrap; align-items: center; height: auto !important; min-height: 40px; padding-right: 4px; overflow: visible; }
+  .md-editor .mde-toolbar > * { flex: 0 0 auto; }
+  .md-editor .mde-toolbar .toolbar-item.right { margin-left: auto; }
+}
+
+.nspp-ai-compose { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; align-items: start; }
+.nspp-ai-compose textarea { flex: 1; min-width: 180px; color: inherit; background: transparent; border: 1px solid #8885; border-radius: 6px; padding: 6px; }
+.nspp-ai-compose small { width: 100%; opacity: .7; }
+
+.nspp-original-notification { display: none !important; }
+.nspp-notification-icon { width: 1em; height: 1em; flex: none; vertical-align: -.125em; }
+.nspp-ecg-shine { display: none; }
+#nspp-tools button[data-monitor-state="running"] .nspp-ecg-shine { display: block; stroke: #8ce9aa; stroke-dasharray: 18 118; animation: nspp-ecg-scan 1.8s linear infinite; }
+@keyframes nspp-ecg-scan { from { stroke-dashoffset: 18; } to { stroke-dashoffset: -118; } }
+@media (prefers-reduced-motion: reduce) { #nspp-tools button[data-monitor-state="running"] .nspp-ecg-shine { display: none; animation: none; } }
+
+
+
+.user-stat .stat-block:has(> .nspp-notification-row) > :has(> .nspp-original-notification:only-child) { display: none; }
+
+
+
+
+.nspp-list-actions[hidden] { display: none !important; }

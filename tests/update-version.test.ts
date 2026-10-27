@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { isNewerVersion, readUpdateVersion, UPDATE_META_URL, UPDATE_URL } from '../src/lib/update-version.ts';
 
 test('update metadata accepts userscript headers and rejects errors or script-body version strings', () => {
-  const header = '// ==UserScript==\r\n// @name NodeSeek++\r\n// @version 26.914.1121\r\n// ==/UserScript==';
+  const header = '// ==UserScript==\r\n// @name NodeSeek++\r\n// @namespace nodeseek-plus-plus\r\n// @version 26.914.1121\r\n// ==/UserScript==';
   assert.equal(readUpdateVersion(header), '26.914.1121');
+  assert.equal(readUpdateVersion(header + '\nthrow Error("never executed")'), '26.914.1121');
+  for (const source of [header.replace('nodeseek-plus-plus', 'other-script'), header.replace(/\/\/ @namespace.*\r\n/, '')]) {
+    assert.throws(() => readUpdateVersion(source), /标识不匹配/);
+  }
   for (const source of ['<html>Service unavailable</html>', '// @version 99.999.9999', '// ==UserScript==\n// ==/UserScript==\n// @version 99.999.9999']) {
     assert.throws(() => readUpdateVersion(source), /有效版本/);
   }

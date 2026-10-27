@@ -4,6 +4,7 @@ import { withTabLock } from '../lib/tab-lock';
 import { unsafeWindow } from '../lib/userscript';
 import { imageUpload } from './actions-upload';
 import type { Context, Feature } from '../core/types';
+import { whenReady } from '../core/when-ready';
 
 type Editor = { getValue(): string };
 export function currentUser() {
@@ -23,7 +24,7 @@ const attendance: Feature = {
     const key = `day:${user.member_id}`;
     const day = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date());
     const control = button('签到', () => { void run(); }, ctx);
-    control.className = 'nspp-action nspp-tool-icon';
+    control.className = 'nspp-action nspp-tool-icon'; control.dataset.nsppAttendance = '';
     const renderControl = (label = '签到') => { control.replaceChildren(toolIcon('attendance')); control.title = label; control.setAttribute('aria-label', label); };
     renderControl(); (document.querySelector('#nspp-tools') || document.body).append(control);
     const initialDay = day();
@@ -54,7 +55,7 @@ const attendance: Feature = {
     };
     async function run() {
       if (control.disabled || ctx.signal.aborted) return;
-      if (known()) { complete(false); return; }
+      if (known()) { complete(false); ctx.notify('今日已签到'); return; }
       animation?.kill();
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.fromTo(control, { scale: .94 }, { scale: 1, duration: .2, ease: 'power2.out' });
       control.disabled = true; renderControl('签到中…'); control.setAttribute('aria-busy', 'true');
@@ -78,11 +79,7 @@ const attendance: Feature = {
     tick();
     return () => { stop(); clearInterval(rollover); animation?.kill(); gsap.killTweensOf(control); control.remove(); };
     };
-    let cleanup: (() => void) | undefined;
-    const start = () => { if (!cleanup && !ctx.signal.aborted) cleanup = initialize(); };
-    const stopReady = ctx.watch(start);
-    const ready = setInterval(start, 1000);
-    return () => { stopReady(); clearInterval(ready); cleanup?.(); };
+    return whenReady(ctx, initialize);
   },
 };
 const compose: Feature = {

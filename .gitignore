@@ -2,3 +2,4 @@ node_modules/
 .vite/
 *.tsbuildinfo
 dist-stage/
+.pnpm-store/

@@ -46,3 +46,14 @@ export function openImagePreview(content: HTMLElement, image: HTMLImageElement, 
   viewer.show();
   return close;
 }
+
+/** Images wrapped in a link to a page (banners, "点击进入" buttons) navigate instead of opening the preview. */
+export function linksElsewhere(image: HTMLImageElement): boolean {
+  const href = image.closest<HTMLAnchorElement>('a[href]')?.href;
+  if (!href || /^javascript:/i.test(href)) return false;
+  try {
+    const target = new URL(href, location.href);
+    if (target.href === new URL(image.currentSrc || image.src, location.href).href) return false;
+    return !/\.(?:avif|bmp|gif|jpe?g|png|svg|webp)$/i.test(target.pathname);
+  } catch { return false; }
+}

@@ -6,10 +6,10 @@
 
 | 入口 | 地址 |
 | --- | --- |
-| 安装 / 更新（推荐） | [点击安装 NodeSeek++](https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js) |
-| Greasy Fork | [脚本介绍与版本记录](https://greasyfork.org/zh-CN/scripts/595488) |
+| 安装 / 更新（推荐） | [点击安装 NodeSeek++](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js) |
 | GitHub | [rirh/nodeseek-plus](https://github.com/rirh/nodeseek-plus) |
 | GitHub 分发文件 | [完整 userscript](https://github.com/rirh/nodeseek-plus/blob/main/dist/nodeseek-plus-plus.user.js) |
+| Greasy Fork（备用） | [脚本介绍与版本记录](https://greasyfork.org/zh-CN/scripts/595488) |
 | 问题反馈 | [GitHub Issues](https://github.com/rirh/nodeseek-plus/issues) |
 
 1. 在浏览器中安装 [Tampermonkey](https://www.tampermonkey.net/) 等用户脚本管理器。
@@ -25,11 +25,11 @@
 
 **设置内更新：** 打开设置，点击顶部或「关于」中的“检查更新” → 发现新版后点击“前往更新” → 在脚本管理器中确认更新 → 刷新论坛页面。
 
-**手动更新：** 重新打开 [安装 / 更新链接](https://update.greasyfork.org/scripts/595488/NodeSeek%2B%2B.user.js)，在脚本管理器中确认覆盖更新，再刷新论坛。无需卸载旧版，以免丢失脚本管理器中的配置。
+**手动更新：** 重新打开 [安装 / 更新链接](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js)，在脚本管理器中确认覆盖更新，再刷新论坛。无需卸载旧版，以免丢失脚本管理器中的配置。
 
 正式版也会自动检查更新：页面打开约 30 秒后检查，之后每 6 小时检查一次；发现新版本通过弹窗提醒，同一版本 24 小时内不重复提醒。只有论坛页面保持打开时，脚本的后台检查才会运行。
 
-GitHub 分发文件可能比油叉同步更早；普通用户建议使用上方油叉安装链接。维护者的 `make deploy` 发布流程见本文末尾。
+默认安装与更新均使用 GitHub 分发文件，发布后即可获取最新版本；油叉通过 Webhook 异步同步，可能稍有延迟，仅作备用。维护者的 `make deploy` 发布流程见本文末尾。
 
 ## 主要功能
 
@@ -180,7 +180,7 @@ pnpm build --mode stage
 
 ### 一键发布与油叉同步
 
-设置顶部版本号旁提供“检查更新”。正式版会在页面打开约 30 秒后检查油叉版本，之后每 6 小时检查一次；后台失败不打扰，同一新版本 24 小时内只提醒一次。后台发现更新时会等页面可见且没有打开弹窗，再显示响应式更新提示；“前往更新”打开油叉安装页，“稍后提醒”保留当前版本。检查只读取 `.meta.js` 版本信息，不下载执行远程代码。开发版与 Stage 版不自动检查更新。
+设置顶部版本号旁提供“检查更新”。正式版会在页面打开约 30 秒后检查 GitHub 上的版本，之后每 6 小时检查一次；后台失败不打扰，同一新版本 24 小时内只提醒一次。后台发现更新时会等页面可见且没有打开弹窗，再显示响应式更新提示；“前往更新”打开 GitHub 安装链接，“稍后提醒”保留当前版本。检查只读取 `.meta.js` 版本信息，不下载执行远程代码。开发版与 Stage 版不自动检查更新。
 
 直接执行，无需提前手动提交源码：
 

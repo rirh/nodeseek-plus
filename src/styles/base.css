@@ -1,0 +1,61 @@
+#nspp-tools { position: fixed; right: 72px; bottom: 16px; z-index: 999; display: flex; flex-direction: column; align-items: center; gap: 2px; box-sizing: border-box; width: 44px; padding: 6px; max-height: 55dvh; overflow-y: auto; border: 1px solid var(--border-color, #d1d9e0); border-radius: 12px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 4px 16px #0000000d; isolation: isolate; }
+#nspp-tools:not(:has(button:not([hidden]))) { display: none; }
+#nspp-tools { color-scheme: light; }
+.dark-layout #nspp-tools { --bg-color: #262626; --text-color: #dedede; --border-color: #454545; color-scheme: dark; }
+html[data-nspp-settings-open] #nspp-tools, html[data-nspp-settings-open] [data-nspp-ai-launcher] { display: none !important; }
+html[data-nspp-background] #nspp-tools *, html[data-nspp-background] .nspp-user-hover * { animation-play-state: paused !important; }
+@media (max-width: 700px), (hover: none) {
+  .nspp-user-hover:not(.nspp-user-hover-inline) { display: none !important; }
+  #nspp-tools { right: auto; left: max(8px, env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); max-height: 36dvh; width: 44px; max-width: 44px; padding: 6px; gap: 2px; }
+  #nspp-tools .nspp-tool-icon { width: 30px; height: 30px; }
+  body:has(.nspp-messages-container[data-nspp-message-view='new']) #nspp-tools { display: none !important; }
+}
+.discussion-wrapper .discussion-item.nspp-discussion-row > a:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.discussion-wrapper .discussion-item.nspp-discussion-row > :not(a:first-child) { flex: none; margin-right: 0; }
+.discussion-wrapper .nspp-discussion-row > .nspp-discussion-stats { display: inline-flex; flex: none; gap: 10px; margin: 0 0 0 auto; padding-left: 12px; color: #ccc; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nspp-discussion-stats[hidden], .nspp-discussion-stats > span[hidden] { display: none !important; }
+.nspp-discussion-stats > span { display: inline-flex; align-items: center; gap: 4px; }
+.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon { width: 14px; height: 14px; color: currentColor; flex: none; }
+.discussion-wrapper .discussion-item .nspp-discussion-stats .iconpark-icon:hover { transform: none; }
+#nspp-tools button, [data-nspp-resolve], .nspp-action { font: inherit; font-size: .8rem; padding: .35rem .6rem; border: 1px solid var(--border-color, #929a9380); border-radius: .4rem; color: var(--text-color, inherit); background: var(--bg-color, Canvas); cursor: pointer; }
+#nspp-tools a, [data-nspp-footprints] a { text-underline-offset: .2em; }
+#nspp-tools a:hover, [data-nspp-footprints] a:hover { text-decoration: underline; }
+#nspp-tools button:disabled, .nspp-compose button:disabled { opacity: 1; cursor: wait; }
+#nspp-tools :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { [class*="nspp-"] { scroll-behavior: auto !important; } }
+.nspp-monitor { width: min(42rem, 92vw); max-height: 85dvh; overflow: auto; padding: 1rem; border: 1px solid var(--border-color, #929a9380); border-radius: .75rem; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); }
+.nspp-monitor::backdrop { background: #0006; }
+.nspp-monitor ul { padding-left: 1.25rem; }
+.nspp-monitor li { margin: .4rem 0; overflow-wrap: anywhere; }
+.nspp-monitor a { text-underline-offset: .2em; }
+.nspp-monitor a:hover { text-decoration: underline; }
+.nspp-block-controls { display: inline-flex; flex-wrap: wrap; gap: .3rem; margin-left: .4rem; font-size: .75rem; }
+.nspp-user-badges { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin-inline-start: 4px; vertical-align: baseline; font: 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nspp-user-badges > span { padding: 0; border: 0; background: transparent; white-space: nowrap; }
+.nspp-level { color: var(--nspp-badge-color, #59636e); font-weight: 600; }
+.nspp-age { color: #59636e; cursor: help; }
+.nspp-user-badges button { font: inherit; color: inherit; padding: 0; min-height: 0; border: 0; border-radius: 2px; background: transparent; box-shadow: none; cursor: pointer; }
+.nspp-user-badges .nspp-trust { color: var(--nspp-badge-color, #59636e); font-weight: 600; }
+.nspp-user-badges .nspp-trust:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-user-badges button:focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.nspp-level[data-level="0"] { --nspp-badge-color: #66717e; }
+.nspp-level[data-level="2"] { --nspp-badge-color: #0969da; }
+.nspp-level[data-level="3"] { --nspp-badge-color: #087f8c; }
+.nspp-level[data-level="4"] { --nspp-badge-color: #218044; }
+.nspp-level[data-level="5"] { --nspp-badge-color: #a66b08; }
+.dark-layout .nspp-level, .dark-layout .nspp-user-badges .nspp-trust { color: var(--nspp-badge-color, #9198a1); }
+.dark-layout .nspp-age { color: #9198a1; }
+.dark-layout .nspp-level[data-level="0"] { --nspp-badge-color: #a3adb8; }
+.dark-layout .nspp-level[data-level="2"] { --nspp-badge-color: #79b8ff; }
+.dark-layout .nspp-level[data-level="3"] { --nspp-badge-color: #56c8ce; }
+.dark-layout .nspp-level[data-level="4"] { --nspp-badge-color: #70cf91; }
+.dark-layout .nspp-level[data-level="5"] { --nspp-badge-color: #dfb653; }
+.nspp-level[data-level="1"], .nspp-trust[data-tier="danger"] { --nspp-badge-color: #cf3434; }
+.nspp-trust[data-tier="warning"] { --nspp-badge-color: #a66b08; }
+.nspp-trust[data-tier="success"] { --nspp-badge-color: #218044; }
+.dark-layout .nspp-level[data-level="1"], .dark-layout .nspp-trust[data-tier="danger"] { --nspp-badge-color: #ff8585; }
+.dark-layout .nspp-trust[data-tier="warning"] { --nspp-badge-color: #dfb653; }
+.dark-layout .nspp-trust[data-tier="success"] { --nspp-badge-color: #70cf91; }
+.nspp-user-badges .nspp-trust[data-tier="perfect"] { --nspp-badge-color: #ffe66d; background: #b82025; padding: 0 4px; border-radius: 3px; }
+.nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #916008; background: #fff3cd; box-shadow: inset 0 0 0 1px #dfba6266; padding: 0 4px; border-radius: 3px; }
+.dark-layout .nspp-user-badges .nspp-level[data-level="6"] { --nspp-badge-color: #f0ce78; background: #3c321c; box-shadow: inset 0 0 0 1px #dfba6255; }

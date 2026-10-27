@@ -1,0 +1,13 @@
+/* Shared bottom sheet for every NodeSeek++ panel on narrow or touch screens (see sheet.ts). */
+@media (max-width: 700px), (hover: none) {
+  dialog.nspp-sheet { position: fixed; inset: auto 0 0; box-sizing: border-box; width: 100%; min-width: 0; max-width: none; height: auto; max-height: calc(100dvh - max(24px, env(safe-area-inset-top))); margin: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid #818b9830; border-radius: 14px 14px 0 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 -8px 32px #0003; }
+  dialog.nspp-sheet[open] { display: flex; flex-direction: column; }
+  dialog.nspp-sheet.nspp-sheet-tall { height: min(88dvh, 760px); }
+  dialog.nspp-sheet::before { content: ""; flex: none; align-self: center; width: 36px; height: 4px; margin: 6px 0 2px; border-radius: 2px; background: #818b9860; }
+  dialog.nspp-sheet::backdrop { background: #0006; }
+  dialog.nspp-sheet > * { flex: none; max-width: 100%; }
+  dialog.nspp-sheet > .nspp-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  dialog.nspp-sheet > footer { margin-top: auto; }
+  dialog.nspp-sheet :is(button, input, select) { min-height: 36px; }
+  dialog.nspp-sheet :is(input, textarea, select) { font-size: 16px; }
+}

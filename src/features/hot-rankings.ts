@@ -1,7 +1,8 @@
-import { GM_xmlhttpRequest } from '$';
+import { gmRequest } from '../lib/userscript';
 import type { Feature } from '../core/types';
 import { toolIcon } from '../lib/tool-icon';
 import burningFlame from '../assets/hot-flame.svg?raw';
+import { createSheet } from '../views/sheet';
 
 const rankings = { hot: '实时热榜', daily: '日榜', weekly: '周榜' };
 type Ranking = keyof typeof rankings;
@@ -27,7 +28,7 @@ function requestRanking(kind: Ranking, signal: AbortSignal): Promise<Snapshot> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('已取消')); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
-    const request = GM_xmlhttpRequest({
+    const request = gmRequest({
       method: 'GET', url: `https://api.bimg.eu.org/${kind}.json?t=${Date.now()}`, anonymous: true, timeout: 20000,
       headers: { Accept: 'application/json' },
       onload: response => {
@@ -55,7 +56,7 @@ export const hotRankings: Feature = {
     const errors = new Set<Ranking>();
     const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.title = 'NodeSeek 热榜'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppHotLauncher = '';
     launch.append(document.importNode(new DOMParser().parseFromString(burningFlame, 'image/svg+xml').documentElement, true));
-    const panel = document.createElement('dialog'); panel.className = 'nspp-monitor nspp-hot-rankings'; panel.setAttribute('aria-label', 'NodeSeek 热榜');
+    const panel = createSheet('nspp-monitor nspp-hot-rankings', 'NodeSeek 热榜', { tall: true });
     const head = document.createElement('div'); head.className = 'nspp-hot-header'; const title = document.createElement('h2'); title.textContent = 'NodeSeek 热榜';
     const close = document.createElement('button'); close.type = 'button'; close.className = 'nspp-hot-close'; close.title = '关闭热榜'; close.setAttribute('aria-label', close.title); close.append(toolIcon('close')); close.addEventListener('click', () => panel.close(), { signal: ctx.signal }); head.append(title, close);
     const toolbar = document.createElement('nav'); toolbar.setAttribute('aria-label', '热榜类型');
@@ -65,7 +66,7 @@ export const hotRankings: Feature = {
     });
     const refresh = document.createElement('button'); refresh.type = 'button'; refresh.textContent = '刷新'; refresh.addEventListener('click', () => { void load(true); }, { signal: ctx.signal }); toolbar.append(refresh);
     const status = document.createElement('p'); status.setAttribute('role', 'status');
-    const list = document.createElement('ol');
+    const list = document.createElement('ol'); list.className = 'nspp-sheet-body';
     head.replaceChildren(title, toolbar, close); panel.append(head, status, list); document.body.append(panel);
     const tools = document.getElementById('nspp-tools') || document.body;
     const monitor = tools.querySelector('[data-nspp-monitor-launcher]');
@@ -86,7 +87,7 @@ export const hotRankings: Feature = {
         for (let index = 0; index < 8; index++) {
           const row = document.createElement('li'); row.className = 'nspp-hot-skeleton'; row.setAttribute('aria-hidden', 'true');
           for (const part of ['rank', 'title', 'heat']) {
-            const block = document.createElement('span'); block.className = `nspp-hot-skeleton-${part} nspp-sweep-shine`; row.append(block);
+            const block = document.createElement('span'); block.className = `nspp-hot-skeleton-${part} nspp-skeleton-shine`; row.append(block);
           }
           list.append(row);
         }

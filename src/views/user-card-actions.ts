@@ -1,5 +1,7 @@
 import { unsafeWindow } from '../lib/userscript';
 import { request } from '../lib/request';
+import { createSheet } from './sheet';
+import { setShine } from './sweep-shine';
 
 // API contracts: https://github.com/5151561/nodyssey (FollowRepository, StardustRepository, NodeSeekSite).
 
@@ -67,13 +69,13 @@ export function userCardActions(id: string, name: () => string, notify: (message
     const account = ownId();
     if (!account) { notify('请先登录'); return; }
     dialog?.remove();
-    const panel = document.createElement('dialog'); dialog = panel; panel.className = 'nspp-history nspp-user-transfer'; panel.setAttribute('aria-label', '星辰转账');
+    const panel = createSheet('nspp-history nspp-user-transfer', '星辰转账', { dismissible: false }); dialog = panel;
     const title = document.createElement('h2'); title.textContent = '星辰转账';
     const recipient = document.createElement('p'); recipient.textContent = `${name()} · UID ${id}`;
     const form = document.createElement('form');
     const label = document.createElement('label'); label.textContent = '星辰数量';
     const amount = document.createElement('input'); amount.type = 'number'; amount.min = '1'; amount.step = '1'; amount.required = true; amount.inputMode = 'numeric'; label.append(amount);
-    const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = '正在确认收款人…';
+    const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = '正在确认收款人…'; setShine(status, true);
     const actions = document.createElement('div'); actions.className = 'nspp-transfer-actions';
     const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => panel.close(), { signal });
     const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = '确认转账'; submit.disabled = true;
@@ -85,16 +87,16 @@ export function userCardActions(id: string, name: () => string, notify: (message
       const value = Number(amount.value);
       if (!ready || sending || !Number.isSafeInteger(value) || value <= 0 || !form.reportValidity()) return;
       if (ownId() !== account) { status.textContent = '登录状态已变化，请重新打开转账'; submit.disabled = true; return; }
-      sending = true; submit.disabled = true; amount.disabled = true; status.textContent = '转账中…';
+      sending = true; submit.disabled = true; amount.disabled = true; status.textContent = '转账中…'; setShine(status, true);
       try {
         const result = await request<{ success?: boolean; message?: string }>('/api/stardust/send', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member_id: Number(id), diff: value, ref_id: ref, onetime: true }), signal,
         });
         if (result?.success === true) { panel.close(); notify(`已转账 ${value} 星辰`); }
-        else if (result?.success === false) { status.textContent = result.message || '转账未成功'; sending = false; submit.disabled = false; amount.disabled = false; }
+        else if (result?.success === false) { setShine(status, false); status.textContent = result.message || '转账未成功'; sending = false; submit.disabled = false; amount.disabled = false; }
         else throw new Error('结果未确认');
       } catch {
-        status.textContent = '结果未确认，请先核对星辰明细，勿重复转账。';
+        setShine(status, false); status.textContent = '结果未确认，请先核对星辰明细，勿重复转账。';
         const ledger = document.createElement('a'); ledger.href = `/stardust/list?member_id=${account}`; ledger.textContent = '查看明细'; ledger.target = '_blank'; ledger.rel = 'noopener'; status.append(' ', ledger);
       }
     }, { signal });
@@ -104,8 +106,8 @@ export function userCardActions(id: string, name: () => string, notify: (message
       });
       if (result?.success !== true || !result.receiver_name) throw new Error(result?.message || '无法确认收款人');
       if (!panel.open || signal.aborted) return;
-      recipient.textContent = `${result.receiver_name} · UID ${id}`; status.textContent = ''; ready = true; submit.disabled = false; amount.focus();
-    } catch (error) { status.textContent = error instanceof Error ? error.message : '无法确认收款人'; }
+      recipient.textContent = `${result.receiver_name} · UID ${id}`; setShine(status, false); status.textContent = ''; ready = true; submit.disabled = false; amount.focus();
+    } catch (error) { setShine(status, false); status.textContent = error instanceof Error ? error.message : '无法确认收款人'; }
   }, { signal });
   return { element, refresh };
 }

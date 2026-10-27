@@ -11,7 +11,7 @@ export function userHoverEnabled(): boolean {
 
 export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], .nspp-messages-bubble a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
-const cards = new WeakMap<HTMLAnchorElement, { element: HTMLElement; users: number; dispose(): void }>();
+const cards = new WeakMap<HTMLAnchorElement, { href: string; element: HTMLElement; users: number; dispose(): void }>();
 
 export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
   if (anchor.closest('.hover-user-card')) return false;
@@ -19,9 +19,20 @@ export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
   return url.origin === location.origin && /^\/space\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash;
 }
 
+// /fans lists other users as native public .user-card; their avatar anchor gets our card rendered in place instead of a popup.
+function listCard(anchor: HTMLAnchorElement) {
+  if (location.pathname !== '/fans' || !anchor.parentElement?.matches('.user-head')) return undefined;
+  const card = anchor.closest<HTMLElement>('.user-card:not(.hover-user-card)');
+  return card && !card.querySelector('a[href^="/notification"]') ? card : undefined;
+}
+
 export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
   let entry = cards.get(anchor);
+  // Vue may reuse the anchor for another user; holders of the old card release it on their own.
+  if (entry && entry.href !== anchor.href) { cards.delete(anchor); entry = undefined; }
   if (!entry) {
+    const href = anchor.href;
+    const replace = listCard(anchor);
     const title = anchor.getAttribute('title'); if (userHoverEnabled()) anchor.removeAttribute('title');
     const element = document.createElement('section'); element.className = 'nspp-user-hover'; element.hidden = true;
     const heading = document.createElement('a'); heading.href = anchor.href; heading.textContent = anchor.textContent?.trim() || anchor.querySelector('img')?.alt || '用户资料'; heading.className = 'nspp-user-hover-name';
@@ -52,39 +63,51 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
     const actions = id ? userCardActions(id, () => heading.textContent || '', ctx.notify, controller.signal) : undefined;
     avatar.addEventListener('load', () => { avatar.hidden = false; mark.hidden = true; });
     avatar.addEventListener('error', () => { avatar.hidden = true; mark.hidden = false; });
-    header.append(avatar, mark, identity); element.append(header); if (actions) element.append(actions.element); document.body.append(element);
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const close = () => { clearTimeout(timer); element.hidden = true; };
-    const open = () => {
-      clearTimeout(timer); if (!anchor.isConnected) return;
-      if (!userHoverEnabled() || document.hidden || innerWidth <= 700 || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-      if (Array.from(document.querySelectorAll<HTMLElement>('.hover-user-card')).some(card => !card.hidden && card.getClientRects().length > 0)) return;
-      syncTags(); element.hidden = false;
-      actions?.refresh();
-      if (id && !avatar.getAttribute('src')) avatar.src = `/avatar/${id}.png`;
-      const rect = anchor.getBoundingClientRect();
-      element.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - element.offsetWidth - 8))}px`;
-      element.style.top = `${Math.max(8, Math.min(rect.bottom + 6, innerHeight - element.offsetHeight - 8))}px`;
-    };
-    const leave = () => { clearTimeout(timer); timer = setTimeout(close, 180); };
-    anchor.addEventListener('mouseenter', () => { clearTimeout(timer); timer = setTimeout(open, 300); }, options);
-    anchor.addEventListener('mouseleave', leave, options);
-    anchor.addEventListener('focus', open, options);
-    anchor.addEventListener('blur', leave, options);
-    element.addEventListener('mouseenter', () => clearTimeout(timer), options);
-    element.addEventListener('mouseleave', leave, options);
-    element.addEventListener('focusin', () => clearTimeout(timer), options);
-    element.addEventListener('focusout', leave, options);
-    document.addEventListener('keydown', event => { if (event.key === 'Escape' && !element.hidden) { anchor.focus(); close(); } }, options);
-    document.addEventListener('pointerdown', event => { if (!element.contains(event.target as Node) && !anchor.contains(event.target as Node)) close(); }, options);
-    window.addEventListener('resize', close, options);
-    window.addEventListener('scroll', close, { ...options, capture: true });
-    entry = { element, users: 0, dispose: () => { close(); controller.abort(); element.remove(); if (title !== null) anchor.setAttribute('title', title); cards.delete(anchor); } };
-    cards.set(anchor, entry);
+    header.append(avatar, mark, identity); element.append(header); if (actions) element.append(actions.element);
+    if (replace) {
+      element.classList.add('nspp-user-hover-inline'); element.hidden = false;
+      // Keep the list layout: take over the native card's box size before hiding it.
+      const box = getComputedStyle(replace); if (replace.getClientRects().length) element.style.width = box.width; element.style.margin = box.margin;
+      replace.dataset.nsppReplaced = ''; replace.after(element);
+      if (id) avatar.src = `/avatar/${id}.png`; actions?.refresh();
+      entry = { href, element, users: 0, dispose: () => { controller.abort(); element.remove(); if (cards.get(anchor) === entry) cards.delete(anchor); if (!cards.get(anchor)?.element.classList.contains('nspp-user-hover-inline')) delete replace.dataset.nsppReplaced; if (title !== null) anchor.setAttribute('title', title); } };
+      cards.set(anchor, entry);
+    } else {
+      document.body.append(element);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const close = () => { clearTimeout(timer); element.hidden = true; };
+      const open = () => {
+        clearTimeout(timer); if (!anchor.isConnected) return;
+        if (!userHoverEnabled() || document.hidden || innerWidth <= 700 || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        if (Array.from(document.querySelectorAll<HTMLElement>('.hover-user-card')).some(card => !card.hidden && card.getClientRects().length > 0)) return;
+        syncTags(); element.hidden = false;
+        actions?.refresh();
+        if (id && !avatar.getAttribute('src')) avatar.src = `/avatar/${id}.png`;
+        const rect = anchor.getBoundingClientRect();
+        element.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - element.offsetWidth - 8))}px`;
+        element.style.top = `${Math.max(8, Math.min(rect.bottom + 6, innerHeight - element.offsetHeight - 8))}px`;
+      };
+      const leave = () => { clearTimeout(timer); timer = setTimeout(close, 180); };
+      anchor.addEventListener('mouseenter', () => { clearTimeout(timer); timer = setTimeout(open, 300); }, options);
+      anchor.addEventListener('mouseleave', leave, options);
+      anchor.addEventListener('focus', open, options);
+      anchor.addEventListener('blur', leave, options);
+      element.addEventListener('mouseenter', () => clearTimeout(timer), options);
+      element.addEventListener('mouseleave', leave, options);
+      element.addEventListener('focusin', () => clearTimeout(timer), options);
+      element.addEventListener('focusout', leave, options);
+      document.addEventListener('keydown', event => { if (event.key === 'Escape' && !element.hidden) { anchor.focus(); close(); } }, options);
+      document.addEventListener('pointerdown', event => { if (!element.contains(event.target as Node) && !anchor.contains(event.target as Node)) close(); }, options);
+      window.addEventListener('resize', close, options);
+      window.addEventListener('scroll', close, { ...options, capture: true });
+      entry = { href, element, users: 0, dispose: () => { close(); controller.abort(); element.remove(); if (title !== null) anchor.setAttribute('title', title); if (cards.get(anchor) === entry) cards.delete(anchor); } };
+      cards.set(anchor, entry);
+    }
   }
+  entry = entry!;
   entry.users++;
   const shared = entry; let released = false;
   const release = () => { if (released) return; released = true; if (--shared.users === 0) shared.dispose(); };
   ctx.signal.addEventListener('abort', release, { once: true });
-  return { element: shared.element, release };
+  return { element: shared.element, inline: shared.element.classList.contains('nspp-user-hover-inline'), release };
 }

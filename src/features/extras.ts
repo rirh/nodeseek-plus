@@ -3,6 +3,8 @@ import { parseLinkRules, cleanLink, footprintHref } from '../lib/link-rules';
 import { unsafeWindow } from '../lib/userscript';
 import { resolveLink } from '../lib/resolve-link';
 import type { Feature } from '../core/types';
+import { createSheet } from '../views/sheet';
+import { sweepShine } from '../views/sweep-shine';
 
 type PageConfig = { user?: { member_id: number }; commentPerPage?: number };
 function pageConfig(): PageConfig | undefined {
@@ -19,16 +21,16 @@ export const extraFeatures: Feature[] = [
       let records = ctx.get<Entry[]>(key) || [];
       let cursor = ctx.get<number>(`${key}:cursor`) || 1;
       let busy = false;
-      const panel = document.createElement('dialog'); panel.className = 'nspp-history nspp-footprints-dialog'; panel.dataset.nsppFootprints = '';
+      const panel = createSheet('nspp-history nspp-footprints-dialog', '我的回帖足迹', { tall: true }); panel.dataset.nsppFootprints = '';
       const summary = document.createElement('h2'); summary.textContent = '我的回帖足迹';
-      const open = document.createElement('button'); open.type = 'button'; open.className = 'nspp-tool-icon'; open.title = '回帖足迹'; open.setAttribute('aria-label', open.title); open.append(toolIcon('footprints'));
+      const open = document.createElement('button'); open.type = 'button'; open.className = 'nspp-tool-icon'; open.dataset.nsppFootprintsLauncher = ''; open.title = '回帖足迹'; open.setAttribute('aria-label', open.title); open.append(toolIcon('footprints'));
       const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
       open.addEventListener('click', () => { panel.showModal(); render(); }, { signal: ctx.signal });
       close.addEventListener('click', () => panel.close(), { signal: ctx.signal });
       const sync = document.createElement('button'); sync.type = 'button'; sync.textContent = '同步 / 继续';
       const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = '清空缓存';
       const status = document.createElement('span'); status.setAttribute('role', 'status');
-      const list = document.createElement('div'); list.className = 'nspp-footprints-list';
+      const list = document.createElement('div'); list.className = 'nspp-footprints-list nspp-sheet-body';
       close.prepend(toolIcon('close')); sync.prepend(toolIcon('refresh'));
       const header = document.createElement('header'); header.append(summary, close);
       const toolbar = document.createElement('div'); toolbar.className = 'nspp-footprints-toolbar'; toolbar.append(sync, reset, status);
@@ -53,7 +55,7 @@ export const extraFeatures: Feature[] = [
         const signal = titleController.signal;
         const post = Number(link.dataset.post);
         const label = link.querySelector<HTMLElement>('.nspp-footprint-title')!;
-        label.textContent = '正在加载帖子标题…'; link.setAttribute('aria-busy', 'true');
+        label.textContent = '正在加载帖子标题…'; label.classList.add('nspp-sweep-shine'); link.setAttribute('aria-busy', 'true');
         try {
           const html = await ctx.request<string>(`/post-${post}-1`, { responseType: 'text', signal });
           if (signal.aborted || ctx.signal.aborted) return;
@@ -68,7 +70,7 @@ export const extraFeatures: Feature[] = [
           ctx.set(key, records); label.textContent = title; link.title = title;
         } catch {
           if (!signal.aborted && !ctx.signal.aborted) label.textContent = `标题暂不可用 · 帖子 ${post}`;
-        } finally { link.removeAttribute('aria-busy'); }
+        } finally { label.classList.remove('nspp-sweep-shine'); link.removeAttribute('aria-busy'); }
       };
       const titleObserver = new IntersectionObserver(entries => {
         for (const entry of entries) {
@@ -150,7 +152,7 @@ export const extraFeatures: Feature[] = [
           if (!shortHosts.has(url.hostname) || a.nextElementSibling?.hasAttribute('data-nspp-resolve')) return;
           const button = document.createElement('button'); button.type = 'button'; button.textContent = '解析短链'; button.dataset.nsppResolve = '';
           button.addEventListener('click', async () => {
-            button.disabled = true; button.textContent = '解析中…'; button.setAttribute('aria-busy', 'true');
+            button.disabled = true; button.replaceChildren(sweepShine('解析中…')); button.setAttribute('aria-busy', 'true');
             try {
               const target = new URL(await resolveLink(a.href, ctx.signal));
               a.href = clean(target).href; touched.set(a, a.href); button.remove(); ctx.notify('已更新链接，请再次点击原链接打开');

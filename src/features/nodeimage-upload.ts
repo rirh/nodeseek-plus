@@ -1,12 +1,12 @@
-import { GM_xmlhttpRequest } from '$';
+import { gmRequest, hasRequest } from '../lib/userscript';
 
 // Keep privileged requests scoped to the official NodeImage upload endpoint.
 export function uploadNodeImage(body: FormData, headers: Record<string, string>, signal: AbortSignal): Promise<unknown> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('上传已取消')); return; }
-    if (typeof GM_xmlhttpRequest !== 'function') { reject(new Error('请重新安装最新版脚本，授予 NodeImage 连接权限')); return; }
+    if (!hasRequest()) { reject(new Error('请重新安装最新版脚本，授予 NodeImage 连接权限')); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
-    const request = GM_xmlhttpRequest({
+    const request = gmRequest({
       method: 'POST', url: 'https://api.nodeimage.com/api/upload', data: body, headers,
       anonymous: true, responseType: 'json', timeout: 120000,
       onload: response => {
@@ -27,9 +27,9 @@ export function uploadNodeImage(body: FormData, headers: Record<string, string>,
 export function getNodeImageKey(signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('已取消')); return; }
-    if (typeof GM_xmlhttpRequest !== 'function') { reject(new Error('请更新脚本并允许连接 NodeImage')); return; }
+    if (!hasRequest()) { reject(new Error('请更新脚本并允许连接 NodeImage')); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
-    const request = GM_xmlhttpRequest({
+    const request = gmRequest({
       method: 'GET', url: 'https://api.nodeimage.com/api/user/api-key',
       anonymous: false, headers: { Accept: 'application/json' }, responseType: 'json', timeout: 20000,
       onload: response => {

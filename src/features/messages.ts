@@ -10,6 +10,7 @@ import { createMessageEditor } from '../views/message-editor';
 import { findNotificationContainer } from '../views/message-container';
 import { createChatProfile } from '../views/chat-profile';
 import './messages.css';
+import { sweepShine } from '../views/sweep-shine';
 
 // Protocol reference: nodyssey's MessageRepository / NodeSeekJsonClient.
 type Result = { success?: boolean; message?: string; msgArray?: Message[]; data?: Message; talkTo?: { member_id: number; member_name: string } };
@@ -152,7 +153,7 @@ function mountChat(ctx: Context, account: number) {
   const updateSend = () => {
     const busy = !!active && sending.has(active);
     send.disabled = !active || busy || !input.value.trim() || uncertain.has(active) || editor.busy(active);
-    send.textContent = busy ? '发送中…' : '发送';
+    if (busy) send.replaceChildren(sweepShine('发送中…')); else send.textContent = '发送';
     if (busy) send.setAttribute('aria-busy', 'true'); else send.removeAttribute('aria-busy');
     input.disabled = busy; markdown.disabled = busy;
     editor.setDisabled(busy);
@@ -274,7 +275,7 @@ function mountChat(ctx: Context, account: number) {
     const id = active; if (!id || !valid() || (threadBusy && !first)) return;
     threadController.abort(); threadController = new AbortController();
     const requestSignal = AbortSignal.any([signal(), threadController.signal]); threadBusy = true;
-    retrySync.disabled = true; retrySync.textContent = '重试中…';
+    retrySync.disabled = true; retrySync.replaceChildren(sweepShine('重试中…'));
     let peerName = peers.get(id)?.name || `用户 ${id}`;
     if (first) {
       const known = histories.get(id);

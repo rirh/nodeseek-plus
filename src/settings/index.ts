@@ -2,6 +2,7 @@ import { toolIcon } from "../lib/tool-icon";
 import { hasStorage } from "../lib/userscript";
 import css from "./style.css?inline";
 import loadingCss from "../loading.css?inline";
+import sheetCss from "../views/sheet.css?inline";
 import { parseSettings, normalizeSettings, exportSettings } from "../core/config";
 import { clearCaches, loadSettings, saveSettings } from "../core/runtime";
 import type { Feature, Settings } from "../core/types";
@@ -14,12 +15,24 @@ const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) =
   return node;
 };
 
+const categoryOrder = ["浏览", "用户", "工具", "其他"];
+const categories: Record<string, string> = { 阅读: "浏览", 外观: "浏览", 导航: "浏览", 过滤: "用户", 用户: "用户", 操作辅助: "工具", 监控: "工具", 编辑: "工具", 网络: "其他" };
+const categoryOf = (feature: Feature) => categories[feature.group] || "其他";
+// Options that only matter in a particular mode stay hidden until that mode is chosen.
+const dependsOn: Record<string, (settings: Settings[string]) => boolean> = {
+  "user-level.levelColor": settings => settings.colors === "custom",
+  "user-level.trustColor": settings => settings.colors === "custom",
+  "user-level.roleColor": settings => settings.colors === "custom",
+  "image-upload.base": settings => settings.provider !== "NodeImage",
+  "reading-focus.height": settings => settings.collapse === true,
+};
+
 export function mountSettings(features: Feature[]) {
   const host = element("div");
   host.id = "nspp-settings";
   host.toggleAttribute("data-dark", document.body.classList.contains("dark-layout"));
   const shadow = host.attachShadow({ mode: "open" });
-  const style = element("style", css + loadingCss);
+  const style = element("style", css + sheetCss + loadingCss);
   const launch = element("button");
   launch.type = "button"; launch.append(toolIcon("settings"));
   launch.className = "nspp-tool-icon";
@@ -27,6 +40,7 @@ export function mountSettings(features: Feature[]) {
   launch.title = "打开 NodeSeek++ 设置";
   launch.setAttribute("aria-label", launch.title);
   const dialog = element("dialog");
+  dialog.className = "nspp-sheet";
   dialog.setAttribute("aria-labelledby", "nspp-title");
   const header = element("header");
   const heading = element("div");
@@ -34,14 +48,9 @@ export function mountSettings(features: Feature[]) {
   title.id = "nspp-title";
   heading.className = "heading";
   heading.append(title, element("small", `v${__APP_VERSION__}`));
-  const checkUpdate = element("button", "检查更新");
-  checkUpdate.type = "button";
-  checkUpdate.className = "check-update";
-  heading.append(checkUpdate);
   const close = element("button", "关闭");
   close.type = "button";
   close.className = "settings-close";
-  header.append(heading);
   const search = element("input");
   search.type = "search";
   search.placeholder = "搜索功能…";
@@ -49,7 +58,7 @@ export function mountSettings(features: Feature[]) {
   const searchBar = element("div");
   searchBar.className = "search-bar";
   searchBar.append(search);
-  header.append(searchBar);
+  header.append(heading, searchBar);
   const content = element("div");
   content.className = "content";
   const navigation = element("nav");
@@ -73,12 +82,17 @@ export function mountSettings(features: Feature[]) {
   clearCache.title = "清除当前站点的插件用户资料、通知计数和回帖足迹缓存并刷新页面；保留配置、阅读历史和监控记录，未保存的设置不会保存。";
   const exportButton = element("button", "导出配置");
   const importButton = element("button", "导入配置");
+  reset.title = "所有功能恢复默认，保存后生效。";
+  exportButton.title = "导出为 JSON，不含密钥和历史。";
   [reset, clearCache, exportButton, importButton].forEach(button => button.type = "button");
   const file = element("input");
   file.type = "file";
   file.accept = ".json,application/json";
   file.hidden = true;
-  actions.append(exportButton, importButton, clearCache, reset, close, save, file);
+  const dataTools = element("div");
+  dataTools.className = "data-tools";
+  dataTools.append(exportButton, importButton, clearCache, reset, file);
+  actions.append(close, save);
   const footer = element("footer");
   footer.className = "settings-footer";
   footer.append(actions);
@@ -124,13 +138,6 @@ export function mountSettings(features: Feature[]) {
     toastTimer = setTimeout(dismissToast, 6000);
   };
   const updates = createUpdateChecker(notify, () => !document.hidden && !dialog.open && !document.querySelector('dialog[open]'));
-  checkUpdate.addEventListener("click", async () => {
-    checkUpdate.disabled = true;
-    checkUpdate.setAttribute("aria-busy", "true");
-    checkUpdate.textContent = "检查中…";
-    try { await updates.check(); }
-    finally { checkUpdate.disabled = false; checkUpdate.removeAttribute("aria-busy"); checkUpdate.textContent = "检查更新"; }
-  });
 
   let sections: HTMLElement[] = [];
   let links: HTMLAnchorElement[] = [];
@@ -149,96 +156,106 @@ export function mountSettings(features: Feature[]) {
     activate(current);
   }
   content.addEventListener("scroll", syncCategory, { passive: true });
+  function addSection(name: string) {
+    const group = element("section");
+    const index = sections.length;
+    group.id = `nspp-category-${index}`;
+    const link = element("a", name);
+    link.href = `#${group.id}`;
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      content.scrollTo({ top: content.scrollTop + group.getBoundingClientRect().top - content.getBoundingClientRect().top, behavior: "instant" });
+      activate(index);
+    });
+    sections.push(group); links.push(link); navigation.append(link);
+    group.append(element("h3", name));
+    content.append(group);
+    return group;
+  }
+  function renderFeature(feature: Feature) {
+    const settings = draft[feature.id];
+    const row = element("article");
+    const label = element("label");
+    label.className = "feature-heading";
+    label.title = feature.description;
+    const toggle = element("input");
+    toggle.type = "checkbox";
+    toggle.checked = settings.enabled === true;
+    label.append(element("strong", feature.title), toggle);
+    row.append(label);
+    const options = Object.keys(feature.defaults).filter(key => key !== "enabled");
+    if (!options.length) return row;
+    const details = element("div");
+    details.className = "feature-options";
+    const conditional: [HTMLElement, () => boolean][] = [];
+    const sync = () => {
+      details.hidden = !toggle.checked;
+      for (const [field, visible] of conditional) field.hidden = !visible();
+    };
+    toggle.addEventListener("change", () => { settings.enabled = toggle.checked; sync(); });
+    for (const key of options) {
+      const metadata = feature.fields?.[key];
+      const value = settings[key];
+      const field = element("label");
+      field.className = "field";
+      field.append(element("span", metadata?.label || key));
+      let control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      if (metadata?.type === "select") {
+        control = element("select");
+        for (const option of metadata.options || []) {
+          const item = element("option", option.label);
+          item.value = option.value;
+          control.append(item);
+        }
+      } else if (metadata?.type === "textarea") {
+        control = element("textarea");
+        control.rows = 3;
+      } else {
+        control = element("input");
+        control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
+      }
+      if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
+      else if (feature.id === 'request-settings' && control instanceof HTMLInputElement) { control.min = key === 'maxConcurrent' ? '1' : '0'; control.max = key === 'maxConcurrent' ? '10' : '5000'; control.step = '1'; control.value = String(value); }
+      else control.value = String(value);
+      control.addEventListener("input", () => {
+        settings[key] = typeof value === "boolean" ? (control as HTMLInputElement).checked
+          : typeof value === "number" ? Number(control.value) : control.value;
+        sync();
+      });
+      field.append(control);
+      details.append(field);
+      const visible = dependsOn[`${feature.id}.${key}`];
+      if (visible) conditional.push([field, () => visible(settings)]);
+    }
+    sync();
+    row.append(details);
+    return row;
+  }
   function render() {
     content.replaceChildren();
     navigation.replaceChildren();
     sections = []; links = [];
     const query = search.value.toLocaleLowerCase().trim();
     const groups = new Map<string, HTMLElement>();
-    const categories: Record<string, string> = { 阅读: "浏览", 外观: "界面", 导航: "界面", 过滤: "用户", 用户: "用户", 操作辅助: "工具", 监控: "工具", 编辑: "工具" };
-    for (const feature of features) {
-      const category = categories[feature.group] || feature.group;
+    const ordered = [...features].sort((a, b) => categoryOrder.indexOf(categoryOf(a)) - categoryOrder.indexOf(categoryOf(b)));
+    for (const feature of ordered) {
+      const category = categoryOf(feature);
       if (query && !`${feature.title} ${feature.description} ${feature.group} ${category} ${Object.values(feature.fields || {}).map(field => field.label).join(' ')}`.toLocaleLowerCase().includes(query)) continue;
       let group = groups.get(category);
-      if (!group) {
-        group = element("section");
-        const index = sections.length;
-        group.id = `nspp-category-${index}`;
-        const link = element("a", category);
-        link.href = `#${group.id}`;
-        link.addEventListener("click", event => {
-          event.preventDefault();
-          const section = sections[index];
-          content.scrollTo({ top: content.scrollTop + section.getBoundingClientRect().top - content.getBoundingClientRect().top, behavior: "instant" });
-          activate(index);
-        });
-        sections.push(group); links.push(link); navigation.append(link);
-        group.append(element("h3", category));
-        groups.set(category, group);
-        content.append(group);
-      }
-      const row = element("article");
-      const label = element("label");
-      label.className = "feature-heading";
-      const toggle = element("input");
-      toggle.type = "checkbox";
-      toggle.checked = draft[feature.id].enabled === true;
-      toggle.addEventListener("change", () => { draft[feature.id].enabled = toggle.checked; });
-      label.append(element("strong", feature.title), toggle);
-      row.append(label);
-      if (feature.id === 'monitor') row.append(element("p", "开启后显示监控入口并运行监控；关闭后隐藏入口并停止检查。"));
-      if (feature.id === 'request-settings') row.append(element("p", feature.description));
-      if (["ai-polish", "official-blocklist", "infinite-scroll"].includes(feature.id)) {
-        const hints: Record<string, string> = { "ai-polish": "开启并填写完整的 HTTPS 接口、模型和 API Key 后显示 AI 入口；配置在这里管理，写作在独立面板中使用。", "official-blocklist": "添加或解除会修改站点黑名单。", "infinite-scroll": "新增评论的回复、评分需打开原页。" };
-        row.append(element("p", hints[feature.id]));
-      }
-      const options = Object.keys(feature.defaults).filter(key => key !== "enabled");
-      if (options.length) {
-        const details = element("div");
-        details.className = "feature-options";
-        for (const key of options) {
-          const metadata = feature.fields?.[key];
-          const value = draft[feature.id][key];
-          const field = element("label");
-          field.className = "field";
-          field.append(element("span", metadata?.label || key));
-          let control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-          if (metadata?.type === "select") {
-            control = element("select");
-            for (const option of metadata.options || []) {
-              const item = element("option", option.label);
-              item.value = option.value;
-              control.append(item);
-            }
-          } else if (metadata?.type === "textarea") {
-            control = element("textarea");
-            control.rows = 4;
-          } else {
-            control = element("input");
-            control.type = metadata?.type === "color" ? "color" : typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : /^(api[-_]?key|token|password|secret|access[-_]?token)$/i.test(key) ? "password" : "text";
-          }
-          if (typeof value === "boolean" && control instanceof HTMLInputElement) control.checked = value;
-          else if (feature.id === 'request-settings' && control instanceof HTMLInputElement) { control.min = key === 'maxConcurrent' ? '1' : '0'; control.max = key === 'maxConcurrent' ? '10' : '5000'; control.step = '1'; control.value = String(value); }
-          else control.value = String(value);
-          control.addEventListener("input", () => {
-            draft[feature.id][key] = typeof value === "boolean" ? (control as HTMLInputElement).checked
-              : typeof value === "number" ? Number(control.value) : control.value;
-          });
-          field.append(control);
-          details.append(field);
-        }
-        row.append(details);
-      }
-      group.append(row);
+      if (!group) { group = addSection(category); groups.set(category, group); }
+      group.append(renderFeature(feature));
     }
-    if (!query || '关于 nodeseek++ github 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证'.includes(query)) {
-      const group = element('section'); const index = sections.length; group.id = `nspp-category-${index}`;
-      const link = element('a', '关于'); link.href = `#${group.id}`;
-      link.addEventListener('click', event => {
-        event.preventDefault(); content.scrollTo({ top: content.scrollTop + group.getBoundingClientRect().top - content.getBoundingClientRect().top, behavior: 'instant' }); activate(index);
-      });
-      group.append(element('h3', '关于'), aboutContent(() => updates.check()));
-      sections.push(group); links.push(link); navigation.append(link); groups.set('关于', group); content.append(group);
+    const showData = !query || '数据 导出 导入 配置 缓存 恢复默认 备份'.includes(query);
+    const showAbout = !query || '关于 nodeseek++ github 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证'.includes(query);
+    if (showData || showAbout) {
+      const group = groups.get("其他") || addSection("其他");
+      groups.set("其他", group);
+      if (showData) {
+        const row = element("article");
+        row.append(element("strong", "数据"), dataTools);
+        group.append(row);
+      }
+      if (showAbout) group.append(aboutContent(() => updates.check()));
     }
     if (!groups.size) content.append(element("p", "没有匹配的功能"));
     content.scrollTop = 0;

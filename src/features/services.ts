@@ -2,6 +2,9 @@ import { toolIcon } from '../lib/tool-icon';
 import { systemNotify, unsafeWindow } from '../lib/userscript';
 import { withTabLock } from '../lib/tab-lock';
 import type { Feature } from '../core/types';
+import { createSheet } from '../views/sheet';
+import { whenReady } from '../core/when-ready';
+import { sweepShine } from '../views/sweep-shine';
 export const serviceFeatures: Feature[] = [
   {
     id: 'notification-categories', title: '通知分类', description: '侧边卡片分别显示回复、@我、私信；每60秒检查，新回复、@我和私信使用系统通知，失败保留上次结果。', group: '操作辅助', defaults: { enabled: true },
@@ -13,8 +16,10 @@ export const serviceFeatures: Feature[] = [
         const originals = new Map<HTMLElement, HTMLElement['hidden']>();
         const rows: HTMLElement[] = ['reply', 'atMe', 'message'].map(() => document.createElement('div'));
         rows.forEach(row => { row.className = 'nspp-notification-row'; });
+        // Follow/fan pages render other users' cards with the same .user-stat class; only the own card links to /notification.
+        const ownStat = () => Array.from(document.querySelectorAll<HTMLElement>('.user-stat')).find(stat => stat.querySelector('a[href^="/notification"]'));
         const place = () => {
-          const card = document.querySelector('.user-card .user-stat, .user-stat');
+          const card = ownStat();
           const columns = card?.querySelectorAll('.stat-block');
           if (columns && columns.length >= 2) {
             rows.forEach((row, index) => {
@@ -44,7 +49,7 @@ export const serviceFeatures: Feature[] = [
             const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             shape.setAttribute('d', key === 'reply' ? 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4' : key === 'atMe' ? 'M16 8v6a2 2 0 0 0 4 0v-2a8 8 0 1 0-3 6.25M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0' : 'M3 5h18v14H3zM3 5l9 7 9-7');
             icon.append(shape);
-            const template = document.querySelector<HTMLAnchorElement>('.user-stat a[href^="/notification"]:not(.nspp-notification-link)');
+            const template = ownStat()?.querySelector<HTMLAnchorElement>('a[href^="/notification"]:not(.nspp-notification-link)');
             const native = template?.cloneNode(true) as HTMLAnchorElement | undefined;
             if (native && native.children.length >= 3 && native.querySelector('svg')) {
               native.removeAttribute('id'); native.hidden = false; native.classList.remove('nspp-original-notification'); native.classList.add('nspp-notification-link'); native.href = a.href;
@@ -106,11 +111,7 @@ export const serviceFeatures: Feature[] = [
         document.addEventListener('visibilitychange', () => { if (!document.hidden) void run(); }, { signal: ctx.signal }); void run();
         const timer = setInterval(() => { void run(); }, 60_000); return () => { clearInterval(timer); stopPlacement(); rows.forEach(row => row.remove()); originals.forEach((hidden, el) => { el.hidden = hidden; el.classList.remove('nspp-original-notification'); }); };
       };
-      let cleanup: (() => void) | undefined;
-      const start = () => { if (!cleanup && !ctx.signal.aborted) cleanup = initialize(); };
-      const stop = ctx.watch(start);
-      const readyTimer = setInterval(start, 1000);
-      return () => { stop(); clearInterval(readyTimer); cleanup?.(); };
+      return whenReady(ctx, initialize);
     },
   },
   {
@@ -124,7 +125,7 @@ export const serviceFeatures: Feature[] = [
       let dialog: HTMLDialogElement | undefined;
       const launch = document.createElement('button'); launch.type = 'button'; launch.className = 'nspp-tool-icon'; launch.append(toolIcon('ai')); launch.title = 'AI 写作助手'; launch.setAttribute('aria-label', launch.title); launch.dataset.nsppAiLauncher = '';
       (document.getElementById('nspp-tools') || document.body).append(launch);
-      const compose = document.createElement('dialog'); compose.className = 'nspp-ai-dialog'; document.body.append(compose);
+      const compose = createSheet('nspp-ai-dialog', 'AI 写作助手', { dismissible: false }); document.body.append(compose);
       const open = () => {
         compose.replaceChildren();
         const heading = document.createElement('h2'); heading.textContent = 'AI 写作助手';
@@ -148,7 +149,7 @@ export const serviceFeatures: Feature[] = [
         test.addEventListener('click', async () => {
           let url: URL; try { url = new URL(ctx.get<string>('url')); if (url.protocol !== 'https:') throw new Error('HTTPS required'); } catch { ctx.notify('请设置完整 HTTPS API 地址'); return; }
           if (!ctx.get<string>('model')) { ctx.notify('请先填写模型名称'); return; }
-          test.disabled = true; test.textContent = '连接测试中…'; test.setAttribute('aria-busy', 'true');
+          test.disabled = true; test.replaceChildren(sweepShine('连接测试中…')); test.setAttribute('aria-busy', 'true');
           try {
             const response = await ctx.request<{ choices?: { message?: { content?: string } }[] }>(url.href, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ctx.get<string>('apiKey')}` }, body: JSON.stringify({ model: ctx.get<string>('model'), messages: [{ role: 'user', content: 'Reply with OK. This is a connection test.' }], max_tokens: 16, stream: false }) });
             if (!response.choices?.[0]?.message?.content) throw new Error('Empty response');
@@ -163,12 +164,12 @@ export const serviceFeatures: Feature[] = [
           const appendResult = mode.value === '续写';
           let url: URL; try { url = new URL(ctx.get<string>('url')); if (url.protocol !== 'https:') throw new Error('HTTPS required'); } catch { ctx.notify('请设置完整 HTTPS API 地址'); return; }
           if (!ctx.get<string>('model')) { ctx.notify('请先填写模型名称'); return; }
-          button.disabled = true; button.textContent = '生成中…'; button.setAttribute('aria-busy', 'true');
+          button.disabled = true; button.replaceChildren(sweepShine('生成中…')); button.setAttribute('aria-busy', 'true');
           try {
             const response = await ctx.request<{ choices?: { message?: { content?: string } }[] }>(url.href, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ctx.get<string>('apiKey')}` }, body: JSON.stringify({ model: ctx.get<string>('model'), messages: [{ role: 'system', content: ctx.get<string>('prompt') }, { role: 'user', content: `${instruction} 不编造事实、价格或测试数据，缺失信息用待补充标记。只输出结果。\n\n写作要求：\n${requirements.value}\n\n当前正文：\n${original}` }], stream: false }) });
             const result = response.choices?.[0]?.message?.content; if (!result) throw new Error('Empty response');
             if (ctx.signal.aborted) return;
-            dialog?.remove(); dialog = document.createElement('dialog'); dialog.className = 'nspp-ai-dialog';
+            dialog?.remove(); dialog = createSheet('nspp-ai-dialog', 'AI 结果预览', { dismissible: false });
             const heading = document.createElement('h2'); heading.textContent = 'AI 结果预览';
             const preview = document.createElement('textarea'); preview.value = result; preview.style.cssText = 'width:100%;height:45vh;box-sizing:border-box'; preview.setAttribute('aria-label', 'AI 修改结果');
             const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = appendResult ? '追加到正文' : '替换编辑器内容';

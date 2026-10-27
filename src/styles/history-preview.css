@@ -1,0 +1,166 @@
+/* Keep native identity labels compact and distinguish roles by color and symbol. */
+.nspp-user-hover-tags, .nspp-user-native-tags, .nspp-user-profile-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.nspp-user-native-tags:empty, .nspp-user-profile-tags:empty, .nspp-user-profile-tags[hidden], .nspp-user-hover-tags[hidden] { display: none; }
+.nspp-user-hover .role-tag, .nspp-chat-profile .role-tag { display: inline-flex; align-items: center; flex: none; gap: 3px; margin: 0; padding: 0 4px; border: 0; border-radius: 3px; box-shadow: none; font: 500 10px/15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; white-space: nowrap; }
+.nspp-user-hover .role-tag:not([data-nspp-role]), .nspp-chat-profile .role-tag:not([data-nspp-role]) { color: #69717a; background: #818b9818; }
+.nspp-user-hover .role-tag[data-nspp-role]::before, .nspp-chat-profile .role-tag[data-nspp-role]::before { width: 8px; height: 9px; }
+.role-tag[data-nspp-role] { display: inline-flex; flex: none; align-items: center; gap: 3px; padding: 0 5px; border: 0; border-radius: 3px; color: #2463a0; background: #eaf3fc; box-shadow: none; font: 600 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; letter-spacing: 0; vertical-align: middle; white-space: nowrap; }
+.role-tag[data-nspp-role]::before { content: ""; flex: none; width: 9px; height: 10px; background: currentColor; clip-path: polygon(50% 0, 95% 17%, 88% 65%, 50% 100%, 12% 65%, 5% 17%); }
+.role-tag[data-nspp-role="founder"] { color: #087f78; background: #e5f4ef; }
+.role-tag[data-nspp-role="founder"]::before { clip-path: polygon(50% 0, 66% 34%, 100% 50%, 66% 66%, 50% 100%, 34% 66%, 0 50%, 34% 34%); }
+.role-tag[data-nspp-role="owner"] { color: #4c596a; background: #eaf0f5; }
+.role-tag[data-nspp-role="owner"]::before { clip-path: polygon(0 15%, 25% 40%, 50% 0, 75% 40%, 100% 15%, 88% 85%, 12% 85%); }
+.dark-layout .role-tag[data-nspp-role="admin"] { color: #9ac7f2; background: #23374b; }
+.dark-layout .role-tag[data-nspp-role="founder"] { color: #7cd4c1; background: #1e3b35; }
+.dark-layout .role-tag[data-nspp-role="owner"] { color: #c1ccd9; background: #303a47; }
+.nspp-history { width: min(640px, calc(100vw - 24px)); max-width: none; max-height: 80dvh; margin: auto; padding: 0; border: 1px solid #d1d9e0; border-radius: 8px; color: #1f2328; background: #fff; box-shadow: 0 8px 28px #1f232833; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+.nspp-history[open] { display: flex; flex-direction: column; }
+.nspp-history::backdrop { background: #1f232866; }
+.nspp-history * { box-sizing: border-box; }
+.nspp-history header { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 0; background: transparent; box-shadow: none; }
+.nspp-history h2 { font-size: 14px; font-weight: 600; margin: 0; }
+.nspp-history button { padding: 2px 8px; min-height: 26px; border: 1px solid #d1d9e0; border-radius: 5px; background: #f6f8fa; color: inherit; font-family: inherit; font-size: 12px; line-height: 20px; cursor: pointer; white-space: nowrap; }
+.nspp-history [hidden] { display: none !important; }
+.nspp-history-toolbar { display: flex; flex: none; gap: 6px; padding: 4px 12px 6px; border-bottom: 0; }
+.nspp-history input { min-width: 0; flex: 1; width: 0; padding: 4px 8px; border: 1px solid #d1d9e0; border-radius: 5px; background: transparent; color: inherit; font: inherit; }
+.nspp-history ol { margin: 0; padding: 0 12px; list-style: none; overflow-y: auto; min-height: 60px; overscroll-behavior: contain; }
+.nspp-history li { display: flex; align-items: center; gap: 8px; margin: 0; padding: 3px 0; border: 0; }
+.nspp-history li button { min-height: 24px; padding: 1px 6px; border-color: transparent; background: transparent; }
+.nspp-history li:hover { background: #818b980c; }
+.nspp-history li a { flex: 1; min-width: 0; color: #0969da; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.nspp-history a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.nspp-history time { font-size: 11px; color: #59636e; flex: none; }
+.nspp-history :focus-visible { outline: 2px solid #0969da; outline-offset: 2px; }
+.dark-layout .nspp-history { background: #0d1117; color: #f0f6fc; border-color: #3d444d; }
+.dark-layout .nspp-history header, .dark-layout .nspp-history button { background: #151b23; }
+.dark-layout .nspp-history a { color: #79c0ff; }
+@media (max-width: 700px), (hover: none) { .nspp-history-toolbar { flex-wrap: wrap; } .nspp-history time { display: none; } }
+
+.nspp-block-toggle { vertical-align: middle; margin-left: 5px; padding: 0 2px; min-width: 0; border: 0; border-radius: 4px; background: transparent; color: #59636e; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; cursor: pointer; }
+.nspp-block-toggle[data-blocked="true"] { color: #cf222e; border-color: #ff818280; }
+.nspp-block-toggle:disabled { opacity: 1; cursor: wait; }
+.dark-layout .nspp-block-toggle { color: #9198a1; border-color: #3d444d; }
+
+.nspp-user-badges[aria-busy="true"] { min-width: 88px; min-height: 16px; border-radius: 4px; color: #59636e; }
+.nspp-trust-dialog { padding: 16px; }
+.nspp-trust-dialog p { white-space: pre-line; line-height: 1.8; }
+.nspp-trust-dialog button { align-self: flex-end; }
+
+.nspp-post-preview { margin: 0; padding: 0; position: fixed; z-index: 2147483644; width: min(340px, calc(100vw - 24px)); height: auto; max-height: min(320px, calc(100dvh - 24px)); display: flex; flex-direction: column; border: 1px solid var(--border-color, #929a9380); border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 3px 12px #00000018; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; text-align: left; overflow: hidden; }
+.nspp-post-preview[hidden] { display: none; }
+.nspp-post-preview { color-scheme: light; }
+.dark-layout .nspp-post-preview { --bg-color: #262626; --text-color: #dedede; --border-color: #454545; --link-color: #8ab4f8; color-scheme: dark; }
+.nspp-post-preview > header, .nspp-post-preview > footer, .nspp-post-preview > .nspp-preview-content { background: inherit; color: inherit; }
+.nspp-post-preview header { box-shadow: none !important; text-shadow: none !important; position: static; display: flex; flex-shrink: 0; gap: 8px; align-items: center; padding: 5px 8px; font-size: 12px; line-height: 18px; border-bottom: 1px solid #929a9350; }
+.nspp-post-preview header a { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-shadow: none !important; box-shadow: none !important; color: inherit; font-weight: 500; text-decoration: none; }
+.nspp-post-preview button { flex: none; width: 20px; height: 20px; min-height: 0; font: 16px/18px Arial, sans-serif; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
+.nspp-post-preview > p { margin: 0; padding: 5px 8px; font-size: 11px; }
+.nspp-post-preview > p:empty { display: none; }
+.nspp-preview-content { flex: 0 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 7px 8px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.nspp-preview-meta { font-size: 11px; opacity: .65; margin-bottom: 5px; }
+.nspp-preview-content img { max-width: 100%; max-height: 120px; width: auto; height: auto; object-fit: contain; }
+.nspp-preview-content pre { overflow: auto; padding: 6px; background: #818b9814; border-radius: 6px; }
+.nspp-preview-content blockquote { margin: 6px 0; padding-left: 8px; border-left: 3px solid #818b9850; }
+.nspp-preview-content table { display: block; max-width: 100%; overflow: auto; }
+.nspp-preview-content h3 { font-size: 12px; margin: 6px 0; }
+.nspp-preview-comment { padding: 6px 0; border-top: 1px solid #818b9830; }
+.nspp-preview-comment > strong { font-size: 12px; }
+.nspp-post-preview footer { flex-shrink: 0; padding: 4px 8px; background: transparent; line-height: 16px; border-top: 1px solid #818b9830; font-size: 11px; }
+.nspp-post-preview footer a, .nspp-preview-content a { color: var(--link-color, #0969da); }
+.nspp-preview-content article > :first-child { margin-top: 0; }
+.nspp-preview-content article > :last-child { margin-bottom: 0; }
+
+.nspp-post-preview, .nspp-post-preview * { box-sizing: border-box; }
+.nspp-preview-content p { margin: 5px 0; font-size: inherit; line-height: inherit; }
+.nspp-preview-content :is(ul, ol) { margin: 5px 0; padding-left: 18px; }
+.nspp-preview-content :is(h1, h2, h4) { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+.nspp-post-preview button:hover { background: #818b981a; }
+.nspp-post-preview footer a { text-decoration: none; color: inherit; opacity: .7; }
+.nspp-post-preview footer a:hover { opacity: 1; text-decoration: underline; }
+.nspp-meta-label { opacity: .6; font-size: 10px; }
+.nspp-user-badges :is(.nspp-level, .nspp-age, .nspp-trust) { display: inline-flex; align-items: center; gap: 3px; }
+.nspp-user-badges .iconpark-icon { width: 11px; height: 11px; flex: none; }
+.nspp-list-actions { display: flex; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; align-items: center; gap: 12px; padding-top: 5px; font: 11px/18px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; color: var(--text-color, #777); }
+.nspp-list-actions button { display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; opacity: .75; }
+.nspp-list-actions .iconpark-icon { width: 13px; height: 13px; }
+/* The expanded custom view is separate from each three-line list item. */
+.nspp-interaction { list-style: none; margin: 4px 0 12px 52px; padding: 0; border: 1px solid #818b9840; border-radius: 6px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.nspp-interaction[hidden], .nspp-interaction form[hidden] { display: none !important; }
+.nspp-interaction header { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #818b9820; }
+.nspp-interaction header a { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit; }
+.nspp-interaction button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.nspp-interaction header button { font-size: 18px; }
+.nspp-interaction p { margin: 0; padding: 6px 10px; font-size: 11px; }
+.nspp-interaction p:empty { display: none; }
+.nspp-interaction form { padding: 8px 10px; }
+.nspp-interaction textarea { box-sizing: border-box; display: block; width: 100%; min-height: 84px; max-height: 240px; resize: vertical; border: 1px solid #818b9850; border-radius: 4px; padding: 8px; font: inherit; background: transparent; color: inherit; }
+.nspp-reply-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.nspp-reply-actions span { opacity: .6; font-size: 10px; }
+.nspp-reply-actions button { padding: 3px 10px; background: #238636; color: white; border-radius: 4px; }
+.nspp-reply-actions button:disabled { opacity: .4; cursor: default; }
+
+@media (max-width: 600px) { .nspp-interaction { margin-left: 0; } }
+@media (max-width: 600px) { .nspp-list-actions { gap: 8px; } }
+
+.nspp-list-actions [hidden] { display: none !important; }
+.nspp-block-toggle { display: inline-flex; align-items: center; gap: 3px; }
+.nspp-block-toggle .iconpark-icon { width: 11px; height: 11px; }
+.nspp-block-toggle[hidden], #nspp-tools button[hidden] { display: none !important; }
+
+.nspp-action-category { margin-left: auto; color: inherit; opacity: .65; text-decoration: none; flex: none; }
+.nspp-action-category:hover { text-decoration: underline; text-underline-offset: 3px; }
+.nspp-list-actions button { flex-shrink: 0; }
+
+.nspp-post-preview footer .nspp-list-actions { padding: 2px 0 5px; gap: 10px; }
+.nspp-post-preview footer .nspp-list-actions button { width: auto; height: auto; font: inherit; line-height: 18px; }
+.nspp-post-preview footer .nspp-list-actions button:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+
+.nspp-post-preview::backdrop { background: #0006; }
+@media (max-width: 700px), (hover: none) {
+  .nspp-post-preview { max-height: 85dvh; }
+  .nspp-post-preview header { padding: 10px 16px; font-size: 14px; }
+  .nspp-post-preview header a { white-space: normal; }
+  .nspp-post-preview button { width: 40px; height: 40px; font-size: 22px; }
+  .nspp-preview-content { padding: 12px 16px; font-size: 14px; line-height: 1.7; }
+  .nspp-post-preview footer { padding: 12px 16px; font-size: 13px; }
+  .nspp-post-preview footer a { display: block; padding: 8px 0; }
+}
+
+
+.nspp-count-loading { font-size: 10px; flex: none; }
+.nspp-quick-replies { box-sizing: border-box; width: min(440px, calc(100vw - 24px)); max-height: 85dvh; margin: auto; padding: 0; border: 1px solid #818b9838; border-radius: 12px; background: var(--bg-color, Canvas); color: var(--text-color, CanvasText); box-shadow: 0 16px 60px #0003; font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+.nspp-quick-replies[open] { display: flex; flex-direction: column; }
+.nspp-quick-replies::backdrop { background: #0005; }
+.nspp-quick-replies [hidden] { display: none !important; }
+.nspp-quick-head, .nspp-quick-pagination { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 6px; background: transparent; color: inherit; }
+.nspp-quick-head strong { font-size: 14px; }
+.nspp-quick-replies button { font: inherit; color: inherit; background: transparent; border: 1px solid #818b9840; border-radius: 6px; padding: 4px 8px; min-height: 28px; cursor: pointer; box-shadow: none; }
+.nspp-quick-replies button:hover:not(:disabled) { background: #818b9814; }
+.nspp-quick-replies :is(button, input, textarea):focus-visible { outline: 2px solid var(--link-color, #0969da); outline-offset: 2px; }
+.nspp-quick-replies button:disabled { opacity: .4; cursor: default; }
+.nspp-quick-head button { border: 0; font-size: 18px; padding: 0; width: 28px; }
+.nspp-quick-replies p { margin: 0; }
+.nspp-quick-replies .nspp-quick-target { padding: 0 12px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .65; font-size: 12px; flex: none; }
+.nspp-quick-toolbar { display: flex; flex: none; gap: 6px; padding: 2px 12px 8px; }
+.nspp-quick-replies input, .nspp-quick-replies textarea { box-sizing: border-box; min-width: 0; padding: 5px 8px; font: inherit; color: inherit; border: 1px solid #818b9850; border-radius: 6px; background: transparent; }
+.nspp-quick-toolbar input { flex: 1; width: 0; }
+.nspp-quick-replies .nspp-quick-primary { color: var(--link-color, #0969da); background: #0969da0c; border-color: #0969da40; flex: none; }
+.nspp-quick-list { overflow-y: auto; min-height: 0; padding: 0 12px; overscroll-behavior: contain; }
+.nspp-quick-item { display: flex; gap: 4px; padding: 2px 0; border-bottom: 1px solid #818b9820; align-items: center; }
+.nspp-quick-item:last-child { border-bottom: 0; }
+.nspp-quick-item .nspp-quick-send { flex: 1; min-width: 0; min-height: 30px; border: 0; padding: 4px 6px; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nspp-quick-item button:not(.nspp-quick-send) { flex: none; font-size: 11px; border-color: transparent; padding: 4px 6px; }
+.nspp-quick-item .nspp-quick-delete:hover:not(:disabled) { color: #cf3434; background: #cf343410; }
+.nspp-quick-list > p { padding: 16px 6px; text-align: center; opacity: .6; }
+.nspp-quick-replies form { flex: none; padding: 8px 12px; border-top: 1px solid #818b9830; }
+.nspp-quick-replies form button + button { margin-left: 8px; }
+.nspp-quick-replies textarea { display: block; width: 100%; max-height: 22dvh; resize: vertical; margin-bottom: 8px; }
+.nspp-quick-pagination { border-top: 1px solid #818b9830; font-size: 11px; padding-top: 6px; padding-bottom: 6px; }
+.nspp-quick-replies .nspp-quick-status { padding: 0 12px 6px; font-size: 11px; opacity: .65; flex: none; }
+
+.post-title a.nspp-read { opacity: .6; text-decoration: underline dotted; }
+.nspp-callout { border-inline-start: 3px solid currentColor; padding: 10px 16px; margin: 1em 0; }
+.nspp-callout summary { cursor: pointer; font-weight: 600; }
+.nspp-image-viewer { max-width: 95vw; max-height: 95vh; padding: 12px; }
+.nspp-image-viewer img { max-width: 90vw; max-height: 82vh; object-fit: contain; }
+.nspp-image-viewer::backdrop { background: rgb(0 0 0 / .8); }

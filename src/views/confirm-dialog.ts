@@ -1,7 +1,7 @@
 export function confirmDialog(title: string, description: string, confirmLabel: string, signal: AbortSignal, options: { href?: string; cancelLabel?: string } = {}): Promise<boolean> {
   if (signal.aborted) return Promise.resolve(false);
   return new Promise(resolve => {
-    const dialog = document.createElement('dialog'); dialog.className = 'nspp-confirm-dialog';
+    const dialog = document.createElement('dialog'); dialog.className = 'nspp-sheet nspp-confirm-dialog';
     dialog.setAttribute('aria-label', title);
     const heading = document.createElement('h2'); heading.textContent = title;
     const body = document.createElement('p'); body.textContent = description;

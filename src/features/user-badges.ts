@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { siteIcon } from './post-interaction-data';
 import type { Feature } from '../core/types';
 import { authorId, forumAge, registration, trustScore, type UserProfile } from './user-profile';
+import { createSheet } from '../views/sheet';
 
 
 export const userBadges: Feature = {
@@ -105,9 +106,7 @@ export const userBadges: Feature = {
         age.setAttribute('aria-label', `${age.textContent}，查看注册资料`);
         age.addEventListener('click', () => {
           scoreDialog?.remove();
-          scoreDialog = document.createElement('dialog');
-          scoreDialog.className = 'nspp-history nspp-profile-dialog';
-          scoreDialog.setAttribute('aria-label', '注册资料');
+          scoreDialog = createSheet('nspp-history nspp-profile-dialog', '注册资料');
           const header = document.createElement('header');
           const heading = document.createElement('h2'); heading.textContent = '注册资料';
           const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
@@ -147,9 +146,9 @@ export const userBadges: Feature = {
         score.setAttribute('aria-label', `信任分 ${trust?.score ?? "未知"}，查看评分依据`);
         score.addEventListener('click', () => {
           scoreDialog?.remove();
-          scoreDialog = document.createElement('dialog'); scoreDialog.className = 'nspp-history nspp-trust-dialog'; scoreDialog.setAttribute('aria-label', '信任分依据');
+          scoreDialog = createSheet('nspp-history nspp-trust-dialog', '信任分依据');
           const heading = document.createElement('h2'); heading.textContent = '信任分依据';
-          const body = document.createElement('p'); body.textContent = details;
+          const body = document.createElement('p'); body.className = 'nspp-sheet-body'; body.textContent = details;
           const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
           close.addEventListener('click', () => scoreDialog?.close(), { signal: ctx.signal });
           scoreDialog.append(heading, body, close); document.body.append(scoreDialog); scoreDialog.showModal();
@@ -222,6 +221,7 @@ export const userBadges: Feature = {
         const hover = userHover(author, ctx);
         const details = document.createElement('dl'); details.textContent = '正在读取用户资料…'; hover.element.insertBefore(details, hover.element.querySelector('.nspp-user-hover-actions, :scope > .nspp-block-toggle'));
         author.after(badge); nodes.set(author, { id, badge, details, release: hover.release });
+        if (hover.inline) { void load(author, id, badge); return; }
         if (badge.hidden) {
           let started = false;
           const start = () => { if (!started && userHoverEnabled() && innerWidth > 700 && matchMedia('(hover: hover) and (pointer: fine)').matches) { started = true; void load(author, id, badge); } };
