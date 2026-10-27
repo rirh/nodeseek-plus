@@ -390,3 +390,28 @@ test('hot rankings load lazily, keep tabs independent, cache results and retain 
     assert.match(panel.querySelector('[role="status"]')!.textContent!, /加载失败/);
   } finally { await f.close(); }
 });
+
+test('share launcher sits above settings and opens QR, X, Telegram and more actions', async () => {
+  const opened: string[] = [];
+  const f = await fixture({}, '', '/', undefined, window => { window.open = ((url: string) => { opened.push(url); return null; }) as typeof window.open; });
+  try {
+    const doc = f.window.document;
+    const launcher = doc.querySelector<HTMLButtonElement>('[data-nspp-share-launcher]')!;
+    assert.ok(launcher);
+    assert.equal(launcher.nextElementSibling, doc.querySelector('[data-nspp-settings-launcher]'));
+    launcher.click();
+    const sheet = doc.querySelector<HTMLDialogElement>('dialog.nspp-share')!;
+    assert.equal(sheet.open, true);
+    const actions = [...sheet.querySelectorAll<HTMLButtonElement>('.nspp-share-actions button')];
+    assert.deepEqual(actions.map(button => button.textContent), ['保存二维码', 'X', 'Telegram', '更多']);
+    actions[1].click(); actions[2].click();
+    assert.match(opened[0], /^https:\/\/x\.com\/intent\/post\?text=.+&url=https%3A%2F%2Fgithub\.com%2Frirh%2Fnodeseek-plus$/);
+    assert.match(opened[1], /^https:\/\/t\.me\/share\/url\?url=https%3A%2F%2Fgithub\.com%2Frirh%2Fnodeseek-plus&text=/);
+  } finally { await f.close(); }
+});
+
+test('share launcher can be turned off in settings', async () => {
+  const f = await fixture({ share: { enabled: false } });
+  try { assert.equal(f.window.document.querySelector('[data-nspp-share-launcher]'), null); }
+  finally { await f.close(); }
+});

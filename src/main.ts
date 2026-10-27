@@ -17,12 +17,14 @@ import { messagesFeature } from "./features/messages";
 import { floatingReply } from "./features/floating-reply";
 import { hotRankings } from "./features/hot-rankings";
 import { mountFastNav } from "./features/fast-nav";
+import { share } from "./features/share";
 import "./styles/base.css";
 import "./styles/history-preview.css";
 import "./styles/tools-monitor.css";
 import "./styles/user-hover.css";
 import "./styles/dialogs.css";
 import "./styles/hot-rankings-mobile.css";
+import "./styles/share.css";
 import "./views/sheet.css";
 import loadingCss from "./loading.css?inline";
 
@@ -63,6 +65,7 @@ function main() {
     messagesFeature,
     floatingReply,
     hotRankings,
+    share,
   ];
   if (new Set(features.map((feature) => feature.id)).size !== features.length)
     throw new Error("重复功能 ID");

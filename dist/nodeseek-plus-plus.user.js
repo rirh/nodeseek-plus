@@ -149,6 +149,33 @@ Redistribution and use in source and binary forms, with or without modification,
 
 This software is provided by the copyright holders and contributors “as is” and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. In no event shall the copyright owner or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
 
+## qrcode-generator 2.0.4
+
+Source: https://github.com/kazuhikoarase/qrcode-generator
+
+MIT License
+
+Copyright (c) 2009 Kazuhiko Arase
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The word "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 
 
 BSD 3-Clause License
@@ -588,7 +615,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		return svg;
 	}
-	var style_default = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}small{color:var(--muted);font-size:11px}dialog{width:min(600px,100vw - 24px);max-width:none;max-height:min(82dvh,720px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;overflow:hidden;box-shadow:0 12px 40px #0003}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}form{flex-direction:column;min-height:0;margin:0;display:flex}header{flex:none;align-items:center;gap:12px;padding:10px 14px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}h2{margin:0;font-size:15px;font-weight:600;line-height:22px}.search-bar{flex:0 200px;min-width:0;margin-left:auto}.search-bar input{background:var(--soft);border-color:#0000;padding:4px 10px}.status{color:#9a6700;flex:none;margin:0;padding:4px 14px;font-size:11px}.status:empty{display:none}.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:min(58dvh,460px);min-height:0;display:grid}.categories{padding:4px 6px;overflow:auto}.categories a{color:var(--muted);border-radius:5px;margin-bottom:2px;padding:6px 10px;font-size:12px;text-decoration:none;display:block}.categories a:hover{background:var(--soft)}.categories a[aria-current]{background:var(--soft);color:var(--text);font-weight:600}.content{overscroll-behavior:contain;scrollbar-gutter:stable;min-width:0;padding:0 14px 12px 8px;overflow-y:auto}section+section{margin-top:10px}h3{z-index:1;background:var(--surface);color:var(--muted);margin:0;padding:6px 0 4px;font-size:11px;font-weight:600;position:sticky;top:0}article{border-bottom:1px solid color-mix(in srgb, var(--line) 50%, transparent);padding:7px 0}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}.feature-heading strong,article>strong{font-size:12.5px;font-weight:500}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:14px;height:14px;margin:0}.feature-options{background:var(--soft);border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px 10px;margin-top:8px;font-size:12px;display:grid}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field:has(textarea){grid-template-columns:1fr}.field>span{color:var(--muted);overflow-wrap:anywhere}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px}input[type=color]{height:26px;padding:1px 2px}textarea{resize:vertical;min-height:60px}.data-tools{flex-wrap:wrap;gap:6px;margin-top:6px;display:flex}.data-tools button{min-height:26px;padding:2px 10px;font-size:11.5px}.about-heading{justify-content:space-between;align-items:center;gap:8px;display:flex}.about-heading strong{font-size:12.5px;font-weight:500}.check-update{min-height:24px;padding:1px 8px;font-size:11.5px}.about-content p{font-size:12px}.about-links{flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;display:flex}.about-links a{color:var(--link);text-decoration:none}.about-links a:hover{text-decoration:underline}.about-share{gap:6px;margin-top:10px;display:grid}.about-share textarea{box-sizing:border-box;resize:vertical;width:100%;font:inherit;font-size:12px;line-height:1.5}.about-share-actions{gap:6px;display:flex}.about-share-actions button{min-height:24px;padding:1px 8px;font-size:11.5px}.settings-footer{border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);flex:none;padding:8px 14px}.actions{justify-content:flex-end;gap:6px;display:flex}.actions button{min-height:28px;padding:3px 12px}.settings-close{color:var(--muted);background:0 0;border-color:#0000}.primary{background:var(--text);min-width:92px;color:var(--surface);border-color:#0000}.primary:hover{background:var(--text);filter:brightness(.9)}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}@media (width<=700px),(hover:none){header{flex-wrap:wrap;padding:8px 12px}.search-bar{flex:100%;margin-left:0}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:min(62dvh,520px)}.categories{gap:4px;padding:4px 12px 6px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.content{padding:0 12px 8px}.field{grid-template-columns:1fr}.settings-footer{padding:8px 12px}.actions button{flex:1}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}";
+	var style_default = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}small{color:var(--muted);font-size:11px}dialog{width:min(600px,100vw - 24px);max-width:none;max-height:min(82dvh,720px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;overflow:hidden;box-shadow:0 12px 40px #0003}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}form{flex-direction:column;min-height:0;margin:0;display:flex}header{flex:none;align-items:center;gap:12px;padding:10px 14px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}h2{margin:0;font-size:15px;font-weight:600;line-height:22px}.search-bar{flex:0 200px;min-width:0;margin-left:auto}.search-bar input{background:var(--soft);border-color:#0000;padding:4px 10px}.status{color:#9a6700;flex:none;margin:0;padding:4px 14px;font-size:11px}.status:empty{display:none}.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:min(58dvh,460px);min-height:0;display:grid}.categories{padding:4px 6px;overflow:auto}.categories a{color:var(--muted);border-radius:5px;margin-bottom:2px;padding:6px 10px;font-size:12px;text-decoration:none;display:block}.categories a:hover{background:var(--soft)}.categories a[aria-current]{background:var(--soft);color:var(--text);font-weight:600}.content{overscroll-behavior:contain;scrollbar-gutter:stable;min-width:0;padding:0 14px 12px 8px;overflow-y:auto}section+section{margin-top:10px}h3{z-index:1;background:var(--surface);color:var(--muted);margin:0;padding:6px 0 4px;font-size:11px;font-weight:600;position:sticky;top:0}article{border-bottom:1px solid color-mix(in srgb, var(--line) 50%, transparent);padding:7px 0}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}.feature-heading strong,article>strong{font-size:12.5px;font-weight:500}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:14px;height:14px;margin:0}.feature-options{background:var(--soft);border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px 10px;margin-top:8px;font-size:12px;display:grid}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field:has(textarea){grid-template-columns:1fr}.field>span{color:var(--muted);overflow-wrap:anywhere}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px}input[type=color]{height:26px;padding:1px 2px}textarea{resize:vertical;min-height:60px}.data-tools{flex-wrap:wrap;gap:6px;margin-top:6px;display:flex}.data-tools button{min-height:26px;padding:2px 10px;font-size:11.5px}.about-heading{justify-content:space-between;align-items:center;gap:8px;display:flex}.about-heading strong{font-size:12.5px;font-weight:500}.check-update{min-height:24px;padding:1px 8px;font-size:11.5px}.about-content p{font-size:12px}.about-links{flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;display:flex}.about-links a{color:var(--link);text-decoration:none}.about-links a:hover{text-decoration:underline}.about-buttons{gap:6px;display:flex}.about-share{min-height:24px;padding:1px 8px;font-size:11.5px}.settings-footer{border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);flex:none;padding:8px 14px}.actions{justify-content:flex-end;gap:6px;display:flex}.actions button{min-height:28px;padding:3px 12px}.settings-close{color:var(--muted);background:0 0;border-color:#0000}.primary{background:var(--text);min-width:92px;color:var(--surface);border-color:#0000}.primary:hover{background:var(--text);filter:brightness(.9)}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}@media (width<=700px),(hover:none){header{flex-wrap:wrap;padding:8px 12px}.search-bar{flex:100%;margin-left:0}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:min(62dvh,520px)}.categories{gap:4px;padding:4px 12px 6px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.content{padding:0 12px 8px}.field{grid-template-columns:1fr}.settings-footer{padding:8px 12px}.actions button{flex:1}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}";
 	var loading_default = "[aria-busy=true],.nspp-skeleton-shine{-webkit-text-fill-color:currentColor;cursor:progress;background-image:linear-gradient(110deg,#0000 35%,#ffffff80 50%,#0000 65%);background-repeat:no-repeat;background-size:250% 100%;animation:1.8s linear infinite nspp-busy-feedback;opacity:1!important}@keyframes nspp-busy-feedback{0%{background-position:150% 0}to{background-position:-150% 0}}.nspp-sweep-shine,[aria-busy=true].nspp-sweep-shine{cursor:progress;background:linear-gradient(90deg,currentColor 0% 40%,#ffffffe6 50%,currentColor 60% 100%) 0 0/200% 100%;-webkit-text-fill-color:transparent;-webkit-background-clip:text;background-clip:text;animation:4s linear infinite nspp-sweep-shine;opacity:1!important}.nspp-sweep-shine *{-webkit-text-fill-color:currentColor}[aria-busy=true]:has(>.nspp-sweep-shine){background-image:none;animation:none}@keyframes nspp-sweep-shine{0%{background-position:200% 0}to{background-position:-200% 0}}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:transparent;background-image:linear-gradient(110deg,currentColor 35%,#ffffff80 50%,currentColor 65%);-webkit-background-clip:text;background-clip:text}.nspp-action[aria-busy=true]>svg{transform-origin:50%;animation:.7s ease-in-out infinite nspp-attendance-working}@keyframes nspp-attendance-working{0%,to{transform:translateY(0)rotate(-8deg)}50%{transform:translateY(-3px)rotate(8deg)}}@media (prefers-reduced-motion:reduce){[aria-busy=true],.nspp-skeleton-shine,.nspp-action[aria-busy=true]>svg{background-image:none;animation:none}.nspp-sweep-shine,[aria-busy=true].nspp-sweep-shine{-webkit-text-fill-color:currentColor;background:0 0;animation:none}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:currentColor;background-image:none}}";
 	var sheet_default = "@media (width<=700px),(hover:none){dialog.nspp-sheet{box-sizing:border-box;width:100%;min-width:0;max-width:none;height:auto;max-height:calc(100dvh - max(24px, env(safe-area-inset-top)));padding-bottom:max(8px, env(safe-area-inset-bottom));overscroll-behavior:contain;border:0;border-top:1px solid #818b9830;border-radius:14px 14px 0 0;margin:0;position:fixed;inset:auto 0 0;overflow:hidden auto;box-shadow:0 -8px 32px #0003}dialog.nspp-sheet[open]{flex-direction:column;display:flex}dialog.nspp-sheet.nspp-sheet-tall{height:min(88dvh,760px)}dialog.nspp-sheet:before{content:\"\";background:#818b9860;border-radius:2px;flex:none;align-self:center;width:36px;height:4px;margin:6px 0 2px}dialog.nspp-sheet::backdrop{background:#0006}dialog.nspp-sheet>*{flex:none;max-width:100%}dialog.nspp-sheet>.nspp-sheet-body{overscroll-behavior:contain;flex:auto;min-height:0;overflow-y:auto}dialog.nspp-sheet>footer{margin-top:auto}dialog.nspp-sheet :is(button,input,select){min-height:36px}dialog.nspp-sheet :is(input,textarea,select){font-size:16px}}";
 	async function withTabLock(name, intervalMs, task) {
@@ -835,53 +862,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (active) el.setAttribute("aria-busy", "true");
 		else el.removeAttribute("aria-busy");
 	}
-	var SHARE_TEXT = [
-		"推荐 NodeSeek++：NodeSeek / DeepFlood 论坛增强脚本，阅读增强、帖子监控、图片上传、消息中心等功能可独立开关。",
-		"安装方法：先装 Tampermonkey 等脚本管理器，再打开下方链接点击“安装”。",
-		`一键安装：${UPDATE_URL}`,
-		`项目主页：${REPOSITORY_URL}`
-	].join("\n");
-	function shareBlock(notify) {
-		const block = document.createElement("div");
-		block.className = "about-share";
-		const text = document.createElement("textarea");
-		text.readOnly = true;
-		text.rows = 4;
-		text.value = SHARE_TEXT;
-		text.setAttribute("aria-label", "分享文案");
-		text.addEventListener("focus", () => text.select());
-		const actions = document.createElement("div");
-		actions.className = "about-share-actions";
-		const copy = document.createElement("button");
-		copy.type = "button";
-		copy.textContent = "复制分享";
-		copy.addEventListener("click", async () => {
-			try {
-				await navigator.clipboard.writeText(SHARE_TEXT);
-				notify("已复制分享文案和安装地址", "success");
-			} catch {
-				text.focus();
-				text.select();
-				notify("复制失败，已选中文本，请手动复制", "error");
-			}
-		});
-		actions.append(copy);
-		if (typeof navigator.share === "function") {
-			const share = document.createElement("button");
-			share.type = "button";
-			share.textContent = "系统分享";
-			share.addEventListener("click", () => {
-				navigator.share({
-					title: "NodeSeek++",
-					text: SHARE_TEXT
-				}).catch(() => {});
-			});
-			actions.append(share);
-		}
-		block.append(text, actions);
-		return block;
-	}
-	function aboutContent(check, notify) {
+	function aboutContent(check, share) {
 		const content = document.createElement("article");
 		content.className = "about-content";
 		const heading = document.createElement("div");
@@ -904,7 +885,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				button.textContent = "检查更新";
 			}
 		});
-		heading.append(title, button);
+		const shareButton = document.createElement("button");
+		shareButton.type = "button";
+		shareButton.className = "about-share";
+		shareButton.textContent = "分享给朋友";
+		shareButton.addEventListener("click", share);
+		const buttons = document.createElement("div");
+		buttons.className = "about-buttons";
+		buttons.append(shareButton, button);
+		heading.append(title, buttons);
 		const summary = document.createElement("p");
 		summary.textContent = `v26.1027.1533 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
 		const links = document.createElement("div");
@@ -923,9 +912,2700 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			link.rel = "noopener noreferrer";
 			links.append(link);
 		}
-		content.append(heading, summary, links, shareBlock(notify));
+		content.append(heading, summary, links);
 		return content;
 	}
+	var qrcode = function(typeNumber, errorCorrectionLevel) {
+		const PAD0 = 236;
+		const PAD1 = 17;
+		let _typeNumber = typeNumber;
+		const _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+		let _modules = null;
+		let _moduleCount = 0;
+		let _dataCache = null;
+		const _dataList = [];
+		const _this = {};
+		const makeImpl = function(test, maskPattern) {
+			_moduleCount = _typeNumber * 4 + 17;
+			_modules = function(moduleCount) {
+				const modules = new Array(moduleCount);
+				for (let row = 0; row < moduleCount; row += 1) {
+					modules[row] = new Array(moduleCount);
+					for (let col = 0; col < moduleCount; col += 1) modules[row][col] = null;
+				}
+				return modules;
+			}(_moduleCount);
+			setupPositionProbePattern(0, 0);
+			setupPositionProbePattern(_moduleCount - 7, 0);
+			setupPositionProbePattern(0, _moduleCount - 7);
+			setupPositionAdjustPattern();
+			setupTimingPattern();
+			setupTypeInfo(test, maskPattern);
+			if (_typeNumber >= 7) setupTypeNumber(test);
+			if (_dataCache == null) _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+			mapData(_dataCache, maskPattern);
+		};
+		const setupPositionProbePattern = function(row, col) {
+			for (let r = -1; r <= 7; r += 1) {
+				if (row + r <= -1 || _moduleCount <= row + r) continue;
+				for (let c = -1; c <= 7; c += 1) {
+					if (col + c <= -1 || _moduleCount <= col + c) continue;
+					if (0 <= r && r <= 6 && (c == 0 || c == 6) || 0 <= c && c <= 6 && (r == 0 || r == 6) || 2 <= r && r <= 4 && 2 <= c && c <= 4) _modules[row + r][col + c] = true;
+					else _modules[row + r][col + c] = false;
+				}
+			}
+		};
+		const getBestMaskPattern = function() {
+			let minLostPoint = 0;
+			let pattern = 0;
+			for (let i = 0; i < 8; i += 1) {
+				makeImpl(true, i);
+				const lostPoint = QRUtil.getLostPoint(_this);
+				if (i == 0 || minLostPoint > lostPoint) {
+					minLostPoint = lostPoint;
+					pattern = i;
+				}
+			}
+			return pattern;
+		};
+		const setupTimingPattern = function() {
+			for (let r = 8; r < _moduleCount - 8; r += 1) {
+				if (_modules[r][6] != null) continue;
+				_modules[r][6] = r % 2 == 0;
+			}
+			for (let c = 8; c < _moduleCount - 8; c += 1) {
+				if (_modules[6][c] != null) continue;
+				_modules[6][c] = c % 2 == 0;
+			}
+		};
+		const setupPositionAdjustPattern = function() {
+			const pos = QRUtil.getPatternPosition(_typeNumber);
+			for (let i = 0; i < pos.length; i += 1) for (let j = 0; j < pos.length; j += 1) {
+				const row = pos[i];
+				const col = pos[j];
+				if (_modules[row][col] != null) continue;
+				for (let r = -2; r <= 2; r += 1) for (let c = -2; c <= 2; c += 1) if (r == -2 || r == 2 || c == -2 || c == 2 || r == 0 && c == 0) _modules[row + r][col + c] = true;
+				else _modules[row + r][col + c] = false;
+			}
+		};
+		const setupTypeNumber = function(test) {
+			const bits = QRUtil.getBCHTypeNumber(_typeNumber);
+			for (let i = 0; i < 18; i += 1) {
+				const mod = !test && (bits >> i & 1) == 1;
+				_modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+			}
+			for (let i = 0; i < 18; i += 1) {
+				const mod = !test && (bits >> i & 1) == 1;
+				_modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+			}
+		};
+		const setupTypeInfo = function(test, maskPattern) {
+			const data = _errorCorrectionLevel << 3 | maskPattern;
+			const bits = QRUtil.getBCHTypeInfo(data);
+			for (let i = 0; i < 15; i += 1) {
+				const mod = !test && (bits >> i & 1) == 1;
+				if (i < 6) _modules[i][8] = mod;
+				else if (i < 8) _modules[i + 1][8] = mod;
+				else _modules[_moduleCount - 15 + i][8] = mod;
+			}
+			for (let i = 0; i < 15; i += 1) {
+				const mod = !test && (bits >> i & 1) == 1;
+				if (i < 8) _modules[8][_moduleCount - i - 1] = mod;
+				else if (i < 9) _modules[8][15 - i - 1 + 1] = mod;
+				else _modules[8][15 - i - 1] = mod;
+			}
+			_modules[_moduleCount - 8][8] = !test;
+		};
+		const mapData = function(data, maskPattern) {
+			let inc = -1;
+			let row = _moduleCount - 1;
+			let bitIndex = 7;
+			let byteIndex = 0;
+			const maskFunc = QRUtil.getMaskFunction(maskPattern);
+			for (let col = _moduleCount - 1; col > 0; col -= 2) {
+				if (col == 6) col -= 1;
+				while (true) {
+					for (let c = 0; c < 2; c += 1) if (_modules[row][col - c] == null) {
+						let dark = false;
+						if (byteIndex < data.length) dark = (data[byteIndex] >>> bitIndex & 1) == 1;
+						if (maskFunc(row, col - c)) dark = !dark;
+						_modules[row][col - c] = dark;
+						bitIndex -= 1;
+						if (bitIndex == -1) {
+							byteIndex += 1;
+							bitIndex = 7;
+						}
+					}
+					row += inc;
+					if (row < 0 || _moduleCount <= row) {
+						row -= inc;
+						inc = -inc;
+						break;
+					}
+				}
+			}
+		};
+		const createBytes = function(buffer, rsBlocks) {
+			let offset = 0;
+			let maxDcCount = 0;
+			let maxEcCount = 0;
+			const dcdata = new Array(rsBlocks.length);
+			const ecdata = new Array(rsBlocks.length);
+			for (let r = 0; r < rsBlocks.length; r += 1) {
+				const dcCount = rsBlocks[r].dataCount;
+				const ecCount = rsBlocks[r].totalCount - dcCount;
+				maxDcCount = Math.max(maxDcCount, dcCount);
+				maxEcCount = Math.max(maxEcCount, ecCount);
+				dcdata[r] = new Array(dcCount);
+				for (let i = 0; i < dcdata[r].length; i += 1) dcdata[r][i] = 255 & buffer.getBuffer()[i + offset];
+				offset += dcCount;
+				const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+				const modPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1).mod(rsPoly);
+				ecdata[r] = new Array(rsPoly.getLength() - 1);
+				for (let i = 0; i < ecdata[r].length; i += 1) {
+					const modIndex = i + modPoly.getLength() - ecdata[r].length;
+					ecdata[r][i] = modIndex >= 0 ? modPoly.getAt(modIndex) : 0;
+				}
+			}
+			let totalCodeCount = 0;
+			for (let i = 0; i < rsBlocks.length; i += 1) totalCodeCount += rsBlocks[i].totalCount;
+			const data = new Array(totalCodeCount);
+			let index = 0;
+			for (let i = 0; i < maxDcCount; i += 1) for (let r = 0; r < rsBlocks.length; r += 1) if (i < dcdata[r].length) {
+				data[index] = dcdata[r][i];
+				index += 1;
+			}
+			for (let i = 0; i < maxEcCount; i += 1) for (let r = 0; r < rsBlocks.length; r += 1) if (i < ecdata[r].length) {
+				data[index] = ecdata[r][i];
+				index += 1;
+			}
+			return data;
+		};
+		const createData = function(typeNumber, errorCorrectionLevel, dataList) {
+			const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+			const buffer = qrBitBuffer();
+			for (let i = 0; i < dataList.length; i += 1) {
+				const data = dataList[i];
+				buffer.put(data.getMode(), 4);
+				buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber));
+				data.write(buffer);
+			}
+			let totalDataCount = 0;
+			for (let i = 0; i < rsBlocks.length; i += 1) totalDataCount += rsBlocks[i].dataCount;
+			if (buffer.getLengthInBits() > totalDataCount * 8) throw "code length overflow. (" + buffer.getLengthInBits() + ">" + totalDataCount * 8 + ")";
+			if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) buffer.put(0, 4);
+			while (buffer.getLengthInBits() % 8 != 0) buffer.putBit(false);
+			while (true) {
+				if (buffer.getLengthInBits() >= totalDataCount * 8) break;
+				buffer.put(PAD0, 8);
+				if (buffer.getLengthInBits() >= totalDataCount * 8) break;
+				buffer.put(PAD1, 8);
+			}
+			return createBytes(buffer, rsBlocks);
+		};
+		_this.addData = function(data, mode) {
+			mode = mode || "Byte";
+			let newData = null;
+			switch (mode) {
+				case "Numeric":
+					newData = qrNumber(data);
+					break;
+				case "Alphanumeric":
+					newData = qrAlphaNum(data);
+					break;
+				case "Byte":
+					newData = qr8BitByte(data);
+					break;
+				case "Kanji":
+					newData = qrKanji(data);
+					break;
+				default: throw "mode:" + mode;
+			}
+			_dataList.push(newData);
+			_dataCache = null;
+		};
+		_this.isDark = function(row, col) {
+			if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) throw row + "," + col;
+			return _modules[row][col];
+		};
+		_this.getModuleCount = function() {
+			return _moduleCount;
+		};
+		_this.make = function() {
+			if (_typeNumber < 1) {
+				let typeNumber = 1;
+				for (; typeNumber < 40; typeNumber++) {
+					const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+					const buffer = qrBitBuffer();
+					for (let i = 0; i < _dataList.length; i++) {
+						const data = _dataList[i];
+						buffer.put(data.getMode(), 4);
+						buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber));
+						data.write(buffer);
+					}
+					let totalDataCount = 0;
+					for (let i = 0; i < rsBlocks.length; i++) totalDataCount += rsBlocks[i].dataCount;
+					if (buffer.getLengthInBits() <= totalDataCount * 8) break;
+				}
+				_typeNumber = typeNumber;
+			}
+			makeImpl(false, getBestMaskPattern());
+		};
+		_this.createTableTag = function(cellSize, margin) {
+			cellSize = cellSize || 2;
+			margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+			let qrHtml = "";
+			qrHtml += "<table style=\"";
+			qrHtml += " border-width: 0px; border-style: none;";
+			qrHtml += " border-collapse: collapse;";
+			qrHtml += " padding: 0px; margin: " + margin + "px;";
+			qrHtml += "\">";
+			qrHtml += "<tbody>";
+			for (let r = 0; r < _this.getModuleCount(); r += 1) {
+				qrHtml += "<tr>";
+				for (let c = 0; c < _this.getModuleCount(); c += 1) {
+					qrHtml += "<td style=\"";
+					qrHtml += " border-width: 0px; border-style: none;";
+					qrHtml += " border-collapse: collapse;";
+					qrHtml += " padding: 0px; margin: 0px;";
+					qrHtml += " width: " + cellSize + "px;";
+					qrHtml += " height: " + cellSize + "px;";
+					qrHtml += " background-color: ";
+					qrHtml += _this.isDark(r, c) ? "#000000" : "#ffffff";
+					qrHtml += ";";
+					qrHtml += "\"/>";
+				}
+				qrHtml += "</tr>";
+			}
+			qrHtml += "</tbody>";
+			qrHtml += "</table>";
+			return qrHtml;
+		};
+		_this.createSvgTag = function(cellSize, margin, alt, title) {
+			let opts = {};
+			if (typeof arguments[0] == "object") {
+				opts = arguments[0];
+				cellSize = opts.cellSize;
+				margin = opts.margin;
+				alt = opts.alt;
+				title = opts.title;
+			}
+			cellSize = cellSize || 2;
+			margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+			alt = typeof alt === "string" ? { text: alt } : alt || {};
+			alt.text = alt.text || null;
+			alt.id = alt.text ? alt.id || "qrcode-description" : null;
+			title = typeof title === "string" ? { text: title } : title || {};
+			title.text = title.text || null;
+			title.id = title.text ? title.id || "qrcode-title" : null;
+			const size = _this.getModuleCount() * cellSize + margin * 2;
+			let c, mc, r, mr, qrSvg = "", rect;
+			rect = "l" + cellSize + ",0 0," + cellSize + " -" + cellSize + ",0 0,-" + cellSize + "z ";
+			qrSvg += "<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\"";
+			qrSvg += !opts.scalable ? " width=\"" + size + "px\" height=\"" + size + "px\"" : "";
+			qrSvg += " viewBox=\"0 0 " + size + " " + size + "\" ";
+			qrSvg += " preserveAspectRatio=\"xMinYMin meet\"";
+			qrSvg += title.text || alt.text ? " role=\"img\" aria-labelledby=\"" + escapeXml([title.id, alt.id].join(" ").trim()) + "\"" : "";
+			qrSvg += ">";
+			qrSvg += title.text ? "<title id=\"" + escapeXml(title.id) + "\">" + escapeXml(title.text) + "</title>" : "";
+			qrSvg += alt.text ? "<description id=\"" + escapeXml(alt.id) + "\">" + escapeXml(alt.text) + "</description>" : "";
+			qrSvg += "<rect width=\"100%\" height=\"100%\" fill=\"white\" cx=\"0\" cy=\"0\"/>";
+			qrSvg += "<path d=\"";
+			for (r = 0; r < _this.getModuleCount(); r += 1) {
+				mr = r * cellSize + margin;
+				for (c = 0; c < _this.getModuleCount(); c += 1) if (_this.isDark(r, c)) {
+					mc = c * cellSize + margin;
+					qrSvg += "M" + mc + "," + mr + rect;
+				}
+			}
+			qrSvg += "\" stroke=\"transparent\" fill=\"black\"/>";
+			qrSvg += "</svg>";
+			return qrSvg;
+		};
+		_this.createDataURL = function(cellSize, margin) {
+			cellSize = cellSize || 2;
+			margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+			const size = _this.getModuleCount() * cellSize + margin * 2;
+			const min = margin;
+			const max = size - margin;
+			return createDataURL(size, size, function(x, y) {
+				if (min <= x && x < max && min <= y && y < max) {
+					const c = Math.floor((x - min) / cellSize);
+					const r = Math.floor((y - min) / cellSize);
+					return _this.isDark(r, c) ? 0 : 1;
+				} else return 1;
+			});
+		};
+		_this.createImgTag = function(cellSize, margin, alt) {
+			cellSize = cellSize || 2;
+			margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+			const size = _this.getModuleCount() * cellSize + margin * 2;
+			let img = "";
+			img += "<img";
+			img += " src=\"";
+			img += _this.createDataURL(cellSize, margin);
+			img += "\"";
+			img += " width=\"";
+			img += size;
+			img += "\"";
+			img += " height=\"";
+			img += size;
+			img += "\"";
+			if (alt) {
+				img += " alt=\"";
+				img += escapeXml(alt);
+				img += "\"";
+			}
+			img += "/>";
+			return img;
+		};
+		const escapeXml = function(s) {
+			let escaped = "";
+			for (let i = 0; i < s.length; i += 1) {
+				const c = s.charAt(i);
+				switch (c) {
+					case "<":
+						escaped += "&lt;";
+						break;
+					case ">":
+						escaped += "&gt;";
+						break;
+					case "&":
+						escaped += "&amp;";
+						break;
+					case "\"":
+						escaped += "&quot;";
+						break;
+					default: escaped += c;
+				}
+			}
+			return escaped;
+		};
+		const _createHalfASCII = function(margin) {
+			const cellSize = 1;
+			margin = typeof margin == "undefined" ? 2 : margin;
+			const size = _this.getModuleCount() * cellSize + margin * 2;
+			const min = margin;
+			const max = size - margin;
+			let y, x, r1, r2, p;
+			const blocks = {
+				"██": "█",
+				"█ ": "▀",
+				" █": "▄",
+				"  ": " "
+			};
+			const blocksLastLineNoMargin = {
+				"██": "▀",
+				"█ ": "▀",
+				" █": " ",
+				"  ": " "
+			};
+			let ascii = "";
+			for (y = 0; y < size; y += 2) {
+				r1 = Math.floor((y - min) / cellSize);
+				r2 = Math.floor((y + 1 - min) / cellSize);
+				for (x = 0; x < size; x += 1) {
+					p = "█";
+					if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) p = " ";
+					if (min <= x && x < max && min <= y + 1 && y + 1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) p += " ";
+					else p += "█";
+					ascii += margin < 1 && y + 1 >= max ? blocksLastLineNoMargin[p] : blocks[p];
+				}
+				ascii += "\n";
+			}
+			if (size % 2 && margin > 0) return ascii.substring(0, ascii.length - size - 1) + Array(size + 1).join("▀");
+			return ascii.substring(0, ascii.length - 1);
+		};
+		_this.createASCII = function(cellSize, margin) {
+			cellSize = cellSize || 1;
+			if (cellSize < 2) return _createHalfASCII(margin);
+			cellSize -= 1;
+			margin = typeof margin == "undefined" ? cellSize * 2 : margin;
+			const size = _this.getModuleCount() * cellSize + margin * 2;
+			const min = margin;
+			const max = size - margin;
+			let y, x, r, p;
+			const white = Array(cellSize + 1).join("██");
+			const black = Array(cellSize + 1).join("  ");
+			let ascii = "";
+			let line = "";
+			for (y = 0; y < size; y += 1) {
+				r = Math.floor((y - min) / cellSize);
+				line = "";
+				for (x = 0; x < size; x += 1) {
+					p = 1;
+					if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) p = 0;
+					line += p ? white : black;
+				}
+				for (r = 0; r < cellSize; r += 1) ascii += line + "\n";
+			}
+			return ascii.substring(0, ascii.length - 1);
+		};
+		_this.renderTo2dContext = function(context, cellSize) {
+			cellSize = cellSize || 2;
+			const length = _this.getModuleCount();
+			for (let row = 0; row < length; row++) for (let col = 0; col < length; col++) {
+				context.fillStyle = _this.isDark(row, col) ? "black" : "white";
+				context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+			}
+		};
+		return _this;
+	};
+	qrcode.stringToBytes = function(s) {
+		const bytes = [];
+		for (let i = 0; i < s.length; i += 1) {
+			const c = s.charCodeAt(i);
+			bytes.push(c & 255);
+		}
+		return bytes;
+	};
+	qrcode.createStringToBytes = function(unicodeData, numChars) {
+		const unicodeMap = function() {
+			const bin = base64DecodeInputStream(unicodeData);
+			const read = function() {
+				const b = bin.read();
+				if (b == -1) throw "eof";
+				return b;
+			};
+			let count = 0;
+			const unicodeMap = {};
+			while (true) {
+				const b0 = bin.read();
+				if (b0 == -1) break;
+				const b1 = read();
+				const b2 = read();
+				const b3 = read();
+				const k = String.fromCharCode(b0 << 8 | b1);
+				unicodeMap[k] = b2 << 8 | b3;
+				count += 1;
+			}
+			if (count != numChars) throw count + " != " + numChars;
+			return unicodeMap;
+		}();
+		const unknownChar = "?".charCodeAt(0);
+		return function(s) {
+			const bytes = [];
+			for (let i = 0; i < s.length; i += 1) {
+				const c = s.charCodeAt(i);
+				if (c < 128) bytes.push(c);
+				else {
+					const b = unicodeMap[s.charAt(i)];
+					if (typeof b == "number") {
+						if ((b & 255) == b) bytes.push(b);
+						else {
+							bytes.push(b >>> 8);
+							bytes.push(b & 255);
+						}
+					} else bytes.push(unknownChar);
+				}
+			}
+			return bytes;
+		};
+	};
+	var QRMode = {
+		MODE_NUMBER: 1,
+		MODE_ALPHA_NUM: 2,
+		MODE_8BIT_BYTE: 4,
+		MODE_KANJI: 8
+	};
+	var QRErrorCorrectionLevel = {
+		L: 1,
+		M: 0,
+		Q: 3,
+		H: 2
+	};
+	var QRMaskPattern = {
+		PATTERN000: 0,
+		PATTERN001: 1,
+		PATTERN010: 2,
+		PATTERN011: 3,
+		PATTERN100: 4,
+		PATTERN101: 5,
+		PATTERN110: 6,
+		PATTERN111: 7
+	};
+	var QRUtil = function() {
+		const PATTERN_POSITION_TABLE = [
+			[],
+			[6, 18],
+			[6, 22],
+			[6, 26],
+			[6, 30],
+			[6, 34],
+			[
+				6,
+				22,
+				38
+			],
+			[
+				6,
+				24,
+				42
+			],
+			[
+				6,
+				26,
+				46
+			],
+			[
+				6,
+				28,
+				50
+			],
+			[
+				6,
+				30,
+				54
+			],
+			[
+				6,
+				32,
+				58
+			],
+			[
+				6,
+				34,
+				62
+			],
+			[
+				6,
+				26,
+				46,
+				66
+			],
+			[
+				6,
+				26,
+				48,
+				70
+			],
+			[
+				6,
+				26,
+				50,
+				74
+			],
+			[
+				6,
+				30,
+				54,
+				78
+			],
+			[
+				6,
+				30,
+				56,
+				82
+			],
+			[
+				6,
+				30,
+				58,
+				86
+			],
+			[
+				6,
+				34,
+				62,
+				90
+			],
+			[
+				6,
+				28,
+				50,
+				72,
+				94
+			],
+			[
+				6,
+				26,
+				50,
+				74,
+				98
+			],
+			[
+				6,
+				30,
+				54,
+				78,
+				102
+			],
+			[
+				6,
+				28,
+				54,
+				80,
+				106
+			],
+			[
+				6,
+				32,
+				58,
+				84,
+				110
+			],
+			[
+				6,
+				30,
+				58,
+				86,
+				114
+			],
+			[
+				6,
+				34,
+				62,
+				90,
+				118
+			],
+			[
+				6,
+				26,
+				50,
+				74,
+				98,
+				122
+			],
+			[
+				6,
+				30,
+				54,
+				78,
+				102,
+				126
+			],
+			[
+				6,
+				26,
+				52,
+				78,
+				104,
+				130
+			],
+			[
+				6,
+				30,
+				56,
+				82,
+				108,
+				134
+			],
+			[
+				6,
+				34,
+				60,
+				86,
+				112,
+				138
+			],
+			[
+				6,
+				30,
+				58,
+				86,
+				114,
+				142
+			],
+			[
+				6,
+				34,
+				62,
+				90,
+				118,
+				146
+			],
+			[
+				6,
+				30,
+				54,
+				78,
+				102,
+				126,
+				150
+			],
+			[
+				6,
+				24,
+				50,
+				76,
+				102,
+				128,
+				154
+			],
+			[
+				6,
+				28,
+				54,
+				80,
+				106,
+				132,
+				158
+			],
+			[
+				6,
+				32,
+				58,
+				84,
+				110,
+				136,
+				162
+			],
+			[
+				6,
+				26,
+				54,
+				82,
+				110,
+				138,
+				166
+			],
+			[
+				6,
+				30,
+				58,
+				86,
+				114,
+				142,
+				170
+			]
+		];
+		const G15 = 1335;
+		const G18 = 7973;
+		const G15_MASK = 21522;
+		const _this = {};
+		const getBCHDigit = function(data) {
+			let digit = 0;
+			while (data != 0) {
+				digit += 1;
+				data >>>= 1;
+			}
+			return digit;
+		};
+		_this.getBCHTypeInfo = function(data) {
+			let d = data << 10;
+			while (getBCHDigit(d) - getBCHDigit(G15) >= 0) d ^= G15 << getBCHDigit(d) - getBCHDigit(G15);
+			return (data << 10 | d) ^ G15_MASK;
+		};
+		_this.getBCHTypeNumber = function(data) {
+			let d = data << 12;
+			while (getBCHDigit(d) - getBCHDigit(G18) >= 0) d ^= G18 << getBCHDigit(d) - getBCHDigit(G18);
+			return data << 12 | d;
+		};
+		_this.getPatternPosition = function(typeNumber) {
+			return PATTERN_POSITION_TABLE[typeNumber - 1];
+		};
+		_this.getMaskFunction = function(maskPattern) {
+			switch (maskPattern) {
+				case QRMaskPattern.PATTERN000: return function(i, j) {
+					return (i + j) % 2 == 0;
+				};
+				case QRMaskPattern.PATTERN001: return function(i, j) {
+					return i % 2 == 0;
+				};
+				case QRMaskPattern.PATTERN010: return function(i, j) {
+					return j % 3 == 0;
+				};
+				case QRMaskPattern.PATTERN011: return function(i, j) {
+					return (i + j) % 3 == 0;
+				};
+				case QRMaskPattern.PATTERN100: return function(i, j) {
+					return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0;
+				};
+				case QRMaskPattern.PATTERN101: return function(i, j) {
+					return i * j % 2 + i * j % 3 == 0;
+				};
+				case QRMaskPattern.PATTERN110: return function(i, j) {
+					return (i * j % 2 + i * j % 3) % 2 == 0;
+				};
+				case QRMaskPattern.PATTERN111: return function(i, j) {
+					return (i * j % 3 + (i + j) % 2) % 2 == 0;
+				};
+				default: throw "bad maskPattern:" + maskPattern;
+			}
+		};
+		_this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+			let a = qrPolynomial([1], 0);
+			for (let i = 0; i < errorCorrectLength; i += 1) a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0));
+			return a;
+		};
+		_this.getLengthInBits = function(mode, type) {
+			if (1 <= type && type < 10) switch (mode) {
+				case QRMode.MODE_NUMBER: return 10;
+				case QRMode.MODE_ALPHA_NUM: return 9;
+				case QRMode.MODE_8BIT_BYTE: return 8;
+				case QRMode.MODE_KANJI: return 8;
+				default: throw "mode:" + mode;
+			}
+			else if (type < 27) switch (mode) {
+				case QRMode.MODE_NUMBER: return 12;
+				case QRMode.MODE_ALPHA_NUM: return 11;
+				case QRMode.MODE_8BIT_BYTE: return 16;
+				case QRMode.MODE_KANJI: return 10;
+				default: throw "mode:" + mode;
+			}
+			else if (type < 41) switch (mode) {
+				case QRMode.MODE_NUMBER: return 14;
+				case QRMode.MODE_ALPHA_NUM: return 13;
+				case QRMode.MODE_8BIT_BYTE: return 16;
+				case QRMode.MODE_KANJI: return 12;
+				default: throw "mode:" + mode;
+			}
+			else throw "type:" + type;
+		};
+		_this.getLostPoint = function(qrcode) {
+			const moduleCount = qrcode.getModuleCount();
+			let lostPoint = 0;
+			for (let row = 0; row < moduleCount; row += 1) for (let col = 0; col < moduleCount; col += 1) {
+				let sameCount = 0;
+				const dark = qrcode.isDark(row, col);
+				for (let r = -1; r <= 1; r += 1) {
+					if (row + r < 0 || moduleCount <= row + r) continue;
+					for (let c = -1; c <= 1; c += 1) {
+						if (col + c < 0 || moduleCount <= col + c) continue;
+						if (r == 0 && c == 0) continue;
+						if (dark == qrcode.isDark(row + r, col + c)) sameCount += 1;
+					}
+				}
+				if (sameCount > 5) lostPoint += 3 + sameCount - 5;
+			}
+			for (let row = 0; row < moduleCount - 1; row += 1) for (let col = 0; col < moduleCount - 1; col += 1) {
+				let count = 0;
+				if (qrcode.isDark(row, col)) count += 1;
+				if (qrcode.isDark(row + 1, col)) count += 1;
+				if (qrcode.isDark(row, col + 1)) count += 1;
+				if (qrcode.isDark(row + 1, col + 1)) count += 1;
+				if (count == 0 || count == 4) lostPoint += 3;
+			}
+			for (let row = 0; row < moduleCount; row += 1) for (let col = 0; col < moduleCount - 6; col += 1) if (qrcode.isDark(row, col) && !qrcode.isDark(row, col + 1) && qrcode.isDark(row, col + 2) && qrcode.isDark(row, col + 3) && qrcode.isDark(row, col + 4) && !qrcode.isDark(row, col + 5) && qrcode.isDark(row, col + 6)) lostPoint += 40;
+			for (let col = 0; col < moduleCount; col += 1) for (let row = 0; row < moduleCount - 6; row += 1) if (qrcode.isDark(row, col) && !qrcode.isDark(row + 1, col) && qrcode.isDark(row + 2, col) && qrcode.isDark(row + 3, col) && qrcode.isDark(row + 4, col) && !qrcode.isDark(row + 5, col) && qrcode.isDark(row + 6, col)) lostPoint += 40;
+			let darkCount = 0;
+			for (let col = 0; col < moduleCount; col += 1) for (let row = 0; row < moduleCount; row += 1) if (qrcode.isDark(row, col)) darkCount += 1;
+			const ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+			lostPoint += ratio * 10;
+			return lostPoint;
+		};
+		return _this;
+	}();
+	var QRMath = function() {
+		const EXP_TABLE = new Array(256);
+		const LOG_TABLE = new Array(256);
+		for (let i = 0; i < 8; i += 1) EXP_TABLE[i] = 1 << i;
+		for (let i = 8; i < 256; i += 1) EXP_TABLE[i] = EXP_TABLE[i - 4] ^ EXP_TABLE[i - 5] ^ EXP_TABLE[i - 6] ^ EXP_TABLE[i - 8];
+		for (let i = 0; i < 255; i += 1) LOG_TABLE[EXP_TABLE[i]] = i;
+		const _this = {};
+		_this.glog = function(n) {
+			if (n < 1) throw "glog(" + n + ")";
+			return LOG_TABLE[n];
+		};
+		_this.gexp = function(n) {
+			while (n < 0) n += 255;
+			while (n >= 256) n -= 255;
+			return EXP_TABLE[n];
+		};
+		return _this;
+	}();
+	var qrPolynomial = function(num, shift) {
+		if (typeof num.length == "undefined") throw num.length + "/" + shift;
+		const _num = function() {
+			let offset = 0;
+			while (offset < num.length && num[offset] == 0) offset += 1;
+			const _num = new Array(num.length - offset + shift);
+			for (let i = 0; i < num.length - offset; i += 1) _num[i] = num[i + offset];
+			return _num;
+		}();
+		const _this = {};
+		_this.getAt = function(index) {
+			return _num[index];
+		};
+		_this.getLength = function() {
+			return _num.length;
+		};
+		_this.multiply = function(e) {
+			const num = new Array(_this.getLength() + e.getLength() - 1);
+			for (let i = 0; i < _this.getLength(); i += 1) for (let j = 0; j < e.getLength(); j += 1) num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i)) + QRMath.glog(e.getAt(j)));
+			return qrPolynomial(num, 0);
+		};
+		_this.mod = function(e) {
+			if (_this.getLength() - e.getLength() < 0) return _this;
+			const ratio = QRMath.glog(_this.getAt(0)) - QRMath.glog(e.getAt(0));
+			const num = new Array(_this.getLength());
+			for (let i = 0; i < _this.getLength(); i += 1) num[i] = _this.getAt(i);
+			for (let i = 0; i < e.getLength(); i += 1) num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i)) + ratio);
+			return qrPolynomial(num, 0).mod(e);
+		};
+		return _this;
+	};
+	var QRRSBlock = function() {
+		const RS_BLOCK_TABLE = [
+			[
+				1,
+				26,
+				19
+			],
+			[
+				1,
+				26,
+				16
+			],
+			[
+				1,
+				26,
+				13
+			],
+			[
+				1,
+				26,
+				9
+			],
+			[
+				1,
+				44,
+				34
+			],
+			[
+				1,
+				44,
+				28
+			],
+			[
+				1,
+				44,
+				22
+			],
+			[
+				1,
+				44,
+				16
+			],
+			[
+				1,
+				70,
+				55
+			],
+			[
+				1,
+				70,
+				44
+			],
+			[
+				2,
+				35,
+				17
+			],
+			[
+				2,
+				35,
+				13
+			],
+			[
+				1,
+				100,
+				80
+			],
+			[
+				2,
+				50,
+				32
+			],
+			[
+				2,
+				50,
+				24
+			],
+			[
+				4,
+				25,
+				9
+			],
+			[
+				1,
+				134,
+				108
+			],
+			[
+				2,
+				67,
+				43
+			],
+			[
+				2,
+				33,
+				15,
+				2,
+				34,
+				16
+			],
+			[
+				2,
+				33,
+				11,
+				2,
+				34,
+				12
+			],
+			[
+				2,
+				86,
+				68
+			],
+			[
+				4,
+				43,
+				27
+			],
+			[
+				4,
+				43,
+				19
+			],
+			[
+				4,
+				43,
+				15
+			],
+			[
+				2,
+				98,
+				78
+			],
+			[
+				4,
+				49,
+				31
+			],
+			[
+				2,
+				32,
+				14,
+				4,
+				33,
+				15
+			],
+			[
+				4,
+				39,
+				13,
+				1,
+				40,
+				14
+			],
+			[
+				2,
+				121,
+				97
+			],
+			[
+				2,
+				60,
+				38,
+				2,
+				61,
+				39
+			],
+			[
+				4,
+				40,
+				18,
+				2,
+				41,
+				19
+			],
+			[
+				4,
+				40,
+				14,
+				2,
+				41,
+				15
+			],
+			[
+				2,
+				146,
+				116
+			],
+			[
+				3,
+				58,
+				36,
+				2,
+				59,
+				37
+			],
+			[
+				4,
+				36,
+				16,
+				4,
+				37,
+				17
+			],
+			[
+				4,
+				36,
+				12,
+				4,
+				37,
+				13
+			],
+			[
+				2,
+				86,
+				68,
+				2,
+				87,
+				69
+			],
+			[
+				4,
+				69,
+				43,
+				1,
+				70,
+				44
+			],
+			[
+				6,
+				43,
+				19,
+				2,
+				44,
+				20
+			],
+			[
+				6,
+				43,
+				15,
+				2,
+				44,
+				16
+			],
+			[
+				4,
+				101,
+				81
+			],
+			[
+				1,
+				80,
+				50,
+				4,
+				81,
+				51
+			],
+			[
+				4,
+				50,
+				22,
+				4,
+				51,
+				23
+			],
+			[
+				3,
+				36,
+				12,
+				8,
+				37,
+				13
+			],
+			[
+				2,
+				116,
+				92,
+				2,
+				117,
+				93
+			],
+			[
+				6,
+				58,
+				36,
+				2,
+				59,
+				37
+			],
+			[
+				4,
+				46,
+				20,
+				6,
+				47,
+				21
+			],
+			[
+				7,
+				42,
+				14,
+				4,
+				43,
+				15
+			],
+			[
+				4,
+				133,
+				107
+			],
+			[
+				8,
+				59,
+				37,
+				1,
+				60,
+				38
+			],
+			[
+				8,
+				44,
+				20,
+				4,
+				45,
+				21
+			],
+			[
+				12,
+				33,
+				11,
+				4,
+				34,
+				12
+			],
+			[
+				3,
+				145,
+				115,
+				1,
+				146,
+				116
+			],
+			[
+				4,
+				64,
+				40,
+				5,
+				65,
+				41
+			],
+			[
+				11,
+				36,
+				16,
+				5,
+				37,
+				17
+			],
+			[
+				11,
+				36,
+				12,
+				5,
+				37,
+				13
+			],
+			[
+				5,
+				109,
+				87,
+				1,
+				110,
+				88
+			],
+			[
+				5,
+				65,
+				41,
+				5,
+				66,
+				42
+			],
+			[
+				5,
+				54,
+				24,
+				7,
+				55,
+				25
+			],
+			[
+				11,
+				36,
+				12,
+				7,
+				37,
+				13
+			],
+			[
+				5,
+				122,
+				98,
+				1,
+				123,
+				99
+			],
+			[
+				7,
+				73,
+				45,
+				3,
+				74,
+				46
+			],
+			[
+				15,
+				43,
+				19,
+				2,
+				44,
+				20
+			],
+			[
+				3,
+				45,
+				15,
+				13,
+				46,
+				16
+			],
+			[
+				1,
+				135,
+				107,
+				5,
+				136,
+				108
+			],
+			[
+				10,
+				74,
+				46,
+				1,
+				75,
+				47
+			],
+			[
+				1,
+				50,
+				22,
+				15,
+				51,
+				23
+			],
+			[
+				2,
+				42,
+				14,
+				17,
+				43,
+				15
+			],
+			[
+				5,
+				150,
+				120,
+				1,
+				151,
+				121
+			],
+			[
+				9,
+				69,
+				43,
+				4,
+				70,
+				44
+			],
+			[
+				17,
+				50,
+				22,
+				1,
+				51,
+				23
+			],
+			[
+				2,
+				42,
+				14,
+				19,
+				43,
+				15
+			],
+			[
+				3,
+				141,
+				113,
+				4,
+				142,
+				114
+			],
+			[
+				3,
+				70,
+				44,
+				11,
+				71,
+				45
+			],
+			[
+				17,
+				47,
+				21,
+				4,
+				48,
+				22
+			],
+			[
+				9,
+				39,
+				13,
+				16,
+				40,
+				14
+			],
+			[
+				3,
+				135,
+				107,
+				5,
+				136,
+				108
+			],
+			[
+				3,
+				67,
+				41,
+				13,
+				68,
+				42
+			],
+			[
+				15,
+				54,
+				24,
+				5,
+				55,
+				25
+			],
+			[
+				15,
+				43,
+				15,
+				10,
+				44,
+				16
+			],
+			[
+				4,
+				144,
+				116,
+				4,
+				145,
+				117
+			],
+			[
+				17,
+				68,
+				42
+			],
+			[
+				17,
+				50,
+				22,
+				6,
+				51,
+				23
+			],
+			[
+				19,
+				46,
+				16,
+				6,
+				47,
+				17
+			],
+			[
+				2,
+				139,
+				111,
+				7,
+				140,
+				112
+			],
+			[
+				17,
+				74,
+				46
+			],
+			[
+				7,
+				54,
+				24,
+				16,
+				55,
+				25
+			],
+			[
+				34,
+				37,
+				13
+			],
+			[
+				4,
+				151,
+				121,
+				5,
+				152,
+				122
+			],
+			[
+				4,
+				75,
+				47,
+				14,
+				76,
+				48
+			],
+			[
+				11,
+				54,
+				24,
+				14,
+				55,
+				25
+			],
+			[
+				16,
+				45,
+				15,
+				14,
+				46,
+				16
+			],
+			[
+				6,
+				147,
+				117,
+				4,
+				148,
+				118
+			],
+			[
+				6,
+				73,
+				45,
+				14,
+				74,
+				46
+			],
+			[
+				11,
+				54,
+				24,
+				16,
+				55,
+				25
+			],
+			[
+				30,
+				46,
+				16,
+				2,
+				47,
+				17
+			],
+			[
+				8,
+				132,
+				106,
+				4,
+				133,
+				107
+			],
+			[
+				8,
+				75,
+				47,
+				13,
+				76,
+				48
+			],
+			[
+				7,
+				54,
+				24,
+				22,
+				55,
+				25
+			],
+			[
+				22,
+				45,
+				15,
+				13,
+				46,
+				16
+			],
+			[
+				10,
+				142,
+				114,
+				2,
+				143,
+				115
+			],
+			[
+				19,
+				74,
+				46,
+				4,
+				75,
+				47
+			],
+			[
+				28,
+				50,
+				22,
+				6,
+				51,
+				23
+			],
+			[
+				33,
+				46,
+				16,
+				4,
+				47,
+				17
+			],
+			[
+				8,
+				152,
+				122,
+				4,
+				153,
+				123
+			],
+			[
+				22,
+				73,
+				45,
+				3,
+				74,
+				46
+			],
+			[
+				8,
+				53,
+				23,
+				26,
+				54,
+				24
+			],
+			[
+				12,
+				45,
+				15,
+				28,
+				46,
+				16
+			],
+			[
+				3,
+				147,
+				117,
+				10,
+				148,
+				118
+			],
+			[
+				3,
+				73,
+				45,
+				23,
+				74,
+				46
+			],
+			[
+				4,
+				54,
+				24,
+				31,
+				55,
+				25
+			],
+			[
+				11,
+				45,
+				15,
+				31,
+				46,
+				16
+			],
+			[
+				7,
+				146,
+				116,
+				7,
+				147,
+				117
+			],
+			[
+				21,
+				73,
+				45,
+				7,
+				74,
+				46
+			],
+			[
+				1,
+				53,
+				23,
+				37,
+				54,
+				24
+			],
+			[
+				19,
+				45,
+				15,
+				26,
+				46,
+				16
+			],
+			[
+				5,
+				145,
+				115,
+				10,
+				146,
+				116
+			],
+			[
+				19,
+				75,
+				47,
+				10,
+				76,
+				48
+			],
+			[
+				15,
+				54,
+				24,
+				25,
+				55,
+				25
+			],
+			[
+				23,
+				45,
+				15,
+				25,
+				46,
+				16
+			],
+			[
+				13,
+				145,
+				115,
+				3,
+				146,
+				116
+			],
+			[
+				2,
+				74,
+				46,
+				29,
+				75,
+				47
+			],
+			[
+				42,
+				54,
+				24,
+				1,
+				55,
+				25
+			],
+			[
+				23,
+				45,
+				15,
+				28,
+				46,
+				16
+			],
+			[
+				17,
+				145,
+				115
+			],
+			[
+				10,
+				74,
+				46,
+				23,
+				75,
+				47
+			],
+			[
+				10,
+				54,
+				24,
+				35,
+				55,
+				25
+			],
+			[
+				19,
+				45,
+				15,
+				35,
+				46,
+				16
+			],
+			[
+				17,
+				145,
+				115,
+				1,
+				146,
+				116
+			],
+			[
+				14,
+				74,
+				46,
+				21,
+				75,
+				47
+			],
+			[
+				29,
+				54,
+				24,
+				19,
+				55,
+				25
+			],
+			[
+				11,
+				45,
+				15,
+				46,
+				46,
+				16
+			],
+			[
+				13,
+				145,
+				115,
+				6,
+				146,
+				116
+			],
+			[
+				14,
+				74,
+				46,
+				23,
+				75,
+				47
+			],
+			[
+				44,
+				54,
+				24,
+				7,
+				55,
+				25
+			],
+			[
+				59,
+				46,
+				16,
+				1,
+				47,
+				17
+			],
+			[
+				12,
+				151,
+				121,
+				7,
+				152,
+				122
+			],
+			[
+				12,
+				75,
+				47,
+				26,
+				76,
+				48
+			],
+			[
+				39,
+				54,
+				24,
+				14,
+				55,
+				25
+			],
+			[
+				22,
+				45,
+				15,
+				41,
+				46,
+				16
+			],
+			[
+				6,
+				151,
+				121,
+				14,
+				152,
+				122
+			],
+			[
+				6,
+				75,
+				47,
+				34,
+				76,
+				48
+			],
+			[
+				46,
+				54,
+				24,
+				10,
+				55,
+				25
+			],
+			[
+				2,
+				45,
+				15,
+				64,
+				46,
+				16
+			],
+			[
+				17,
+				152,
+				122,
+				4,
+				153,
+				123
+			],
+			[
+				29,
+				74,
+				46,
+				14,
+				75,
+				47
+			],
+			[
+				49,
+				54,
+				24,
+				10,
+				55,
+				25
+			],
+			[
+				24,
+				45,
+				15,
+				46,
+				46,
+				16
+			],
+			[
+				4,
+				152,
+				122,
+				18,
+				153,
+				123
+			],
+			[
+				13,
+				74,
+				46,
+				32,
+				75,
+				47
+			],
+			[
+				48,
+				54,
+				24,
+				14,
+				55,
+				25
+			],
+			[
+				42,
+				45,
+				15,
+				32,
+				46,
+				16
+			],
+			[
+				20,
+				147,
+				117,
+				4,
+				148,
+				118
+			],
+			[
+				40,
+				75,
+				47,
+				7,
+				76,
+				48
+			],
+			[
+				43,
+				54,
+				24,
+				22,
+				55,
+				25
+			],
+			[
+				10,
+				45,
+				15,
+				67,
+				46,
+				16
+			],
+			[
+				19,
+				148,
+				118,
+				6,
+				149,
+				119
+			],
+			[
+				18,
+				75,
+				47,
+				31,
+				76,
+				48
+			],
+			[
+				34,
+				54,
+				24,
+				34,
+				55,
+				25
+			],
+			[
+				20,
+				45,
+				15,
+				61,
+				46,
+				16
+			]
+		];
+		const qrRSBlock = function(totalCount, dataCount) {
+			const _this = {};
+			_this.totalCount = totalCount;
+			_this.dataCount = dataCount;
+			return _this;
+		};
+		const _this = {};
+		const getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+			switch (errorCorrectionLevel) {
+				case QRErrorCorrectionLevel.L: return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+				case QRErrorCorrectionLevel.M: return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+				case QRErrorCorrectionLevel.Q: return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+				case QRErrorCorrectionLevel.H: return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+				default: return;
+			}
+		};
+		_this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+			const rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+			if (typeof rsBlock == "undefined") throw "bad rs block @ typeNumber:" + typeNumber + "/errorCorrectionLevel:" + errorCorrectionLevel;
+			const length = rsBlock.length / 3;
+			const list = [];
+			for (let i = 0; i < length; i += 1) {
+				const count = rsBlock[i * 3 + 0];
+				const totalCount = rsBlock[i * 3 + 1];
+				const dataCount = rsBlock[i * 3 + 2];
+				for (let j = 0; j < count; j += 1) list.push(qrRSBlock(totalCount, dataCount));
+			}
+			return list;
+		};
+		return _this;
+	}();
+	var qrBitBuffer = function() {
+		const _buffer = [];
+		let _length = 0;
+		const _this = {};
+		_this.getBuffer = function() {
+			return _buffer;
+		};
+		_this.getAt = function(index) {
+			const bufIndex = Math.floor(index / 8);
+			return (_buffer[bufIndex] >>> 7 - index % 8 & 1) == 1;
+		};
+		_this.put = function(num, length) {
+			for (let i = 0; i < length; i += 1) _this.putBit((num >>> length - i - 1 & 1) == 1);
+		};
+		_this.getLengthInBits = function() {
+			return _length;
+		};
+		_this.putBit = function(bit) {
+			const bufIndex = Math.floor(_length / 8);
+			if (_buffer.length <= bufIndex) _buffer.push(0);
+			if (bit) _buffer[bufIndex] |= 128 >>> _length % 8;
+			_length += 1;
+		};
+		return _this;
+	};
+	var qrNumber = function(data) {
+		const _mode = QRMode.MODE_NUMBER;
+		const _data = data;
+		const _this = {};
+		_this.getMode = function() {
+			return _mode;
+		};
+		_this.getLength = function(buffer) {
+			return _data.length;
+		};
+		_this.write = function(buffer) {
+			const data = _data;
+			let i = 0;
+			while (i + 2 < data.length) {
+				buffer.put(strToNum(data.substring(i, i + 3)), 10);
+				i += 3;
+			}
+			if (i < data.length) {
+				if (data.length - i == 1) buffer.put(strToNum(data.substring(i, i + 1)), 4);
+				else if (data.length - i == 2) buffer.put(strToNum(data.substring(i, i + 2)), 7);
+			}
+		};
+		const strToNum = function(s) {
+			let num = 0;
+			for (let i = 0; i < s.length; i += 1) num = num * 10 + chatToNum(s.charAt(i));
+			return num;
+		};
+		const chatToNum = function(c) {
+			if ("0" <= c && c <= "9") return c.charCodeAt(0) - "0".charCodeAt(0);
+			throw "illegal char :" + c;
+		};
+		return _this;
+	};
+	var qrAlphaNum = function(data) {
+		const _mode = QRMode.MODE_ALPHA_NUM;
+		const _data = data;
+		const _this = {};
+		_this.getMode = function() {
+			return _mode;
+		};
+		_this.getLength = function(buffer) {
+			return _data.length;
+		};
+		_this.write = function(buffer) {
+			const s = _data;
+			let i = 0;
+			while (i + 1 < s.length) {
+				buffer.put(getCode(s.charAt(i)) * 45 + getCode(s.charAt(i + 1)), 11);
+				i += 2;
+			}
+			if (i < s.length) buffer.put(getCode(s.charAt(i)), 6);
+		};
+		const getCode = function(c) {
+			if ("0" <= c && c <= "9") return c.charCodeAt(0) - "0".charCodeAt(0);
+			else if ("A" <= c && c <= "Z") return c.charCodeAt(0) - "A".charCodeAt(0) + 10;
+			else switch (c) {
+				case " ": return 36;
+				case "$": return 37;
+				case "%": return 38;
+				case "*": return 39;
+				case "+": return 40;
+				case "-": return 41;
+				case ".": return 42;
+				case "/": return 43;
+				case ":": return 44;
+				default: throw "illegal char :" + c;
+			}
+		};
+		return _this;
+	};
+	var qr8BitByte = function(data) {
+		const _mode = QRMode.MODE_8BIT_BYTE;
+		const _bytes = qrcode.stringToBytes(data);
+		const _this = {};
+		_this.getMode = function() {
+			return _mode;
+		};
+		_this.getLength = function(buffer) {
+			return _bytes.length;
+		};
+		_this.write = function(buffer) {
+			for (let i = 0; i < _bytes.length; i += 1) buffer.put(_bytes[i], 8);
+		};
+		return _this;
+	};
+	var qrKanji = function(data) {
+		const _mode = QRMode.MODE_KANJI;
+		const stringToBytes = qrcode.stringToBytes;
+		(function(c, code) {
+			const test = stringToBytes(c);
+			if (test.length != 2 || (test[0] << 8 | test[1]) != code) throw "sjis not supported.";
+		})("友", 38726);
+		const _bytes = stringToBytes(data);
+		const _this = {};
+		_this.getMode = function() {
+			return _mode;
+		};
+		_this.getLength = function(buffer) {
+			return ~~(_bytes.length / 2);
+		};
+		_this.write = function(buffer) {
+			const data = _bytes;
+			let i = 0;
+			while (i + 1 < data.length) {
+				let c = (255 & data[i]) << 8 | 255 & data[i + 1];
+				if (33088 <= c && c <= 40956) c -= 33088;
+				else if (57408 <= c && c <= 60351) c -= 49472;
+				else throw "illegal char at " + (i + 1) + "/" + c;
+				c = (c >>> 8 & 255) * 192 + (c & 255);
+				buffer.put(c, 13);
+				i += 2;
+			}
+			if (i < data.length) throw "illegal char at " + (i + 1);
+		};
+		return _this;
+	};
+	var byteArrayOutputStream = function() {
+		const _bytes = [];
+		const _this = {};
+		_this.writeByte = function(b) {
+			_bytes.push(b & 255);
+		};
+		_this.writeShort = function(i) {
+			_this.writeByte(i);
+			_this.writeByte(i >>> 8);
+		};
+		_this.writeBytes = function(b, off, len) {
+			off = off || 0;
+			len = len || b.length;
+			for (let i = 0; i < len; i += 1) _this.writeByte(b[i + off]);
+		};
+		_this.writeString = function(s) {
+			for (let i = 0; i < s.length; i += 1) _this.writeByte(s.charCodeAt(i));
+		};
+		_this.toByteArray = function() {
+			return _bytes;
+		};
+		_this.toString = function() {
+			let s = "";
+			s += "[";
+			for (let i = 0; i < _bytes.length; i += 1) {
+				if (i > 0) s += ",";
+				s += _bytes[i];
+			}
+			s += "]";
+			return s;
+		};
+		return _this;
+	};
+	var base64EncodeOutputStream = function() {
+		let _buffer = 0;
+		let _buflen = 0;
+		let _length = 0;
+		let _base64 = "";
+		const _this = {};
+		const writeEncoded = function(b) {
+			_base64 += String.fromCharCode(encode(b & 63));
+		};
+		const encode = function(n) {
+			if (n < 0) throw "n:" + n;
+			else if (n < 26) return 65 + n;
+			else if (n < 52) return 97 + (n - 26);
+			else if (n < 62) return 48 + (n - 52);
+			else if (n == 62) return 43;
+			else if (n == 63) return 47;
+			else throw "n:" + n;
+		};
+		_this.writeByte = function(n) {
+			_buffer = _buffer << 8 | n & 255;
+			_buflen += 8;
+			_length += 1;
+			while (_buflen >= 6) {
+				writeEncoded(_buffer >>> _buflen - 6);
+				_buflen -= 6;
+			}
+		};
+		_this.flush = function() {
+			if (_buflen > 0) {
+				writeEncoded(_buffer << 6 - _buflen);
+				_buffer = 0;
+				_buflen = 0;
+			}
+			if (_length % 3 != 0) {
+				const padlen = 3 - _length % 3;
+				for (let i = 0; i < padlen; i += 1) _base64 += "=";
+			}
+		};
+		_this.toString = function() {
+			return _base64;
+		};
+		return _this;
+	};
+	var base64DecodeInputStream = function(str) {
+		const _str = str;
+		let _pos = 0;
+		let _buffer = 0;
+		let _buflen = 0;
+		const _this = {};
+		_this.read = function() {
+			while (_buflen < 8) {
+				if (_pos >= _str.length) {
+					if (_buflen == 0) return -1;
+					throw "unexpected end of file./" + _buflen;
+				}
+				const c = _str.charAt(_pos);
+				_pos += 1;
+				if (c == "=") {
+					_buflen = 0;
+					return -1;
+				} else if (c.match(/^\s$/)) continue;
+				_buffer = _buffer << 6 | decode(c.charCodeAt(0));
+				_buflen += 6;
+			}
+			const n = _buffer >>> _buflen - 8 & 255;
+			_buflen -= 8;
+			return n;
+		};
+		const decode = function(c) {
+			if (65 <= c && c <= 90) return c - 65;
+			else if (97 <= c && c <= 122) return c - 97 + 26;
+			else if (48 <= c && c <= 57) return c - 48 + 52;
+			else if (c == 43) return 62;
+			else if (c == 47) return 63;
+			else throw "c:" + c;
+		};
+		return _this;
+	};
+	var gifImage = function(width, height) {
+		const _width = width;
+		const _height = height;
+		const _data = new Array(width * height);
+		const _this = {};
+		_this.setPixel = function(x, y, pixel) {
+			_data[y * _width + x] = pixel;
+		};
+		_this.write = function(out) {
+			out.writeString("GIF87a");
+			out.writeShort(_width);
+			out.writeShort(_height);
+			out.writeByte(128);
+			out.writeByte(0);
+			out.writeByte(0);
+			out.writeByte(0);
+			out.writeByte(0);
+			out.writeByte(0);
+			out.writeByte(255);
+			out.writeByte(255);
+			out.writeByte(255);
+			out.writeString(",");
+			out.writeShort(0);
+			out.writeShort(0);
+			out.writeShort(_width);
+			out.writeShort(_height);
+			out.writeByte(0);
+			const lzwMinCodeSize = 2;
+			const raster = getLZWRaster(lzwMinCodeSize);
+			out.writeByte(lzwMinCodeSize);
+			let offset = 0;
+			while (raster.length - offset > 255) {
+				out.writeByte(255);
+				out.writeBytes(raster, offset, 255);
+				offset += 255;
+			}
+			out.writeByte(raster.length - offset);
+			out.writeBytes(raster, offset, raster.length - offset);
+			out.writeByte(0);
+			out.writeString(";");
+		};
+		const bitOutputStream = function(out) {
+			const _out = out;
+			let _bitLength = 0;
+			let _bitBuffer = 0;
+			const _this = {};
+			_this.write = function(data, length) {
+				if (data >>> length != 0) throw "length over";
+				while (_bitLength + length >= 8) {
+					_out.writeByte(255 & (data << _bitLength | _bitBuffer));
+					length -= 8 - _bitLength;
+					data >>>= 8 - _bitLength;
+					_bitBuffer = 0;
+					_bitLength = 0;
+				}
+				_bitBuffer = data << _bitLength | _bitBuffer;
+				_bitLength = _bitLength + length;
+			};
+			_this.flush = function() {
+				if (_bitLength > 0) _out.writeByte(_bitBuffer);
+			};
+			return _this;
+		};
+		const getLZWRaster = function(lzwMinCodeSize) {
+			const clearCode = 1 << lzwMinCodeSize;
+			const endCode = (1 << lzwMinCodeSize) + 1;
+			let bitLength = lzwMinCodeSize + 1;
+			const table = lzwTable();
+			for (let i = 0; i < clearCode; i += 1) table.add(String.fromCharCode(i));
+			table.add(String.fromCharCode(clearCode));
+			table.add(String.fromCharCode(endCode));
+			const byteOut = byteArrayOutputStream();
+			const bitOut = bitOutputStream(byteOut);
+			bitOut.write(clearCode, bitLength);
+			let dataIndex = 0;
+			let s = String.fromCharCode(_data[dataIndex]);
+			dataIndex += 1;
+			while (dataIndex < _data.length) {
+				const c = String.fromCharCode(_data[dataIndex]);
+				dataIndex += 1;
+				if (table.contains(s + c)) s = s + c;
+				else {
+					bitOut.write(table.indexOf(s), bitLength);
+					if (table.size() < 4095) {
+						if (table.size() == 1 << bitLength) bitLength += 1;
+						table.add(s + c);
+					}
+					s = c;
+				}
+			}
+			bitOut.write(table.indexOf(s), bitLength);
+			bitOut.write(endCode, bitLength);
+			bitOut.flush();
+			return byteOut.toByteArray();
+		};
+		const lzwTable = function() {
+			const _map = {};
+			let _size = 0;
+			const _this = {};
+			_this.add = function(key) {
+				if (_this.contains(key)) throw "dup key:" + key;
+				_map[key] = _size;
+				_size += 1;
+			};
+			_this.size = function() {
+				return _size;
+			};
+			_this.indexOf = function(key) {
+				return _map[key];
+			};
+			_this.contains = function(key) {
+				return typeof _map[key] != "undefined";
+			};
+			return _this;
+		};
+		return _this;
+	};
+	var createDataURL = function(width, height, getPixel) {
+		const gif = gifImage(width, height);
+		for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) gif.setPixel(x, y, getPixel(x, y));
+		const b = byteArrayOutputStream();
+		gif.write(b);
+		const base64 = base64EncodeOutputStream();
+		const bytes = b.toByteArray();
+		for (let i = 0; i < bytes.length; i += 1) base64.writeByte(bytes[i]);
+		base64.flush();
+		return "data:image/gif;base64," + base64;
+	};
+	qrcode.stringToBytes;
+	function createSheet(className, label, options = {}) {
+		const dialog = document.createElement("dialog");
+		dialog.className = `nspp-sheet ${className}`;
+		if (options.tall) dialog.classList.add("nspp-sheet-tall");
+		dialog.setAttribute("aria-label", label);
+		if (options.dismissible !== false) dialog.addEventListener("click", (event) => {
+			if (event.target !== dialog) return;
+			const rect = dialog.getBoundingClientRect();
+			if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+		});
+		return dialog;
+	}
+	var SHARE_TITLE = "NodeSeek++";
+	var SHARE_PITCH = "NodeSeek / DeepFlood 论坛增强脚本：用户资料卡、帖子监控、实时热榜、消息中心、阅读增强。";
+	var SHARE_TEXT = [
+		`推荐 ${SHARE_TITLE}：${SHARE_PITCH}`,
+		`一键安装：${UPDATE_URL}`,
+		`项目主页：${REPOSITORY_URL}`
+	].join("\n");
+	var svgIcon = (d, fill = false) => {
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("viewBox", "0 0 24 24");
+		svg.setAttribute("width", "22");
+		svg.setAttribute("height", "22");
+		svg.setAttribute("aria-hidden", "true");
+		if (fill) svg.setAttribute("fill", "currentColor");
+		else {
+			svg.setAttribute("fill", "none");
+			svg.setAttribute("stroke", "currentColor");
+			svg.setAttribute("stroke-width", "1.8");
+			svg.setAttribute("stroke-linecap", "round");
+			svg.setAttribute("stroke-linejoin", "round");
+		}
+		const path = document.createElementNS(svg.namespaceURI, "path");
+		path.setAttribute("d", d);
+		svg.append(path);
+		return svg;
+	};
+	var icons = {
+		share: () => svgIcon("M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"),
+		download: () => svgIcon("M12 3v12M7 10l5 5 5-5M4 19h16"),
+		x: () => svgIcon("M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77L17.75 3Zm-1.08 16.17h1.7L7.4 4.74H5.58l11.09 14.43Z", true),
+		telegram: () => svgIcon("M21 4 3 11l7 2 2 7 3-5 5 4 1-15ZM10 13l11-9")
+	};
+	function shareCard() {
+		const qr = qrcode(0, "M");
+		qr.addData(REPOSITORY_URL);
+		qr.make();
+		const cell = 8, size = (qr.getModuleCount() + 8) * cell, header = 76, footer = 56;
+		const canvas = document.createElement("canvas");
+		canvas.width = size + 64;
+		canvas.height = size + 64 + header + footer;
+		const c = canvas.getContext("2d");
+		if (!c) return canvas;
+		c.fillStyle = "#ffffff";
+		c.fillRect(0, 0, canvas.width, canvas.height);
+		c.fillStyle = "#1f2328";
+		c.textAlign = "center";
+		c.font = "600 28px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif";
+		c.fillText(SHARE_TITLE, canvas.width / 2, 62);
+		c.fillStyle = "#59636e";
+		c.font = "15px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", sans-serif";
+		c.fillText("NodeSeek / DeepFlood 论坛增强脚本", canvas.width / 2, 90);
+		c.save();
+		c.translate(64, 140);
+		qr.renderTo2dContext(c, cell);
+		c.restore();
+		c.fillText("扫码查看安装方法", canvas.width / 2, 108 + size + 30);
+		return canvas;
+	}
+	var share = {
+		id: "share",
+		title: "分享入口",
+		description: "工具栏显示分享按钮：保存二维码，或分享到 X、Telegram 和系统分享。",
+		group: "操作辅助",
+		defaults: { enabled: true },
+		mount(ctx) {
+			const launch = document.createElement("button");
+			launch.type = "button";
+			launch.className = "nspp-tool-icon";
+			launch.title = "分享 NodeSeek++";
+			launch.setAttribute("aria-label", launch.title);
+			launch.dataset.nsppShareLauncher = "";
+			launch.append(icons.share());
+			const panel = createSheet("nspp-share", "分享 NodeSeek++");
+			const head = document.createElement("header");
+			const title = document.createElement("h2");
+			title.textContent = "分享 NodeSeek++";
+			const close = document.createElement("button");
+			close.type = "button";
+			close.className = "nspp-share-close";
+			close.title = "关闭";
+			close.setAttribute("aria-label", close.title);
+			close.append(toolIcon("close"));
+			close.addEventListener("click", () => panel.close(), { signal: ctx.signal });
+			head.append(title, close);
+			const card = document.createElement("div");
+			card.className = "nspp-share-card";
+			const pitch = document.createElement("p");
+			pitch.textContent = SHARE_PITCH;
+			card.append(pitch);
+			const actions = document.createElement("div");
+			actions.className = "nspp-share-actions";
+			const action = (label, icon, run) => {
+				const button = document.createElement("button");
+				button.type = "button";
+				const circle = document.createElement("span");
+				circle.append(icon);
+				button.append(circle, label);
+				button.addEventListener("click", run, { signal: ctx.signal });
+				actions.append(button);
+			};
+			const open = (url) => window.open(url, "_blank", "noopener,noreferrer");
+			const copy = async () => {
+				try {
+					await navigator.clipboard.writeText(SHARE_TEXT);
+					ctx.notify("已复制分享文案和安装地址");
+				} catch {
+					ctx.notify("复制失败，请手动复制项目地址");
+				}
+			};
+			let canvas;
+			action("保存二维码", icons.download(), () => {
+				canvas ||= shareCard();
+				canvas.toBlob((blob) => {
+					if (!blob) {
+						ctx.notify("二维码生成失败");
+						return;
+					}
+					const url = URL.createObjectURL(blob);
+					const link = document.createElement("a");
+					link.href = url;
+					link.download = "nodeseek-plus-plus-qrcode.png";
+					link.click();
+					setTimeout(() => URL.revokeObjectURL(url), 1e3);
+				}, "image/png");
+			});
+			action("X", icons.x(), () => open(`https://x.com/intent/post?text=${encodeURIComponent(`推荐 ${SHARE_TITLE}：${SHARE_PITCH}`)}&url=${encodeURIComponent(REPOSITORY_URL)}`));
+			action("Telegram", icons.telegram(), () => open(`https://t.me/share/url?url=${encodeURIComponent(REPOSITORY_URL)}&text=${encodeURIComponent(`推荐 ${SHARE_TITLE}：${SHARE_PITCH}\n一键安装：${UPDATE_URL}`)}`));
+			action("更多", icons.share(), () => {
+				if (typeof navigator.share === "function") navigator.share({
+					title: SHARE_TITLE,
+					text: SHARE_TEXT
+				}).catch((error) => {
+					if (error?.name !== "AbortError") copy();
+				});
+				else copy();
+			});
+			const qr = document.createElement("div");
+			qr.className = "nspp-share-qr";
+			panel.append(head, card, qr, actions);
+			document.body.append(panel);
+			const tools = document.getElementById("nspp-tools") || document.body;
+			const settings = tools.querySelector("[data-nspp-settings-launcher]");
+			if (settings) settings.before(launch);
+			else tools.append(launch);
+			launch.addEventListener("click", () => {
+				if (!qr.firstChild) {
+					canvas ||= shareCard();
+					const image = document.createElement("img");
+					image.alt = "NodeSeek++ 项目二维码";
+					image.src = canvas.toDataURL("image/png");
+					qr.append(image);
+				}
+				panel.showModal();
+			}, { signal: ctx.signal });
+			return () => {
+				panel.remove();
+				launch.remove();
+			};
+		}
+	};
 	var element$1 = (tag, text) => {
 		const node = document.createElement(tag);
 		if (text) node.textContent = text;
@@ -1209,7 +3889,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					row.append(element$1("strong", "数据"), dataTools);
 					group.append(row);
 				}
-				if (showAbout) group.append(aboutContent(() => updates.check(), notify));
+				if (showAbout) group.append(aboutContent(() => updates.check(), () => {
+					const launcher = document.querySelector("[data-nspp-share-launcher]");
+					if (!launcher) {
+						navigator.clipboard?.writeText(SHARE_TEXT).then(() => notify("已复制分享文案和安装地址", "success"), () => notify("复制失败，请手动复制项目地址", "error"));
+						return;
+					}
+					dialog.close();
+					launcher.click();
+				}));
 			}
 			if (!groups.size) content.append(element$1("p", "没有匹配的功能"));
 			content.scrollTop = 0;
@@ -3378,18 +6066,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			firstWeekContainsDate: 4
 		}
 	};
-	function createSheet(className, label, options = {}) {
-		const dialog = document.createElement("dialog");
-		dialog.className = `nspp-sheet ${className}`;
-		if (options.tall) dialog.classList.add("nspp-sheet-tall");
-		dialog.setAttribute("aria-label", label);
-		if (options.dismissible !== false) dialog.addEventListener("click", (event) => {
-			if (event.target !== dialog) return;
-			const rect = dialog.getBoundingClientRect();
-			if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
-		});
-		return dialog;
-	}
 	var historyFeature = {
 		id: "reading-history",
 		title: "阅读历史与已读标记",
@@ -24469,6 +27145,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 	_css(".nspp-user-hover{z-index:10010;box-sizing:border-box;border:1px solid var(--border-color,#818b9840);background:var(--bg-color,Canvas);width:260px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);color:var(--text-color,CanvasText);border-radius:8px;padding:12px;font:12px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;overflow:auto;box-shadow:0 6px 24px #0002}.nspp-user-hover[hidden]{display:none!important}.nspp-user-hover-name{color:inherit;font-weight:600;text-decoration:none}.nspp-user-hover dl{grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0;display:grid}.nspp-user-hover dt{opacity:.65}.nspp-user-hover dd{font-variant-numeric:tabular-nums;margin:0}.nspp-user-hover>.nspp-block-toggle{font:inherit;color:inherit;background:0 0;border:1px solid #818b9840;border-radius:4px;margin:8px 0 0;padding:4px 8px;display:flex}.nspp-user-hover{border-radius:12px;width:280px;padding:12px;box-shadow:0 12px 36px #0002,0 2px 6px #0001}.nspp-user-hover .nspp-user-hover-header{align-items:center;gap:8px;margin-bottom:10px;display:flex}.nspp-user-hover .nspp-user-hover-header>div{flex-wrap:wrap;align-items:center;gap:6px;min-width:0;display:flex}.nspp-user-hover-name{overflow-wrap:anywhere;font-size:13px}.nspp-user-hover-monogram{color:#0969da;background:#0969da10;border-radius:10px;flex:0 0 36px;place-items:center;height:36px;font-size:18px;font-weight:600;display:grid}.nspp-user-hover .nspp-user-hover-rich{background:#818b9808;border:1px solid #818b9824;border-radius:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px;padding:7px 6px;font-size:13px;line-height:22px;display:grid}.nspp-user-hover-rich>div{flex-direction:column;align-items:center;gap:4px;min-width:0;display:flex}.nspp-user-hover-rich small{opacity:.6;font-size:11px;line-height:16px}.nspp-user-hover-rich .iconpark-icon{width:13px;height:13px}.nspp-user-hover-rich .nspp-age{font-weight:600}.nspp-user-hover dl{gap:4px 10px;margin:0}.nspp-user-hover dd{text-align:right;font-weight:500}.nspp-user-hover>.nspp-block-toggle{border-radius:6px;justify-content:center;width:100%;margin-top:12px;padding:5px 8px}.nspp-user-hover>.nspp-block-toggle:hover{color:#cf3434;background:#cf343410;border-color:#cf343440}.dark-layout .nspp-user-hover{color:#e6edf3;background:#161b22}.dark-layout .nspp-user-hover-monogram{color:#79b8ff;background:#79b8ff18}.nspp-user-badges[hidden],.nspp-user-hover-tags[hidden]{display:none!important}.nspp-user-hover-tags{flex-wrap:wrap;gap:5px;width:100%;display:flex}.nspp-user-hover-avatar{object-fit:cover;border-radius:10px;flex:0 0 32px;width:32px;height:32px}.nspp-user-hover-avatar[hidden],.nspp-user-hover-monogram[hidden]{display:none!important}.nspp-user-hover-signature{color:inherit;opacity:.7;white-space:pre-wrap;overflow-wrap:anywhere;max-height:5.1em;margin:-2px 0 10px;font-size:11px;line-height:1.7;overflow:auto}.nspp-user-hover[data-trust=danger]{background:#fff3f3;border-color:#e9b9bf}.nspp-user-hover[data-trust=warning]{background:#fff9ed;border-color:#e7d5ae}.nspp-user-hover[data-trust=success]{background:#f0faf4;border-color:#b8ddc5}.nspp-user-hover[data-trust=perfect]{background:#fff8e3;border-color:#ddbc6a}.dark-layout .nspp-user-hover[data-trust=danger]{background:#2b1c22;border-color:#643740}.dark-layout .nspp-user-hover[data-trust=warning]{background:#29251b;border-color:#605234}.dark-layout .nspp-user-hover[data-trust=success]{background:#182820;border-color:#355c45}.dark-layout .nspp-user-hover[data-trust=perfect]{background:#2d2617;border-color:#756031}.nspp-user-hover .nspp-user-hover-header{width:auto;height:auto;min-height:0;box-shadow:none;background:0 0;border:0;padding:0;position:static}.nspp-copy-button{color:inherit;font:inherit;cursor:pointer;background:0 0;border:0;border-radius:4px;padding:2px 5px}.nspp-copy-button:hover{background:#818b9820}.nspp-user-hover .nspp-copy-button{opacity:.65;font-size:10px}.nspp-category-actions{white-space:nowrap;flex:none;align-items:center;gap:5px;width:max-content;max-width:none;display:inline-flex}.nspp-category-reply{cursor:pointer;white-space:nowrap;flex:none;margin:0;font-family:inherit;position:static}.nspp-copy-button{justify-content:center;align-items:center;gap:4px;display:inline-flex}.nspp-copy-button[data-copied=true]{color:#218044;opacity:1}.nspp-user-hover{width:260px;padding:9px;line-height:1.45}.nspp-user-hover .nspp-user-hover-header{gap:7px;margin-bottom:5px}.nspp-user-hover .nspp-user-hover-header>div{flex:1}.nspp-user-hover .nspp-user-hover-score{color:#768390;cursor:pointer;background:0 0;border:0;flex-direction:column;flex:none;align-items:center;gap:0;margin:0 0 0 auto;padding:0;display:flex}.nspp-user-hover-score strong{letter-spacing:-1px;font-variant-numeric:tabular-nums;font:700 26px/1 -apple-system,BlinkMacSystemFont,sans-serif}.nspp-user-hover-score small{opacity:.75;font-size:9px;line-height:16px}.nspp-user-hover[data-trust=danger] .nspp-user-hover-score{color:#c63849}.nspp-user-hover[data-trust=warning] .nspp-user-hover-score{color:#a66b08}.nspp-user-hover[data-trust=success] .nspp-user-hover-score{color:#218044}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#a56b00}.dark-layout .nspp-user-hover .nspp-user-hover-score{filter:brightness(1.5)}.nspp-user-hover dl{border-block:1px solid #818b9824;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 10px;padding:6px 0}.nspp-user-hover dl>div{justify-content:space-between;align-items:baseline;gap:6px;min-width:0;display:flex}.nspp-user-hover dt{opacity:.7;flex:none;align-items:center;gap:4px;font-size:11px;display:inline-flex}.nspp-user-hover dt .iconpark-icon{width:13px;height:13px}.nspp-user-hover dd{overflow-wrap:anywhere;min-width:0;font-size:12px}.nspp-user-hover dd a{color:inherit;text-underline-offset:3px;-webkit-text-decoration:underline #818b9850;text-decoration:underline #818b9850}.nspp-user-hover dd a:hover,.nspp-user-hover dd a:focus-visible{text-decoration-color:currentColor}.nspp-user-hover .nspp-user-hover-rich{background:0 0;border:0;border-radius:0;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:3px 6px;margin:0;padding:5px 0 0;font-size:10px;line-height:18px;display:flex}.nspp-user-hover .nspp-user-hover-rich .nspp-age{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;gap:3px;padding:1px 4px;font-size:10px;font-weight:400}.nspp-user-hover .nspp-user-hover-rich .nspp-age strong{font-weight:700}.nspp-user-hover dd.nspp-user-badges{margin:0}.nspp-user-hover dd .nspp-level{background:color-mix(in srgb, currentColor 10%, transparent);border-radius:4px;padding:0 4px;font-size:11px;line-height:17px}.nspp-user-hover .nspp-user-hover-rich .iconpark-icon{width:11px;height:11px;display:inline-block}.nspp-user-hover-rich>span{opacity:.65}.nspp-user-hover>.nspp-block-toggle{margin-top:8px;padding:3px 6px}.nspp-user-hover-signature{color:#8d7832;opacity:1;max-height:3em;margin:0 0 5px;line-height:1.5}.dark-layout .nspp-user-hover-signature,.nspp-user-hover[data-trust=perfect] .nspp-user-hover-signature{color:#cdbb87}.nspp-user-hover-actions{gap:4px;margin-top:6px;display:flex}.nspp-user-hover-actions[hidden]{display:none!important}.nspp-user-hover-actions>:is(a,button){box-sizing:border-box;min-width:0;color:inherit;white-space:nowrap;cursor:pointer;background:0 0;border:1px solid #0000;border-radius:6px;flex:1;justify-content:center;align-items:center;gap:3px;margin:0;padding:3px;font-family:inherit;font-size:11px;line-height:18px;text-decoration:none;display:inline-flex}.nspp-user-hover-actions .iconpark-icon{width:12px;height:12px}.nspp-user-hover-actions>[data-action=transfer]{color:#fff;background:#218044}.nspp-user-hover-actions>[data-action=follow]{color:#fff;background:#0969da}.nspp-user-hover-actions>[data-action=message]{color:#fff;background:#8250df}.nspp-user-hover-actions>.nspp-block-toggle{color:#fff;background:#cf3434}.nspp-user-hover-actions>:hover{filter:brightness(.9)}.nspp-user-hover-actions>:disabled{opacity:.5;cursor:wait}.user-card[data-nspp-replaced]{display:none!important}.nspp-user-hover.nspp-user-hover-inline{align-self:start;width:auto;max-width:none;max-height:none;display:block;position:static;overflow:visible;box-shadow:0 2px 8px #0000000f}.nspp-user-hover.nspp-user-hover-inline[hidden]{display:none!important}.nspp-user-transfer{width:min(340px,100vw - 32px)}.nspp-user-transfer form{gap:12px;display:grid}.nspp-user-transfer label{gap:6px;display:grid}.nspp-user-transfer input{box-sizing:border-box;width:100%;color:inherit;font:inherit;background:0 0;border:1px solid #818b9840;border-radius:6px;padding:8px}.nspp-user-transfer [role=status]{overflow-wrap:anywhere;margin:0;font-size:12px}.nspp-user-transfer [role=status]:empty{display:none}.nspp-transfer-actions{justify-content:flex-end;gap:8px;display:flex}.nspp-user-hover[data-trust=perfect],.dark-layout .nspp-user-hover[data-trust=perfect]{color:#eee9df;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:radial-gradient(at 100% 0,#c8a5651c,#0000 65%),linear-gradient(145deg,#26272b,#191a1e);border-color:#ac8e555c;border-radius:10px;padding:9px;box-shadow:inset 0 1px #e8ce9133,0 16px 40px #0004,0 3px 10px #0002}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-header{margin-bottom:5px}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-name{color:#f5efe2;font-weight:600}.nspp-user-hover[data-trust=perfect] :is(.nspp-user-hover-avatar,.nspp-user-hover-monogram){outline-offset:2px;border-radius:9px;outline:1px solid #d3b57566}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-monogram{color:#e8ce96;background:#d3b57514}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score{color:#ebce91;filter:none}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score strong{letter-spacing:-1px;text-shadow:0 2px 14px #d6b46c20;font-size:26px;font-weight:600}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-score small{color:#c6b899;opacity:1;font-size:9px}.nspp-user-hover[data-trust=perfect] dl{border-color:#d3b57526}.nspp-user-hover[data-trust=perfect] .nspp-user-hover-rich small{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-user-badges :is(.nspp-age,.nspp-level){--nspp-badge-color:#e5ce9c;--nspp-age-color:#b9d0be}.nspp-user-hover[data-trust=perfect] .nspp-user-badges .nspp-level[data-level=\"6\"]{background:#d3b57518;box-shadow:inset 0 0 0 1px #d3b57538}.nspp-user-hover[data-trust=perfect] dt{color:#b9b3a7;opacity:1}.nspp-user-hover[data-trust=perfect] dd{color:#eee6d6}.nspp-user-hover[data-trust=perfect] .nspp-copy-button{color:#cabb9c;opacity:1}.nspp-user-hover[data-trust=perfect] .nspp-copy-button[data-copied=true]{color:#9cd3ac}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle{color:#c7bcaa;background:0 0;border-color:#d3b57530}.nspp-user-hover[data-trust=perfect]>.nspp-block-toggle:hover{color:#ffb4b4;background:#c9787810;border-color:#c978785c}.nspp-user-hover[data-trust=perfect] :focus-visible{outline-offset:2px;outline:2px solid #e8ce96}");
 	_css(".nspp-ai-dialog{box-sizing:border-box;width:min(600px,100vw - 32px);max-height:85dvh;color:var(--text-color,#24292f);background:var(--bg-color,#fff);border:1px solid #8884;border-radius:10px;padding:20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 16px 48px #0002}.nspp-ai-dialog.nspp-ai-config{width:min(460px,100vw - 32px)}.nspp-ai-dialog::backdrop{background:#0005}.nspp-ai-dialog .nspp-ai-header{align-items:center;gap:8px;margin-bottom:8px;display:flex}.nspp-ai-dialog h2{margin:0;font-size:16px;font-weight:600;line-height:24px}.nspp-ai-dialog .nspp-ai-hint{opacity:.65;margin:0 0 18px;font-size:12px}.nspp-ai-dialog label{gap:6px;margin-bottom:14px;font-size:12px;font-weight:500;display:grid}.nspp-ai-dialog :is(input,textarea,select){box-sizing:border-box;color:inherit;font:inherit;background:0 0;border:1px solid #8885;border-radius:6px;padding:7px 10px;line-height:20px}.nspp-ai-dialog :is(input,textarea){width:100%}.nspp-ai-dialog textarea{resize:vertical}.nspp-ai-dialog input::placeholder,.nspp-ai-dialog textarea::placeholder{color:inherit;opacity:.4}.nspp-ai-dialog button{appearance:none;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:#8881;border:1px solid #8885;border-radius:6px;padding:5px 12px}.nspp-ai-dialog button:hover{background:#8882}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#fff;background:#24292f;border-color:#24292f}.nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]):hover{background:#39414a}.nspp-ai-dialog :focus-visible{outline-offset:2px;outline:2px solid #5989ba}.nspp-ai-dialog .nspp-ai-actions{border-top:1px solid #8883;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;display:flex}.nspp-ai-dialog .nspp-ai-compose{gap:8px;padding:12px 0 0}.dark-layout .nspp-ai-dialog{color:#dce1e7;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#202428}.dark-layout .nspp-ai-dialog :is(.nspp-ai-primary,[data-nspp-ai]){color:#24292f;background:#e0e5eb;border-color:#e0e5eb}@media (width<=700px),(hover:none){.nspp-ai-dialog{padding:8px 16px 16px}.nspp-ai-dialog .nspp-ai-compose textarea{min-width:100%}}.nspp-history .nspp-history-day{color:#768390;justify-content:space-between;margin-top:8px;font-size:11px}.nspp-history button[aria-pressed=true]{color:#0969da;border-color:currentColor}.nspp-history-avatar{vertical-align:middle;border-radius:50%;width:20px;height:20px;margin-right:6px}.nspp-confirm-dialog{box-sizing:border-box;background:var(--bg-color,#fff);width:min(360px,100vw - 32px);max-width:none;max-height:calc(100dvh - 32px);color:var(--text-color,#24292f);border:1px solid #818b9840;border-radius:12px;margin:auto;padding:18px;font:13px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;overflow:auto;box-shadow:0 18px 48px #0003}.nspp-confirm-dialog::backdrop{background:#0006}.nspp-confirm-dialog h2{overflow-wrap:anywhere;margin:0;font-size:15px}.nspp-confirm-dialog p{opacity:.7;margin:8px 0 18px}.nspp-confirm-dialog form{justify-content:flex-end;gap:8px;display:flex}.nspp-confirm-dialog :is(button,a){box-sizing:border-box;min-height:32px;color:inherit;font:inherit;cursor:pointer;background:0 0;border:1px solid #818b9840;border-radius:6px;justify-content:center;align-items:center;padding:5px 14px;text-decoration:none;display:inline-flex}.nspp-confirm-dialog .nspp-confirm-primary{color:#fff;background:#0969da;border-color:#0969da}.nspp-confirm-dialog .nspp-confirm-danger{color:#fff;background:#cf3434;border-color:#cf3434}.nspp-confirm-dialog :focus-visible{outline-offset:2px;outline:2px solid #0969da}.dark-layout .nspp-confirm-dialog{color:#e6edf3;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#161b22}.nspp-update-notice{z-index:1300;box-sizing:border-box;color:#1f2329;background:#fff;border:1px solid #1f232914;border-radius:10px;width:420px;max-width:calc(100vw - 24px);margin:0;padding:16px;font:13px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;position:fixed;inset:auto 20px 20px auto;box-shadow:0 8px 32px #1f23292e}.nspp-update-notice::backdrop{background:0 0}.nspp-update-title{align-items:center;gap:7px;font-size:15px;display:flex}.nspp-update-title svg{color:#3370ff;flex-shrink:0}.nspp-update-message{color:#646a73;white-space:pre-line;margin:6px 0 0}.nspp-update-actions{flex-wrap:wrap;align-items:center;gap:12px;margin-top:12px;display:flex}.nspp-update-notice :is(a,button){box-sizing:border-box;box-shadow:none;font:inherit;cursor:pointer;background:0 0;border:0;margin:0;text-decoration:none}.nspp-update-notice .nspp-update-install{color:#fff;background:#3370ff;border-radius:5px;align-items:center;min-height:32px;padding:4px 13px;font-weight:600;display:inline-flex}.nspp-update-notice .nspp-update-install:hover{background:#4e83fd}.nspp-update-notice .nspp-update-github{color:#646a73}.nspp-update-notice .nspp-update-github:hover{color:#3370ff}.nspp-update-notice .nspp-update-dismiss{color:#8f959e;margin-left:auto;padding:4px 0}.nspp-update-notice :focus-visible{outline-offset:3px;outline:2px solid #3370ff}.dark-layout .nspp-update-notice{color:#ebebeb;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#232324;border-color:#ffffff1f}.dark-layout .nspp-update-message,.dark-layout .nspp-update-notice .nspp-update-github{color:#a6a6a6}.dark-layout .nspp-update-notice .nspp-update-dismiss{color:#8a8a8a}@media (width<=600px){.nspp-update-notice{inset:auto 12px calc(12px + env(safe-area-inset-bottom)) 12px;width:auto}}@media (width<=700px),(hover:none){.nspp-confirm-dialog{padding:12px 16px 16px}.nspp-confirm-dialog form>:is(button,a){flex:1;min-height:38px}}");
 	_css(".nspp-hot-rankings{box-sizing:border-box;border-right:0;border-radius:14px 0 0 14px;width:min(420px,100vw - 24px);height:100dvh;max-height:none;margin:0;padding:12px 14px 10px;position:fixed;inset:0 0 0 auto;overflow:hidden}.nspp-hot-rankings[open]{flex-direction:column;display:flex}.nspp-hot-rankings .nspp-hot-header{box-shadow:none;background:0 0;border:0;flex:none;align-items:center;gap:12px;margin:0;padding:0 0 5px;display:flex}.nspp-hot-rankings h2{white-space:nowrap;border:0;flex:none;margin:0;padding:0;font:600 14px/24px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.nspp-hot-rankings nav{min-width:0;box-shadow:none;background:0 0;border:0;flex:1;align-items:center;gap:3px;margin:0;padding:0;display:flex}.nspp-hot-rankings button{all:unset;box-sizing:border-box;color:inherit;cursor:pointer;font:inherit;white-space:nowrap;text-align:center;border-radius:4px;padding:3px 7px;font-size:11px;line-height:18px}.nspp-hot-rankings button:hover{background:#818b9818}.nspp-hot-rankings button:focus-visible{outline-offset:2px;outline:2px solid #0969da}.nspp-hot-rankings button:disabled{opacity:.55;cursor:wait}.nspp-hot-rankings button[aria-pressed=true]{color:#0969da;background:#0969da12;font-weight:600}.dark-layout .nspp-hot-rankings button[aria-pressed=true]{color:#79b8ff;background:#79b8ff18}.nspp-hot-rankings nav>:last-child{color:var(--text-secondary-color,#818b98);margin-left:auto}.nspp-hot-rankings .nspp-hot-close{width:24px;height:24px;color:var(--text-secondary-color,#818b98);flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.nspp-hot-close svg{width:16px;height:16px}.nspp-hot-rankings ol{overscroll-behavior:contain;flex:1;min-height:0;margin:0;padding:0;list-style:none;overflow:auto}.nspp-hot-rankings li{box-sizing:border-box;border-bottom:1px solid #818b9814;align-items:center;gap:6px;min-height:28px;margin:0;padding:3px 0;display:flex}.nspp-hot-rankings li:last-child{border-bottom:0}.nspp-hot-skeleton>span{background-color:#818b981c;border-radius:4px;flex:none;height:12px;display:block}.nspp-hot-skeleton .nspp-hot-skeleton-rank{width:20px;height:20px}.nspp-hot-skeleton .nspp-hot-skeleton-title{flex:1;margin-right:8%}.nspp-hot-skeleton:nth-child(2n) .nspp-hot-skeleton-title{margin-right:20%}.nspp-hot-skeleton .nspp-hot-skeleton-heat{width:40px;margin-left:auto}.nspp-hot-rankings li:hover{background:#818b980a}.nspp-hot-rankings li a{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:inherit;flex:1;font-size:12px;line-height:21px;text-decoration:none;overflow:hidden}.nspp-hot-rankings li a:hover{text-decoration:underline}.nspp-hot-rank{text-align:center;color:#818b98;font-variant-numeric:tabular-nums;flex:none;width:20px;font-size:11px;font-weight:600}.nspp-hot-heat{color:#818b98;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none;justify-content:flex-end;align-items:center;gap:3px;min-width:58px;font-size:10px;display:inline-flex}.nspp-hot-heat svg{fill:currentColor;stroke-width:1px;width:12px;height:14px}.nspp-hot-rankings [data-rank=\"1\"]{--nspp-rank-color:#ef4444}.nspp-hot-rankings [data-rank=\"2\"]{--nspp-rank-color:#f0782c}.nspp-hot-rankings [data-rank=\"3\"]{--nspp-rank-color:#c89419}.nspp-hot-rankings :is([data-rank=\"1\"],[data-rank=\"2\"],[data-rank=\"3\"]) .nspp-hot-rank{color:var(--nspp-rank-color);background:color-mix(in srgb, var(--nspp-rank-color) 10%, transparent);border-radius:4px;line-height:20px}.nspp-hot-rankings :is([data-rank=\"1\"],[data-rank=\"2\"],[data-rank=\"3\"]) .nspp-hot-heat{color:var(--nspp-rank-color)}.nspp-hot-rankings [role=status]{color:var(--text-secondary-color,#818b98);flex:none;margin:2px 0 4px;padding:0;font-size:10px;line-height:16px}@media (width<=700px),(hover:none){.nspp-hot-rankings{padding:0 12px}.nspp-hot-rankings .nspp-hot-header{flex-wrap:wrap;gap:5px}.nspp-hot-rankings .nspp-hot-header h2{flex:1;min-width:0}.nspp-hot-rankings nav{flex-basis:100%;order:3;overflow-x:auto}.nspp-hot-rankings h2{font-size:13px}.nspp-hot-rankings button{padding:3px 5px}.nspp-hot-rankings li{gap:4px}.nspp-hot-heat{min-width:50px}}@media (width<=380px){.nspp-hot-rankings nav{flex-basis:100%;order:1}.nspp-hot-rankings .nspp-hot-close{margin-left:auto}}@media (width<=700px),(hover:none){.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>header{flex-wrap:wrap;padding:8px 12px}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>header h3{flex:1;min-width:0;margin-right:0}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>.nspp-monitor-summary{padding:8px 12px}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>.nspp-monitor-results{padding:0 12px 8px}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>.nspp-monitor-tracked{max-height:24dvh}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>footer{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 12px;display:grid}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>footer>span{grid-column:1/-1;min-width:0;display:block}.nspp-monitor:not(.nspp-monitor-config):not(.nspp-hot-rankings)>footer>button{width:100%;min-width:0;margin:0}.nspp-monitor-config .nspp-monitor-editor{padding:10px 14px 14px}.nspp-monitor-config .nspp-monitor-editor>button{align-self:stretch;width:100%}}[data-nspp-reply-launcher]{display:none!important}@media (width<=700px),(hover:none){[data-nspp-reply-launcher]:not([hidden]){display:inline-flex!important}html[data-nspp-reply-open]{scroll-behavior:auto!important;overflow:hidden!important}html[data-nspp-reply-open] body{overscroll-behavior:none;width:100%;overflow:hidden!important}html[data-nspp-reply-open] #nspp-tools{visibility:hidden}.md-editor.nspp-floating-reply{padding-bottom:env(safe-area-inset-bottom);overscroll-behavior:contain;background:var(--bg-color,Canvas);color:var(--text-color,CanvasText);border-radius:12px 12px 0 0;overflow:auto;box-shadow:0 -6px 30px #0003;inset:var(--nspp-reply-top,auto) 0 auto!important;z-index:1001!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;max-height:min(70dvh, calc(var(--nspp-reply-height,70dvh) - 8px))!important;margin:0!important;position:fixed!important}.dark-layout .md-editor.nspp-floating-reply{color:#dedede;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;background:#262626;box-shadow:0 -6px 30px #0008}.nspp-floating-reply .CodeMirror{height:clamp(80px, calc(var(--nspp-reply-height,100dvh) * .32), 240px)!important}.nspp-floating-reply textarea{max-height:30dvh;font-size:16px}.nspp-floating-reply-header{justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;font-size:12px;display:flex}.nspp-floating-reply-header button{font:inherit;color:inherit;cursor:pointer;background:#818b9818;border:0;border-radius:4px;flex:none;padding:5px 10px}}");
+	_css(".nspp-share{box-sizing:border-box;color:#1f2328;background:#fff;border:1px solid #d1d9e0;border-radius:12px;width:min(400px,100vw - 24px);padding:16px 20px 20px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;box-shadow:0 12px 40px #0003}.nspp-share::backdrop{background:#1f232866}.nspp-share header{justify-content:space-between;align-items:center;gap:8px;display:flex}.nspp-share h2{margin:0;font-size:16px;font-weight:600}.nspp-share-close{color:#818b98;cursor:pointer;background:0 0;border:0;border-radius:6px;justify-content:center;align-items:center;width:28px;height:28px;padding:0;display:inline-flex}.nspp-share-close:hover{background:#818b981f}.nspp-share-card p{color:#59636e;margin:4px 0 0;font-size:12.5px}.nspp-share-qr{justify-content:center;margin:14px 0 6px;display:flex}.nspp-share-qr img{border:1px solid #d1d9e0;border-radius:10px;width:min(220px,60vw);height:auto}.nspp-share-actions{grid-template-columns:repeat(4,1fr);gap:4px;margin-top:12px;display:grid}.nspp-share-actions button{color:#59636e;min-height:0;font:inherit;cursor:pointer;background:0 0;border:0;flex-direction:column;align-items:center;gap:6px;padding:4px 0;font-size:12px;display:flex}.nspp-share-actions button>span{color:#1f2328;background:#eaeaec;border-radius:50%;place-items:center;width:52px;height:52px;transition:background .15s;display:grid}.nspp-share-actions button:hover>span{background:#dcdce0}.dark-layout .nspp-share{color:#dedede;background:#1e1e1e;border-color:#454545}.dark-layout .nspp-share-card p,.dark-layout .nspp-share-actions button{color:#a0a0a0}.dark-layout .nspp-share-actions button>span{color:#eee;background:#333}.dark-layout .nspp-share-actions button:hover>span{background:#3d3d3d}.dark-layout .nspp-share-qr img{border-color:#454545}@media (width<=700px),(hover:none){dialog.nspp-share{padding:4px 20px max(20px, env(safe-area-inset-bottom))}}");
 	_css("@media (width<=700px),(hover:none){dialog.nspp-sheet{box-sizing:border-box;width:100%;min-width:0;max-width:none;height:auto;max-height:calc(100dvh - max(24px, env(safe-area-inset-top)));padding-bottom:max(8px, env(safe-area-inset-bottom));overscroll-behavior:contain;border:0;border-top:1px solid #818b9830;border-radius:14px 14px 0 0;margin:0;position:fixed;inset:auto 0 0;overflow:hidden auto;box-shadow:0 -8px 32px #0003}dialog.nspp-sheet[open]{flex-direction:column;display:flex}dialog.nspp-sheet.nspp-sheet-tall{height:min(88dvh,760px)}dialog.nspp-sheet:before{content:\"\";background:#818b9860;border-radius:2px;flex:none;align-self:center;width:36px;height:4px;margin:6px 0 2px}dialog.nspp-sheet::backdrop{background:#0006}dialog.nspp-sheet>*{flex:none;max-width:100%}dialog.nspp-sheet>.nspp-sheet-body{overscroll-behavior:contain;flex:auto;min-height:0;overflow-y:auto}dialog.nspp-sheet>footer{margin-top:auto}dialog.nspp-sheet :is(button,input,select){min-height:36px}dialog.nspp-sheet :is(input,textarea,select){font-size:16px}}");
 	var MENU_COMMANDS = [
 		[
@@ -24527,7 +27204,8 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 			discussionStatsFeature,
 			messagesFeature,
 			floatingReply,
-			hotRankings
+			hotRankings,
+			share
 		];
 		if (new Set(features.map((feature) => feature.id)).size !== features.length) throw new Error("重复功能 ID");
 		const ui = mountSettings(features);

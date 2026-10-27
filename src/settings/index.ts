@@ -8,6 +8,7 @@ import { clearCaches, loadSettings, saveSettings } from "../core/runtime";
 import type { Feature, Settings } from "../core/types";
 import { createUpdateChecker } from "../lib/script-update";
 import { aboutContent } from "./about";
+import { SHARE_TEXT } from "../features/share";
 
 const element = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const node = document.createElement(tag);
@@ -255,7 +256,11 @@ export function mountSettings(features: Feature[]) {
         row.append(element("strong", "数据"), dataTools);
         group.append(row);
       }
-      if (showAbout) group.append(aboutContent(() => updates.check(), notify));
+      if (showAbout) group.append(aboutContent(() => updates.check(), () => {
+        const launcher = document.querySelector<HTMLButtonElement>('[data-nspp-share-launcher]');
+        if (!launcher) { void navigator.clipboard?.writeText(SHARE_TEXT).then(() => notify('已复制分享文案和安装地址', 'success'), () => notify('复制失败，请手动复制项目地址', 'error')); return; }
+        dialog.close(); launcher.click();
+      }));
     }
     if (!groups.size) content.append(element("p", "没有匹配的功能"));
     content.scrollTop = 0;
