@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1027.1525.1
+// @version      26.1027.1533
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
@@ -588,7 +588,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		return svg;
 	}
-	var style_default = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}small{color:var(--muted);font-size:11px}dialog{width:min(600px,100vw - 24px);max-width:none;max-height:min(82dvh,720px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;overflow:hidden;box-shadow:0 12px 40px #0003}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}form{flex-direction:column;min-height:0;margin:0;display:flex}header{flex:none;align-items:center;gap:12px;padding:10px 14px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}h2{margin:0;font-size:15px;font-weight:600;line-height:22px}.search-bar{flex:0 200px;min-width:0;margin-left:auto}.search-bar input{background:var(--soft);border-color:#0000;padding:4px 10px}.status{color:#9a6700;flex:none;margin:0;padding:4px 14px;font-size:11px}.status:empty{display:none}.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:min(58dvh,460px);min-height:0;display:grid}.categories{padding:4px 6px;overflow:auto}.categories a{color:var(--muted);border-radius:5px;margin-bottom:2px;padding:6px 10px;font-size:12px;text-decoration:none;display:block}.categories a:hover{background:var(--soft)}.categories a[aria-current]{background:var(--soft);color:var(--text);font-weight:600}.content{overscroll-behavior:contain;scrollbar-gutter:stable;min-width:0;padding:0 14px 12px 8px;overflow-y:auto}section+section{margin-top:10px}h3{z-index:1;background:var(--surface);color:var(--muted);margin:0;padding:6px 0 4px;font-size:11px;font-weight:600;position:sticky;top:0}article{border-bottom:1px solid color-mix(in srgb, var(--line) 50%, transparent);padding:7px 0}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}.feature-heading strong,article>strong{font-size:12.5px;font-weight:500}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:14px;height:14px;margin:0}.feature-options{background:var(--soft);border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px 10px;margin-top:8px;font-size:12px;display:grid}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field:has(textarea){grid-template-columns:1fr}.field>span{color:var(--muted);overflow-wrap:anywhere}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px}input[type=color]{height:26px;padding:1px 2px}textarea{resize:vertical;min-height:60px}.data-tools{flex-wrap:wrap;gap:6px;margin-top:6px;display:flex}.data-tools button{min-height:26px;padding:2px 10px;font-size:11.5px}.about-heading{justify-content:space-between;align-items:center;gap:8px;display:flex}.about-heading strong{font-size:12.5px;font-weight:500}.check-update{min-height:24px;padding:1px 8px;font-size:11.5px}.about-content p{font-size:12px}.about-links{flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;display:flex}.about-links a{color:var(--link);text-decoration:none}.about-links a:hover{text-decoration:underline}.settings-footer{border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);flex:none;padding:8px 14px}.actions{justify-content:flex-end;gap:6px;display:flex}.actions button{min-height:28px;padding:3px 12px}.settings-close{color:var(--muted);background:0 0;border-color:#0000}.primary{background:var(--text);min-width:92px;color:var(--surface);border-color:#0000}.primary:hover{background:var(--text);filter:brightness(.9)}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}@media (width<=700px),(hover:none){header{flex-wrap:wrap;padding:8px 12px}.search-bar{flex:100%;margin-left:0}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:min(62dvh,520px)}.categories{gap:4px;padding:4px 12px 6px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.content{padding:0 12px 8px}.field{grid-template-columns:1fr}.settings-footer{padding:8px 12px}.actions button{flex:1}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}";
+	var style_default = ":host{all:initial;--surface:#fff;--text:#1f2328;--muted:#59636e;--line:#d1d9e0;--accent:#1f883d;--link:#0969da;--soft:#f6f8fa;--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif}:host([data-dark]){--surface:#0d1117;--text:#f0f6fc;--muted:#9198a1;--line:#3d444d;--accent:#238636;--link:#4493f8;--soft:#151b23;--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}*,:before,:after{box-sizing:border-box}[hidden]{display:none!important}button,input,textarea,select{font:inherit;letter-spacing:normal;accent-color:var(--link)}button{cursor:pointer;border:1px solid var(--line);background:var(--soft);min-height:28px;color:var(--text);white-space:nowrap;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;line-height:20px}button:hover{background:var(--line)}button:disabled{opacity:.6;cursor:wait}:focus-visible{outline:2px solid var(--link);outline-offset:2px}p{color:var(--muted);overflow-wrap:anywhere;margin:3px 0 0}small{color:var(--muted);font-size:11px}dialog{width:min(600px,100vw - 24px);max-width:none;max-height:min(82dvh,720px);color:var(--text);background:var(--surface);border:1px solid var(--line);text-align:left;border-radius:8px;margin:auto;padding:0;overflow:hidden;box-shadow:0 12px 40px #0003}dialog[open]{flex-direction:column;display:flex}dialog::backdrop{background:#1f232866}form{flex-direction:column;min-height:0;margin:0;display:flex}header{flex:none;align-items:center;gap:12px;padding:10px 14px;display:flex}.heading{white-space:nowrap;align-items:baseline;gap:6px;display:flex}h2{margin:0;font-size:15px;font-weight:600;line-height:22px}.search-bar{flex:0 200px;min-width:0;margin-left:auto}.search-bar input{background:var(--soft);border-color:#0000;padding:4px 10px}.status{color:#9a6700;flex:none;margin:0;padding:4px 14px;font-size:11px}.status:empty{display:none}.settings-workspace{grid-template-columns:72px minmax(0,1fr);height:min(58dvh,460px);min-height:0;display:grid}.categories{padding:4px 6px;overflow:auto}.categories a{color:var(--muted);border-radius:5px;margin-bottom:2px;padding:6px 10px;font-size:12px;text-decoration:none;display:block}.categories a:hover{background:var(--soft)}.categories a[aria-current]{background:var(--soft);color:var(--text);font-weight:600}.content{overscroll-behavior:contain;scrollbar-gutter:stable;min-width:0;padding:0 14px 12px 8px;overflow-y:auto}section+section{margin-top:10px}h3{z-index:1;background:var(--surface);color:var(--muted);margin:0;padding:6px 0 4px;font-size:11px;font-weight:600;position:sticky;top:0}article{border-bottom:1px solid color-mix(in srgb, var(--line) 50%, transparent);padding:7px 0}article:last-child{border-bottom:0}.feature-heading{cursor:pointer;justify-content:space-between;align-items:center;gap:12px;min-height:20px;display:flex}.feature-heading strong,article>strong{font-size:12.5px;font-weight:500}input[type=checkbox]{cursor:pointer;flex-shrink:0;width:14px;height:14px;margin:0}.feature-options{background:var(--soft);border-radius:5px;margin-top:6px;padding:2px 10px 8px}.field{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:4px 10px;margin-top:8px;font-size:12px;display:grid}.field:has(input[type=checkbox]){grid-template-columns:1fr auto}.field:has(textarea){grid-template-columns:1fr}.field>span{color:var(--muted);overflow-wrap:anywhere}input:not([type=checkbox]),textarea,select{border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;color:var(--text);border-radius:6px;margin:0;padding:2px 8px;font-size:12px;line-height:20px}input[type=color]{height:26px;padding:1px 2px}textarea{resize:vertical;min-height:60px}.data-tools{flex-wrap:wrap;gap:6px;margin-top:6px;display:flex}.data-tools button{min-height:26px;padding:2px 10px;font-size:11.5px}.about-heading{justify-content:space-between;align-items:center;gap:8px;display:flex}.about-heading strong{font-size:12.5px;font-weight:500}.check-update{min-height:24px;padding:1px 8px;font-size:11.5px}.about-content p{font-size:12px}.about-links{flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12px;display:flex}.about-links a{color:var(--link);text-decoration:none}.about-links a:hover{text-decoration:underline}.about-share{gap:6px;margin-top:10px;display:grid}.about-share textarea{box-sizing:border-box;resize:vertical;width:100%;font:inherit;font-size:12px;line-height:1.5}.about-share-actions{gap:6px;display:flex}.about-share-actions button{min-height:24px;padding:1px 8px;font-size:11.5px}.settings-footer{border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);flex:none;padding:8px 14px}.actions{justify-content:flex-end;gap:6px;display:flex}.actions button{min-height:28px;padding:3px 12px}.settings-close{color:var(--muted);background:0 0;border-color:#0000}.primary{background:var(--text);min-width:92px;color:var(--surface);border-color:#0000}.primary:hover{background:var(--text);filter:brightness(.9)}.toast{inset:max(16px, env(safe-area-inset-top)) 16px auto auto;color:#1e40af;z-index:2147483646;overflow-wrap:anywhere;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;align-items:center;gap:10px;width:max-content;max-width:min(380px,100vw - 32px);margin:0;padding:12px 14px;font:13px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,PingFang SC,sans-serif;display:flex;position:fixed;box-shadow:0 8px 24px #1f232826}.toast[data-type=success]{color:#166534;background:#f0fdf4;border-color:#bbf7d0}.toast[data-type=error]{color:#991b1b;background:#fef2f2;border-color:#fecaca}.toast-icon{border:1.5px solid;border-radius:50%;flex:none;place-items:center;width:18px;height:18px;font-size:12px;font-weight:700;display:grid}.toast-message{flex:1;min-width:0}.toast-close{width:24px;min-height:24px;color:inherit;background:0 0;border:0;flex:none;padding:0;font-size:18px}.toast-close:hover{background:#818b9826}:host([data-dark]) .toast{color:#bfdbfe;background:#172554;border-color:#1e40af}:host([data-dark]) .toast[data-type=success]{color:#bbf7d0;background:#052e16;border-color:#166534}:host([data-dark]) .toast[data-type=error]{color:#fecaca;background:#450a0a;border-color:#991b1b}@media (width<=700px),(hover:none){header{flex-wrap:wrap;padding:8px 12px}.search-bar{flex:100%;margin-left:0}.settings-workspace{grid-template-rows:auto minmax(0,1fr);grid-template-columns:1fr;height:min(62dvh,520px)}.categories{gap:4px;padding:4px 12px 6px;display:flex;overflow-x:auto}.categories a{white-space:nowrap;flex:none;margin:0}.content{padding:0 12px 8px}.field{grid-template-columns:1fr}.settings-footer{padding:8px 12px}.actions button{flex:1}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}";
 	var loading_default = "[aria-busy=true],.nspp-skeleton-shine{-webkit-text-fill-color:currentColor;cursor:progress;background-image:linear-gradient(110deg,#0000 35%,#ffffff80 50%,#0000 65%);background-repeat:no-repeat;background-size:250% 100%;animation:1.8s linear infinite nspp-busy-feedback;opacity:1!important}@keyframes nspp-busy-feedback{0%{background-position:150% 0}to{background-position:-150% 0}}.nspp-sweep-shine,[aria-busy=true].nspp-sweep-shine{cursor:progress;background:linear-gradient(90deg,currentColor 0% 40%,#ffffffe6 50%,currentColor 60% 100%) 0 0/200% 100%;-webkit-text-fill-color:transparent;-webkit-background-clip:text;background-clip:text;animation:4s linear infinite nspp-sweep-shine;opacity:1!important}.nspp-sweep-shine *{-webkit-text-fill-color:currentColor}[aria-busy=true]:has(>.nspp-sweep-shine){background-image:none;animation:none}@keyframes nspp-sweep-shine{0%{background-position:200% 0}to{background-position:-200% 0}}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:transparent;background-image:linear-gradient(110deg,currentColor 35%,#ffffff80 50%,currentColor 65%);-webkit-background-clip:text;background-clip:text}.nspp-action[aria-busy=true]>svg{transform-origin:50%;animation:.7s ease-in-out infinite nspp-attendance-working}@keyframes nspp-attendance-working{0%,to{transform:translateY(0)rotate(-8deg)}50%{transform:translateY(-3px)rotate(8deg)}}@media (prefers-reduced-motion:reduce){[aria-busy=true],.nspp-skeleton-shine,.nspp-action[aria-busy=true]>svg{background-image:none;animation:none}.nspp-sweep-shine,[aria-busy=true].nspp-sweep-shine{-webkit-text-fill-color:currentColor;background:0 0;animation:none}.nspp-user-badges[aria-busy=true]{-webkit-text-fill-color:currentColor;background-image:none}}";
 	var sheet_default = "@media (width<=700px),(hover:none){dialog.nspp-sheet{box-sizing:border-box;width:100%;min-width:0;max-width:none;height:auto;max-height:calc(100dvh - max(24px, env(safe-area-inset-top)));padding-bottom:max(8px, env(safe-area-inset-bottom));overscroll-behavior:contain;border:0;border-top:1px solid #818b9830;border-radius:14px 14px 0 0;margin:0;position:fixed;inset:auto 0 0;overflow:hidden auto;box-shadow:0 -8px 32px #0003}dialog.nspp-sheet[open]{flex-direction:column;display:flex}dialog.nspp-sheet.nspp-sheet-tall{height:min(88dvh,760px)}dialog.nspp-sheet:before{content:\"\";background:#818b9860;border-radius:2px;flex:none;align-self:center;width:36px;height:4px;margin:6px 0 2px}dialog.nspp-sheet::backdrop{background:#0006}dialog.nspp-sheet>*{flex:none;max-width:100%}dialog.nspp-sheet>.nspp-sheet-body{overscroll-behavior:contain;flex:auto;min-height:0;overflow-y:auto}dialog.nspp-sheet>footer{margin-top:auto}dialog.nspp-sheet :is(button,input,select){min-height:36px}dialog.nspp-sheet :is(input,textarea,select){font-size:16px}}";
 	async function withTabLock(name, intervalMs, task) {
@@ -652,7 +652,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			title.append(Object.assign(document.createElement("strong"), { textContent: "新版本已发布" }));
 			const message = document.createElement("p");
 			message.className = "nspp-update-message";
-			message.textContent = `当前版本：26.1027.1525.1　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
+			message.textContent = `当前版本：26.1027.1533　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
 			const actions = document.createElement("div");
 			actions.className = "nspp-update-actions";
 			const link = (className, href, text) => Object.assign(document.createElement("a"), {
@@ -752,9 +752,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1525.1")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1533")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1525.1。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1533。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -763,7 +763,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1525.1")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1533")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -785,11 +785,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					...state(),
 					version
 				});
-				if (version && isNewerVersion(version, "26.1027.1525.1")) {
+				if (version && isNewerVersion(version, "26.1027.1533")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.1027.1525.1）`);
+				} else if (manual) notify(`当前已是最新版本（v26.1027.1533）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -835,7 +835,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (active) el.setAttribute("aria-busy", "true");
 		else el.removeAttribute("aria-busy");
 	}
-	function aboutContent(check) {
+	var SHARE_TEXT = [
+		"推荐 NodeSeek++：NodeSeek / DeepFlood 论坛增强脚本，阅读增强、帖子监控、图片上传、消息中心等功能可独立开关。",
+		"安装方法：先装 Tampermonkey 等脚本管理器，再打开下方链接点击“安装”。",
+		`一键安装：${UPDATE_URL}`,
+		`项目主页：${REPOSITORY_URL}`
+	].join("\n");
+	function shareBlock(notify) {
+		const block = document.createElement("div");
+		block.className = "about-share";
+		const text = document.createElement("textarea");
+		text.readOnly = true;
+		text.rows = 4;
+		text.value = SHARE_TEXT;
+		text.setAttribute("aria-label", "分享文案");
+		text.addEventListener("focus", () => text.select());
+		const actions = document.createElement("div");
+		actions.className = "about-share-actions";
+		const copy = document.createElement("button");
+		copy.type = "button";
+		copy.textContent = "复制分享";
+		copy.addEventListener("click", async () => {
+			try {
+				await navigator.clipboard.writeText(SHARE_TEXT);
+				notify("已复制分享文案和安装地址", "success");
+			} catch {
+				text.focus();
+				text.select();
+				notify("复制失败，已选中文本，请手动复制", "error");
+			}
+		});
+		actions.append(copy);
+		if (typeof navigator.share === "function") {
+			const share = document.createElement("button");
+			share.type = "button";
+			share.textContent = "系统分享";
+			share.addEventListener("click", () => {
+				navigator.share({
+					title: "NodeSeek++",
+					text: SHARE_TEXT
+				}).catch(() => {});
+			});
+			actions.append(share);
+		}
+		block.append(text, actions);
+		return block;
+	}
+	function aboutContent(check, notify) {
 		const content = document.createElement("article");
 		content.className = "about-content";
 		const heading = document.createElement("div");
@@ -860,11 +906,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		});
 		heading.append(title, button);
 		const summary = document.createElement("p");
-		summary.textContent = `v26.1027.1525.1 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
+		summary.textContent = `v26.1027.1533 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
 		const links = document.createElement("div");
 		links.className = "about-links";
 		for (const [label, href] of [
-			["GitHub", "https://github.com/rirh/nodeseek-plus"],
+			["GitHub", REPOSITORY_URL],
 			["下载安装", UPDATE_URL],
 			["Greasy Fork", "https://greasyfork.org/zh-CN/scripts/595488"],
 			["使用说明", "https://github.com/rirh/nodeseek-plus#readme"],
@@ -877,7 +923,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			link.rel = "noopener noreferrer";
 			links.append(link);
 		}
-		content.append(heading, summary, links);
+		content.append(heading, summary, links, shareBlock(notify));
 		return content;
 	}
 	var element$1 = (tag, text) => {
@@ -931,7 +977,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.1027.1525.1`));
+		heading.append(title, element$1("small", `v26.1027.1533`));
 		const close = element$1("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
@@ -1163,7 +1209,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					row.append(element$1("strong", "数据"), dataTools);
 					group.append(row);
 				}
-				if (showAbout) group.append(aboutContent(() => updates.check()));
+				if (showAbout) group.append(aboutContent(() => updates.check(), notify));
 			}
 			if (!groups.size) content.append(element$1("p", "没有匹配的功能"));
 			content.scrollTop = 0;
