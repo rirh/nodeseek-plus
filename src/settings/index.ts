@@ -255,7 +255,7 @@ export function mountSettings(features: Feature[]) {
         row.append(element("strong", "数据"), dataTools);
         group.append(row);
       }
-      if (showAbout) group.append(aboutContent(() => updates.check()));
+      if (showAbout) group.append(aboutContent(() => updates.check(), notify));
     }
     if (!groups.size) content.append(element("p", "没有匹配的功能"));
     content.scrollTop = 0;
