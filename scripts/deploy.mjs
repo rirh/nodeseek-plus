@@ -5,9 +5,18 @@ import { fileURLToPath } from 'node:url';
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const capture = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const run = (cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' });
+// Accept github.com URLs and SSH host aliases (e.g. git@rirh_github:...) whose ssh config resolves to github.com.
+function isReleaseRemote(url) {
+  const match = url.match(/^(?:https:\/\/([\w.-]+)\/|git@([\w.-]+):|ssh:\/\/git@([\w.-]+)(?::\d+)?\/)rirh\/nodeseek-plus(?:\.git)?$/);
+  if (!match) return false;
+  const host = match[1] || match[2] || match[3];
+  if (host === 'github.com') return true;
+  if (match[1]) return false;
+  try { return /^hostname github\.com$/m.test(execFileSync('ssh', ['-G', host], { encoding: 'utf8' })); } catch { return false; }
+}
 try {
   if (capture('branch', '--show-current') !== 'main') throw new Error('请在 main 分支发布。');
-  if (!/github\.com[:/]rirh\/nodeseek-plus(?:\.git)?$/.test(capture('remote', 'get-url', 'origin'))) throw new Error('origin 不是预期的发布仓库。');
+  if (!isReleaseRemote(capture('remote', 'get-url', 'origin'))) throw new Error('origin 不是预期的发布仓库。');
   if (capture('ls-files', '--unmerged')) throw new Error('请先解决合并冲突，再运行 make deploy。');
   run('git', ['fetch', 'origin', 'main']);
   run('git', ['merge-base', '--is-ancestor', 'origin/main', 'HEAD']);
