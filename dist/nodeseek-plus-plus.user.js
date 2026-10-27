@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1027.1619
+// @version      26.1027.1628
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
@@ -679,7 +679,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			title.append(Object.assign(document.createElement("strong"), { textContent: "新版本已发布" }));
 			const message = document.createElement("p");
 			message.className = "nspp-update-message";
-			message.textContent = `当前版本：26.1027.1619　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
+			message.textContent = `当前版本：26.1027.1628　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
 			const actions = document.createElement("div");
 			actions.className = "nspp-update-actions";
 			const link = (className, href, text) => Object.assign(document.createElement("a"), {
@@ -779,9 +779,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1619")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1027.1628")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1619。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1027.1628。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -790,7 +790,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1619")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1027.1628")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -812,11 +812,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					...state(),
 					version
 				});
-				if (version && isNewerVersion(version, "26.1027.1619")) {
+				if (version && isNewerVersion(version, "26.1027.1628")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.1027.1619）`);
+				} else if (manual) notify(`当前已是最新版本（v26.1027.1628）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -895,7 +895,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		buttons.append(shareButton, button);
 		heading.append(title, buttons);
 		const summary = document.createElement("p");
-		summary.textContent = `v26.1027.1619 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
+		summary.textContent = `v26.1027.1628 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
 		const links = document.createElement("div");
 		links.className = "about-links";
 		for (const [label, href] of [
@@ -3680,7 +3680,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.1027.1619`));
+		heading.append(title, element$1("small", `v26.1027.1628`));
 		const close = element$1("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
