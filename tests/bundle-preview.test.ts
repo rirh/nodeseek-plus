@@ -103,7 +103,7 @@ test('preview footer shares list actions while block control stays immediately a
   } finally { await f.close(); }
 });
 
-test('mobile title tap follows the original post link without opening a preview', async () => {
+test('mobile title tap opens the preview sheet instead of following the link', async () => {
   const f = await fixture({}, '<ul class="post-list"><li class="post-list-item"><div class="post-title"><a href="/post-42-1">Mobile post</a></div></li></ul>', '/', undefined, window => {
     window.matchMedia = ((query: string) => ({ matches: query.includes('hover: none') })) as typeof window.matchMedia;
   });
@@ -112,9 +112,12 @@ test('mobile title tap follows the original post link without opening a preview'
     const event = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });
     link.dispatchEvent(event);
     const view = f.window.document.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
-    assert.equal(event.defaultPrevented, false);
-    assert.equal(view.open, false);
-    assert.equal(view.hidden, true);
+    assert.equal(event.defaultPrevented, true);
+    assert.equal(view.open, true);
+    assert.equal(view.hidden, false);
+    const modified = new f.window.MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+    link.dispatchEvent(modified);
+    assert.equal(modified.defaultPrevented, false, 'modified taps keep native navigation');
   } finally { await f.close(); }
 });
 
@@ -182,11 +185,7 @@ for (const mobile of [false, true]) {
       if (mobile) link.click(); else link.dispatchEvent(new f.window.MouseEvent('mouseenter'));
       await new Promise(resolve => setTimeout(resolve, mobile ? 40 : 450));
       const preview = doc.querySelector<HTMLDialogElement>('.nspp-post-preview')!;
-      if (mobile) {
-        assert.equal(preview.open, false);
-        assert.equal(preview.hidden, true);
-        return;
-      }
+      assert.equal(preview.open, true);
       const images = preview.querySelectorAll<HTMLImageElement>('article img');
       assert.equal(images.length, 2);
       const click = new f.window.MouseEvent('click', { bubbles: true, cancelable: true });

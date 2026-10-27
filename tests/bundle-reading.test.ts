@@ -319,6 +319,8 @@ test('mobile reply keeps the native editor and draft, cancels comment loading an
     assert.equal(calls, 1);
     assert.equal(doc.querySelector('#next-comment'), null);
     doc.querySelector<HTMLButtonElement>('[aria-label="收起回复框"]')!.click();
+    assert.equal(doc.documentElement.hasAttribute('data-nspp-reply-open'), true, 'the sheet slides away before the page is restored');
+    await new Promise(resolve => setTimeout(resolve, 320));
     assert.equal(doc.documentElement.hasAttribute('data-nspp-reply-open'), false);
     assert.equal(observing, true);
     assert.equal(f.window.scrollY, 430);
@@ -328,6 +330,7 @@ test('mobile reply keeps the native editor and draft, cancels comment loading an
     pause.click();
     doc.querySelector<HTMLButtonElement>('.menu-item')!.click();
     doc.querySelector<HTMLButtonElement>('[aria-label="收起回复框"]')!.click();
+    await new Promise(resolve => setTimeout(resolve, 320));
     assert.equal(observing, false, 'closing reply does not override a manual pause');
   } finally { complete?.(); await f.close(); }
 });
