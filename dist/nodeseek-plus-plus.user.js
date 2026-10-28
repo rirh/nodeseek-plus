@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1028.1443.1
+// @version      26.1028.1451
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
@@ -13,6 +13,7 @@
 // @connect      rss.nodeseek.com
 // @connect      api.bimg.eu.org
 // @connect      raw.githubusercontent.com
+// @connect      *
 // @grant        GM.getValue
 // @grant        GM.listValues
 // @grant        GM.setValue
@@ -679,7 +680,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			title.append(Object.assign(document.createElement("strong"), { textContent: "新版本已发布" }));
 			const message = document.createElement("p");
 			message.className = "nspp-update-message";
-			message.textContent = `当前版本：26.1028.1443.1　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
+			message.textContent = `当前版本：26.1028.1451　最新版本：${latest}\n点击更新，在脚本管理器中确认后刷新页面。`;
 			const actions = document.createElement("div");
 			actions.className = "nspp-update-actions";
 			const link = (className, href, text) => Object.assign(document.createElement("a"), {
@@ -779,9 +780,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		async function notifyUpdate() {
 			await withTabLock("script-update-notification", 0, async () => {
 				const latest = state();
-				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1028.1443.1")) return;
+				if (signal.aborted || !latest.version || !isNewerVersion(latest.version, "26.1028.1451")) return;
 				if (latest.notifiedVersion === latest.version && Date.now() - (latest.notifiedAt || 0) < REMINDER_INTERVAL) return;
-				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1028.1443.1。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
+				if (systemNotify(`发现新版本 v${latest.version}，当前 v26.1028.1451。点击从 GitHub 安装更新。`, "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js", "nspp:script-update", "发现新版本")) GM_setValue$1(STATE_KEY, {
 					...state(),
 					notifiedVersion: latest.version,
 					notifiedAt: Date.now()
@@ -790,7 +791,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		}
 		async function prompt(manual) {
 			const latest = state();
-			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1028.1443.1")) return;
+			if (signal.aborted || prompting || !latest.version || !isNewerVersion(latest.version, "26.1028.1451")) return;
 			if (!manual && (!canPrompt() || latest.promptedVersion === latest.version && Date.now() - (latest.promptedAt || 0) < REMINDER_INTERVAL)) return;
 			prompting = true;
 			GM_setValue$1(STATE_KEY, {
@@ -812,11 +813,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 					...state(),
 					version
 				});
-				if (version && isNewerVersion(version, "26.1028.1443.1")) {
+				if (version && isNewerVersion(version, "26.1028.1451")) {
 					await notifyUpdate();
 					if (manual) await prompt(true);
 					else prompt(false).catch(() => {});
-				} else if (manual) notify(`当前已是最新版本（v26.1028.1443.1）`);
+				} else if (manual) notify(`当前已是最新版本（v26.1028.1451）`);
 			} catch (error) {
 				if (manual && !signal.aborted) notify(error instanceof Error ? error.message : "检查更新失败，请稍后重试");
 			}
@@ -895,7 +896,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		buttons.append(shareButton, button);
 		heading.append(title, buttons);
 		const summary = document.createElement("p");
-		summary.textContent = `v26.1028.1443.1 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
+		summary.textContent = `v26.1028.1451 · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
 		const links = document.createElement("div");
 		links.className = "about-links";
 		for (const [label, href] of [
@@ -3657,6 +3658,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		"user-level.trustColor": (settings) => settings.colors === "custom",
 		"user-level.roleColor": (settings) => settings.colors === "custom",
 		"image-upload.base": (settings) => settings.provider !== "NodeImage",
+		"image-upload.customField": (settings) => settings.provider === "Custom",
+		"image-upload.customHeaders": (settings) => settings.provider === "Custom",
+		"image-upload.customResult": (settings) => settings.provider === "Custom",
 		"reading-focus.height": (settings) => settings.collapse === true
 	};
 	function mountSettings(features) {
@@ -3680,7 +3684,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		const title = element$1("h2", "NodeSeek++");
 		title.id = "nspp-title";
 		heading.className = "heading";
-		heading.append(title, element$1("small", `v26.1028.1443.1`));
+		heading.append(title, element$1("small", `v26.1028.1451`));
 		const close = element$1("button", "关闭");
 		close.type = "button";
 		close.className = "settings-close";
@@ -14335,20 +14339,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	gsap.registerPlugin(CSSPlugin);
 	var gsapWithCSS = gsap.registerPlugin(CSSPlugin) || gsap;
 	gsapWithCSS.core.Tween;
-	function uploadNodeImage(body, headers, signal) {
+	function uploadImage(url, body, headers, signal) {
+		const name = new URL(url).hostname === "api.nodeimage.com" ? "NodeImage" : "图床";
 		return new Promise((resolve, reject) => {
 			if (signal.aborted) {
 				reject(new Error("上传已取消"));
 				return;
 			}
 			if (!hasRequest()) {
-				reject(new Error("请重新安装最新版脚本，授予 NodeImage 连接权限"));
+				reject(new Error(`请重新安装最新版脚本，授予 ${name} 连接权限`));
 				return;
 			}
 			const cleanup = () => signal.removeEventListener("abort", cancel);
 			const request = gmRequest({
 				method: "POST",
-				url: "https://api.nodeimage.com/api/upload",
+				url,
 				data: body,
 				headers,
 				anonymous: true,
@@ -14357,18 +14362,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				onload: (response) => {
 					cleanup();
 					if (response.status === 401 || response.status === 403) {
-						reject(new Error("NodeImage 密钥无效或无权限，请到官网 API 页面检查"));
+						reject(new Error(name === "NodeImage" ? "NodeImage 密钥无效或无权限，请到官网 API 页面检查" : "图床密钥无效或无权限（HTTP " + response.status + "）"));
 						return;
 					}
 					if (response.status < 200 || response.status >= 300) {
-						reject(new Error(`NodeImage 上传失败（HTTP ${response.status}）`));
+						reject(new Error(`${name} 上传失败（HTTP ${response.status}）`));
+						return;
+					}
+					if (!response.response) {
+						reject(new Error(`${name} 未返回 JSON，请检查上传地址`));
 						return;
 					}
 					resolve(response.response);
 				},
 				onerror: () => {
 					cleanup();
-					reject(new Error("无法连接 NodeImage，请检查网络和脚本连接权限"));
+					reject(new Error(`无法连接 ${name}，请检查网络和脚本连接权限`));
 				},
 				ontimeout: () => {
 					cleanup();
@@ -14428,14 +14437,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			signal.addEventListener("abort", cancel, { once: true });
 		});
 	}
-	function uploadRequest(provider, configuredBase, key, file) {
-		const base = new URL(provider === "NodeImage" ? "https://api.nodeimage.com" : configuredBase);
-		if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash) throw new Error("Invalid service URL");
+	var imageProviders = [
+		"NodeImage",
+		"Custom",
+		"Telegraph",
+		"Telegraph2",
+		"LskyPro",
+		"Chevereto",
+		"EasyImages"
+	];
+	function uploadRequest(provider, configuredBase, key, file, custom = {}) {
+		const base = new URL(provider === "NodeImage" ? "https://api.nodeimage.com" : configuredBase.trim());
+		if (base.protocol !== "https:" || base.username || base.password || base.hash || provider !== "Custom" && base.search) throw new Error("Invalid service URL");
 		const root = base.href.replace(/\/$/, "");
 		const body = new FormData();
 		const headers = { Accept: "application/json" };
 		let path = "/upload";
 		let field = "file";
+		if (provider === "Custom") {
+			field = custom.field?.trim() || "file";
+			for (const line of (custom.headers || "").split("\n")) {
+				if (!line.trim()) continue;
+				const split = line.indexOf(":");
+				const name = line.slice(0, split).trim();
+				if (split < 1 || !/^[A-Za-z0-9-]+$/.test(name)) throw new Error("Invalid header line");
+				const template = line.slice(split + 1).trim();
+				if (template.includes("{key}") && !key) throw new Error("API Key required");
+				headers[name] = template.replaceAll("{key}", key);
+			}
+			body.append(field, file);
+			return {
+				url: base.href,
+				base: base.origin,
+				body,
+				headers
+			};
+		}
 		if (provider === "NodeImage") {
 			path = "/api/upload";
 			field = "image";
@@ -14465,12 +14502,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			headers
 		};
 	}
-	function uploadResult(provider, base, raw) {
+	function pick(value, path) {
+		return path.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean).reduce((node, part) => node && typeof node === "object" ? node[part] : void 0, value);
+	}
+	function uploadResult(provider, base, raw, resultPath = "") {
 		if (!raw || typeof raw !== "object") throw new Error("Invalid upload response");
 		const result = raw;
 		let direct;
 		if (provider === "Telegraph" && Array.isArray(result)) direct = result[0]?.src;
-		else if (!Array.isArray(result)) {
+		else if (provider === "Custom") {
+			if (!Array.isArray(result) && result.success === false) throw new Error("Upload failed");
+			direct = pick(raw, resultPath.trim() || "url");
+		} else if (!Array.isArray(result)) {
 			if (result.success === false) throw new Error("Upload failed");
 			if (provider === "NodeImage") direct = result.links?.direct;
 			else if (provider === "Telegraph2" && typeof result.data === "string") direct = result.data;
@@ -14483,34 +14526,63 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		if (!["https:", "http:"].includes(url.protocol)) throw new Error("Invalid image URL");
 		return url;
 	}
+	var errorText = {
+		"Invalid URL": "请先在设置中填写 HTTPS 图床地址",
+		"Invalid service URL": "图床地址须为 HTTPS 且不含账号信息",
+		"API Key required": "请先填写图床 API Key / Token",
+		"Invalid header line": "自定义请求头格式应为每行「名称: 值」",
+		"Upload failed": "图床返回上传失败",
+		"Invalid upload response": "图床返回格式无效",
+		"Missing image URL": "未在返回结果中找到图片地址，请检查协议或返回路径",
+		"Invalid image URL": "图床返回的图片地址无效"
+	};
+	function uploadErrorText(error) {
+		if (!(error instanceof Error)) return "图片上传失败，请重试";
+		return errorText[error.message] || (/[一-鿿]/.test(error.message) ? error.message : "上传失败：请检查图床地址、API Key、协议或网络");
+	}
+	function uploadNeedsKey(provider, customHeaders = "") {
+		return provider === "Custom" ? customHeaders.includes("{key}") : !!provider && ![
+			"NodeImage",
+			"Telegraph",
+			"Telegraph2"
+		].includes(provider);
+	}
 	var imageUpload = {
 		id: "image-upload",
 		title: "图片上传",
 		group: "操作辅助",
-		description: "选择图片上传并插入链接，支持六类图床协议。默认使用 NodeImage 官方图床；其他服务须允许 CORS；密钥仅存当前页面内存。",
+		description: "选择、粘贴或拖拽图片上传并插入链接。默认使用 NodeImage 官方图床（登录后自动获取密钥）；也可选择常见图床协议或「自定义」接口。API Key 仅存当前页面内存。",
 		defaults: {
 			enabled: true,
 			provider: "NodeImage",
-			base: ""
+			base: "",
+			customField: "file",
+			customHeaders: "",
+			customResult: "data.url"
 		},
 		fields: {
 			provider: {
-				label: "图床协议",
+				label: "图床",
 				type: "select",
-				options: [
-					"NodeImage",
-					"Telegraph",
-					"Telegraph2",
-					"LskyPro",
-					"Chevereto",
-					"EasyImages"
-				].map((value) => ({
-					label: value === "NodeImage" ? "NodeImage（论坛官方，默认）" : value,
+				options: imageProviders.map((value) => ({
+					label: value === "NodeImage" ? "NodeImage 官方图床（默认）" : value === "Custom" ? "自定义接口" : value,
 					value
 				}))
 			},
 			base: {
-				label: "其他图床地址（NodeImage 固定使用官方地址）",
+				label: "图床地址（HTTPS；自定义接口填完整上传地址）",
+				type: "text"
+			},
+			customField: {
+				label: "图片表单字段名",
+				type: "text"
+			},
+			customHeaders: {
+				label: "请求头（每行「名称: 值」，{key} 替换为页面填写的密钥，例如 Authorization: Bearer {key}）",
+				type: "textarea"
+			},
+			customResult: {
+				label: "返回 JSON 中图片地址的路径（如 data.url、data[0].src）",
 				type: "text"
 			}
 		},
@@ -14630,13 +14702,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								await ensureKey();
 								status.textContent = "上传中…";
 							}
-							const request = uploadRequest(ctx.get("provider"), ctx.get("base"), apiKey, file);
-							const result = ctx.get("provider") === "NodeImage" ? await uploadNodeImage(request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
+							const provider = ctx.get("provider");
+							const request = uploadRequest(provider, ctx.get("base"), apiKey, file, {
+								field: ctx.get("customField"),
+								headers: ctx.get("customHeaders")
+							});
+							const result = provider === "NodeImage" || hasRequest() ? await uploadImage(request.url, request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
 								method: "POST",
 								headers: request.headers,
 								body: request.body
 							});
-							const url = uploadResult(ctx.get("provider"), request.base, result);
+							const url = uploadResult(provider, request.base, result, ctx.get("customResult"));
 							if (ctx.signal.aborted) return false;
 							const markdown = `![image](<${url.href.replace(/>/g, "%3E")}>)`;
 							if (cm) {
@@ -14655,7 +14731,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 								key.value = "";
 								official.hidden = false;
 							}
-							if (!ctx.signal.aborted) status.textContent = ctx.get("provider") === "NodeImage" && error instanceof Error ? error.message : "上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持";
+							if (!ctx.signal.aborted) status.textContent = uploadErrorText(error);
 							return false;
 						} finally {
 							input.disabled = false;
@@ -14665,7 +14741,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 						}
 					}
 					bar.append(official);
-					if (!nodeImage) bar.append(key);
+					if (uploadNeedsKey(ctx.get("provider"), ctx.get("customHeaders"))) bar.append(key);
 					bar.append(input, status);
 					const imageSelector = ".toolbar-item.i-icon.i-icon-pic[title=\"图片\"]";
 					host.addEventListener("click", (event) => {
@@ -25420,7 +25496,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 		key.autocomplete = "off";
 		key.placeholder = "图床 API Key（仅本页）";
 		key.setAttribute("aria-label", key.placeholder);
-		key.hidden = !uploadSettings().provider || uploadSettings().provider === "NodeImage";
+		key.hidden = !uploadNeedsKey(uploadSettings().provider || "NodeImage", uploadSettings().customHeaders);
 		const login = document.createElement("a");
 		login.href = "https://www.nodeimage.com/";
 		login.target = "_blank";
@@ -25582,13 +25658,16 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 						}));
 						apiKey = nodeImageKey;
 					}
-					const request = uploadRequest(provider, settings.base || "", apiKey, file);
-					const result = provider === "NodeImage" ? await uploadNodeImage(request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
+					const request = uploadRequest(provider, settings.base || "", apiKey, file, {
+						field: settings.customField,
+						headers: settings.customHeaders
+					});
+					const result = provider === "NodeImage" || hasRequest() ? await uploadImage(request.url, request.body, request.headers, ctx.signal) : await ctx.request(request.url, {
 						method: "POST",
 						headers: request.headers,
 						body: request.body
 					});
-					const url = uploadResult(provider, request.base, result);
+					const url = uploadResult(provider, request.base, result, settings.customResult);
 					if (ctx.signal.aborted) return;
 					options.insert(peer, `![image](<${url.href.replace(/>/g, "%3E")}>)\n`);
 				}
@@ -25599,7 +25678,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
 					nodeImageKey = "";
 					login.hidden = false;
 				}
-				statuses.set(peer, error instanceof Error ? error.message : "图片上传失败，请重试");
+				statuses.set(peer, uploadErrorText(error));
 			} finally {
 				uploads.delete(peer);
 				images.value = "";

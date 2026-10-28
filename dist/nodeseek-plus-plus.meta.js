@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1028.1443.1
+// @version      26.1028.1451
 // @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
@@ -13,6 +13,7 @@
 // @connect      rss.nodeseek.com
 // @connect      api.bimg.eu.org
 // @connect      raw.githubusercontent.com
+// @connect      *
 // @grant        GM.getValue
 // @grant        GM.listValues
 // @grant        GM.setValue
