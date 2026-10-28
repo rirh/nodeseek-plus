@@ -18,6 +18,7 @@ import { floatingReply } from "./features/floating-reply";
 import { hotRankings } from "./features/hot-rankings";
 import { mountFastNav } from "./features/fast-nav";
 import { share } from "./features/share";
+import { mountToolsCollapse } from "./features/tools-collapse";
 import "./styles/base.css";
 import "./styles/history-preview.css";
 import "./styles/tools-monitor.css";
@@ -49,6 +50,7 @@ function main() {
   tools.setAttribute("aria-label", "NodeSeek++");
   document.body.append(tools);
   const stopFastNav = mountFastNav(tools);
+  const stopToolsCollapse = mountToolsCollapse(tools);
   const features = [
     requestSettings,
     ...readingFeatures,
@@ -82,7 +84,7 @@ function main() {
   }
   const stop = startFeatures(features, settings, ui.notify);
   window.addEventListener("pagehide", (event) => {
-    if (!event.persisted) { stop(); ui.stopUpdates(); stopFastNav(); }
+    if (!event.persisted) { stop(); ui.stopUpdates(); stopFastNav(); stopToolsCollapse(); }
   });
 }
 

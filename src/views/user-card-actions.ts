@@ -10,12 +10,15 @@ let followed = new Set<string>();
 let viewer: number | undefined, checked = 0, loading: Promise<void> | undefined;
 const pending = new Set<string>();
 const ownId = () => (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
-const render = () => controls.forEach(({ id, button }) => {
-  button.disabled = !!loading || pending.has(id);
-  button.textContent = followed.has(id) ? '取消关注' : '关注';
-  button.setAttribute('aria-label', checked ? button.textContent : '查询关注状态');
-  if (button.disabled) button.setAttribute('aria-busy', 'true'); else button.removeAttribute('aria-busy');
-});
+const renderControl = ({ id, button }: { id: string; button: HTMLButtonElement }) => {
+  const disabled = !!loading || pending.has(id);
+  const label = followed.has(id) ? '取消关注' : '关注';
+  if (button.disabled !== disabled) { button.disabled = disabled; if (disabled) button.setAttribute('aria-busy', 'true'); else button.removeAttribute('aria-busy'); }
+  if (button.textContent !== label) button.textContent = label;
+  const aria = checked ? label : '查询关注状态';
+  if (button.getAttribute('aria-label') !== aria) button.setAttribute('aria-label', aria);
+};
+const render = () => controls.forEach(renderControl);
 async function refreshFollowing() {
   const account = ownId();
   if (!account) throw new Error('请先登录');
@@ -42,7 +45,8 @@ export function userCardActions(id: string, name: () => string, notify: (message
     element.hidden = String(ownId()) === id;
     if (ownId() && !element.hidden && (viewer !== ownId() || Date.now() - checked > 60000)) void refreshFollowing().catch(() => {});
   };
-  render(); element.hidden = String(ownId()) === id;
+  // A new card only needs its own button drawn; re-rendering every card here made page scans quadratic.
+  renderControl(control); element.hidden = String(ownId()) === id;
   follow.addEventListener('click', async () => {
     if (pending.has(id)) return;
     const account = ownId();

@@ -71,3 +71,20 @@ export function mockWindowTimers(t: TestContext, window: Window) {
   t.mock.method(window, 'setTimeout', (callback: (...args: unknown[]) => void, delay = 0, ...args: unknown[]) => setTimeout(callback, delay, ...args));
   t.mock.method(window, 'clearTimeout', (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer));
 }
+/** Popup user cards stay out of the page until first opened; open the card for each anchor (desktop, keyboard focus). */
+export function openUserCards(window: Window, selector: string): HTMLElement[] {
+  Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+  const matchMedia = window.matchMedia.bind(window);
+  window.matchMedia = ((query: string) => {
+    const media = matchMedia(query);
+    if (query === '(hover: hover) and (pointer: fine)') Object.defineProperty(media, 'matches', { value: true });
+    return media;
+  }) as typeof window.matchMedia;
+  const cards: HTMLElement[] = [];
+  for (const anchor of window.document.querySelectorAll(selector)) {
+    anchor.dispatchEvent(new window.FocusEvent('focus'));
+    const card = [...window.document.querySelectorAll<HTMLElement>('.nspp-user-hover:not(.nspp-user-hover-inline)')].find(el => !el.hidden);
+    if (card && !cards.includes(card as unknown as HTMLElement)) cards.push(card as unknown as HTMLElement);
+  }
+  return cards;
+}

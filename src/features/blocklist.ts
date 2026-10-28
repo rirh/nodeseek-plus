@@ -25,13 +25,17 @@ export const officialBlocklist: Feature = {
     let fetching: Promise<void> | undefined;
     const pending = new Set<string>();
     function render() {
+      // Called on every page scan: only touch buttons whose state actually changed.
       buttons.forEach(({ id, name, button }) => {
-        button.disabled = !!fetching || pending.has(id);
-        const label = button.disabled ? '…' : !loaded ? '重试' : blocked.has(id) ? '取消屏蔽' : '屏蔽';
+        const disabled = !!fetching || pending.has(id);
+        const label = disabled ? '…' : !loaded ? '重试' : blocked.has(id) ? '取消屏蔽' : '屏蔽';
+        const title = disabled ? '查询中' : !loaded ? '重试查询黑名单' : `${blocked.has(id) ? '解除屏蔽' : '屏蔽'} ${name}`;
+        const state = `${label}|${title}|${loaded && blocked.has(id)}`;
+        if (button.dataset.state === state && button.disabled === disabled) return;
+        button.dataset.state = state; button.disabled = disabled;
         if (button.textContent !== label) button.replaceChildren(siteIcon('forbid'), document.createTextNode(label));
-        button.title = button.disabled ? '查询中' : !loaded ? '重试查询黑名单' : `${blocked.has(id) ? '解除屏蔽' : '屏蔽'} ${name}`;
-        button.setAttribute('aria-label', button.title);
-        if (button.disabled) button.setAttribute('aria-busy', 'true'); else button.removeAttribute('aria-busy');
+        button.title = title; button.setAttribute('aria-label', title);
+        if (disabled) button.setAttribute('aria-busy', 'true'); else button.removeAttribute('aria-busy');
         button.dataset.blocked = String(loaded && blocked.has(id));
       });
     }
@@ -47,12 +51,25 @@ export const officialBlocklist: Feature = {
       const ownId = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
       if (!ownId) return;
       for (const [anchor, item] of buttons) if (!anchor.isConnected) { item.button.remove(); item.release(); buttons.delete(anchor); }
-      document.querySelectorAll<HTMLAnchorElement>(userHoverSelector).forEach(anchor => {
+      const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).filter(anchor => !anchor.closest('.nspp-user-hover, .nspp-profile-dialog'));
+      // Avatar links have no text; look their names up from a map built once per scan, not by re-querying per avatar.
+      let names: Map<string, string> | undefined;
+      const nameOf = (id: string) => {
+        if (!names) {
+          names = new Map();
+          for (const candidate of anchors) {
+            const text = candidate.textContent?.trim(); if (!text) continue;
+            const candidateId = authorId(candidate, location.origin); if (candidateId && !names.has(candidateId)) names.set(candidateId, text);
+          }
+        }
+        return names.get(id);
+      };
+      anchors.forEach(anchor => {
         if (!isUserHoverAnchor(anchor)) return;
-        if (anchor.closest('.nspp-user-hover, .nspp-profile-dialog')) return;
         const id = authorId(anchor, location.origin);
-        const name = anchor.textContent?.trim() || Array.from(document.querySelectorAll<HTMLAnchorElement>(userHoverSelector)).find(candidate => !candidate.closest('.nspp-user-hover, .nspp-profile-dialog') && authorId(candidate, location.origin) === id && candidate.textContent?.trim())?.textContent?.trim() || anchor.querySelector('img')?.alt.trim();
-        if (!id || id === String(ownId) || !name || buttons.get(anchor)?.id === id) return;
+        if (!id || id === String(ownId) || buttons.get(anchor)?.id === id) return;
+        const name = anchor.textContent?.trim() || nameOf(id) || anchor.querySelector('img')?.alt.trim();
+        if (!name) return;
         const previous = buttons.get(anchor); if (previous) { previous.button.remove(); previous.release(); buttons.delete(anchor); }
         const button = document.createElement('button'); button.type = 'button'; button.className = 'nspp-block-toggle';
         const hover = userHover(anchor, ctx); (hover.element.querySelector('.nspp-user-hover-actions') || hover.element).append(button);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { key, fixture, waitFor, mockWindowTimers } from './helpers/bundle-fixture.ts';
+import { key, fixture, waitFor, mockWindowTimers, openUserCards } from './helpers/bundle-fixture.ts';
 
 test('user badges load visible names, share requests and can retry failed profiles', async () => {
   let calls = 0;
@@ -34,7 +34,7 @@ test('user badges load visible names, share requests and can retry failed profil
     assert.match(f.window.document.querySelector<HTMLElement>('.nspp-age')!.title, /已加入 400 天\n加入于 .+\n发帖/);
     assert.equal(f.window.document.querySelector('.nspp-trust')!.textContent, '—');
     assert.equal(f.window.document.querySelector('.nspp-user-badges')!.hasAttribute('aria-busy'), false);
-    const stats = f.window.document.querySelector('.nspp-user-hover dl')!;
+    const stats = openUserCards(f.window, '.author-info a[href="/space/123"]')[0].querySelector('dl')!;
     const links = [...stats.querySelectorAll<HTMLAnchorElement>('dd a')];
     assert.deepEqual(links.map(link => link.getAttribute('href')), ['/space/123#/discussions', '/space/123#/comments', '/stardust/list?member_id=123']);
     assert.deepEqual(links.map(link => link.getAttribute('aria-label')), ['查看主题帖：—', '查看评论数：—', '查看星辰：—']);
@@ -152,21 +152,23 @@ test('one block button per name reflects queried state and synchronizes after ch
   });
   try {
     await new Promise(resolve => setTimeout(resolve, 50));
+    openUserCards(f.window, '.author-info a');
     const buttons = [...f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-block-toggle')];
+    const blockCalls = () => calls.filter(path => path.startsWith('/api/block-list'));
     assert.equal(buttons.length, 2);
     assert.deepEqual(buttons.map(b => b.textContent), ['取消屏蔽', '取消屏蔽']);
-    assert.deepEqual(calls, ['/api/block-list/list']);
+    assert.deepEqual(blockCalls(), ['/api/block-list/list']);
     buttons[0].click(); buttons[1].click();
     const confirmation = f.window.document.querySelector<HTMLDialogElement>('.nspp-confirm-dialog')!;
     assert.equal(confirmation.open, true);
     assert.equal(f.window.document.querySelectorAll('.nspp-confirm-dialog').length, 1);
-    assert.deepEqual(calls, ['/api/block-list/list'], 'no mutation before confirmation');
+    assert.deepEqual(blockCalls(), ['/api/block-list/list'], 'no mutation before confirmation');
     confirmation.close('confirm');
     await new Promise(resolve => setTimeout(resolve, 50));
-    assert.deepEqual(calls, ['/api/block-list/list', '/api/block-list/del']);
+    assert.deepEqual(blockCalls(), ['/api/block-list/list', '/api/block-list/del']);
     assert.deepEqual(buttons.map(b => b.textContent), ['屏蔽', '屏蔽']);
     await new Promise(resolve => setTimeout(resolve, 250));
-    assert.equal(calls.length, 2);
+    assert.equal(blockCalls().length, 2);
   } finally { await f.close(); }
 });
 
@@ -174,8 +176,9 @@ test('failed blacklist lookup offers retry, never assumes an empty list', async 
   const f = await fixture({ 'user-level': { enabled: false } }, '<div class="author-info"><a href="/space/123">Alice</a></div>');
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
+    openUserCards(f.window, '.author-info a');
     assert.equal(f.window.document.querySelector('.nspp-block-toggle')!.textContent, '重试');
-    assert.equal(f.requests.length, 1);
+    assert.equal(f.requests.filter(url => url.includes('/api/block-list')).length, 1);
   } finally { await f.close(); }
 });
 
@@ -216,19 +219,20 @@ test('all usernames show rich hover cards while latest replier has no visible ba
     }) as typeof window.fetch;
   });
   try {
-    await waitFor(() => !!f.window.document.querySelector('.nspp-user-hover-rich') && !!f.window.document.querySelector('.nspp-user-hover .nspp-block-toggle'));
+    await waitFor(() => !!f.window.document.querySelector('.info-author .nspp-level') && calls.includes('/api/block-list/list'));
     mockWindowTimers(t, f.window);
     const doc = f.window.document;
-    const card = doc.querySelector<HTMLElement>('.nspp-user-hover')!;
-    assert.equal(card.hidden, true);
+    const visible = () => [...doc.querySelectorAll<HTMLElement>('.nspp-user-hover')].filter(el => !el.hidden);
+    assert.equal(doc.querySelector('.nspp-user-hover'), null, 'cards stay out of the page until opened');
     assert.equal(doc.querySelector('.info-author .nspp-block-toggle'), null);
     assert.equal(doc.querySelector<HTMLElement>('.info-last-commenter .nspp-user-badges')!.hidden, true);
     assert.equal(calls.includes('/api/account/getInfo/456'), false);
     doc.querySelector('.info-author a')!.dispatchEvent(new f.window.MouseEvent('mouseenter'));
-    assert.equal(card.hidden, true, 'brief hover does not immediately open a card');
+    assert.equal(visible().length, 0, 'brief hover does not immediately open a card');
     t.mock.timers.tick(299);
-    assert.equal(card.hidden, true, 'the card stays hidden until the 300ms hover delay');
+    assert.equal(visible().length, 0, 'the card stays hidden until the 300ms hover delay');
     t.mock.timers.tick(1);
+    const card = visible()[0]!;
     assert.equal(card.hidden, false);
     assert.match(card.textContent!, /注册 2024-01-01/);
     assert.match(card.textContent!, /信任分/);
@@ -265,7 +269,7 @@ test('username uses shared copy control and the card avoids native header stylin
   });
   try {
     const doc = f.window.document;
-    const card = doc.querySelector('.nspp-user-hover')!;
+    const card = openUserCards(f.window, '.info-author a')[0]!;
     assert.equal(card.querySelector('header'), null);
     const button = card.querySelector<HTMLButtonElement>('.nspp-user-hover-header .nspp-copy-button')!;
     button.click(); await new Promise(resolve => setTimeout(resolve, 5));
@@ -288,6 +292,7 @@ test('avatar cards receive synchronized block controls after delayed login initi
     Object.assign(f.window, { __config__: { user: { member_id: 7 } } });
     f.window.document.body.append(f.window.document.createElement('div'));
     await new Promise(resolve => setTimeout(resolve, 250));
+    openUserCards(f.window, 'a[href="/space/123"]');
     const buttons = [...f.window.document.querySelectorAll<HTMLButtonElement>('.nspp-block-toggle')];
     assert.equal(buttons.length, 2);
     assert.deepEqual(buttons.map(button => button.textContent), ['取消屏蔽', '取消屏蔽']);
@@ -313,7 +318,8 @@ test('profile cards exclude activity links, remove titles and reuse persistent c
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
     assert.equal(calls, 1);
-    assert.equal(first.window.document.querySelectorAll('.nspp-user-hover').length, 1);
+    assert.equal(first.window.document.querySelectorAll('.nspp-user-hover').length, 0, 'cards stay out of the page until opened');
+    assert.equal(openUserCards(first.window, '.author-info a').length, 1, 'only the profile link gets a card');
     assert.equal(first.window.document.querySelector('.author-info a')!.hasAttribute('title'), false);
     assert.equal(!!first.window.document.querySelector('.nspp-user-hover-score[title], .nspp-user-hover-rich [title], .nspp-user-hover-note[title]'), false);
     const css = [...first.window.document.querySelectorAll('style')].map(el => el.textContent).join('');

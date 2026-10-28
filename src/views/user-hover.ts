@@ -11,6 +11,19 @@ export function userHoverEnabled(): boolean {
 
 export const userHoverSelector = 'a:is(.info-author,.post-author), :is(.author-info,.info-author,.post-author,.info-last-commenter) > a[href*="/space/"], .nspp-messages-bubble a[href*="/space/"], a[href*="/space/"]:has(img), a[data-uid]';
 
+// Only one popup card is open at a time, so page-wide close triggers are registered once and act on that card
+// instead of each of the hundreds of cards on a list page listening to every scroll.
+let openCard: { element: HTMLElement; anchor: HTMLAnchorElement; close(): void } | undefined;
+let globalListeners = false;
+function listenGlobally() {
+  if (globalListeners) return; globalListeners = true;
+  const closeOpen = () => openCard?.close();
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && openCard && !openCard.element.hidden) { const card = openCard; card.anchor.focus(); card.close(); } });
+  document.addEventListener('pointerdown', event => { if (openCard && !openCard.element.contains(event.target as Node) && !openCard.anchor.contains(event.target as Node)) openCard.close(); });
+  window.addEventListener('resize', closeOpen);
+  window.addEventListener('scroll', closeOpen, { capture: true, passive: true });
+}
+
 const cards = new WeakMap<HTMLAnchorElement, { href: string; element: HTMLElement; users: number; dispose(): void }>();
 
 export function isUserHoverAnchor(anchor: HTMLAnchorElement) {
@@ -73,14 +86,16 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
       entry = { href, element, users: 0, dispose: () => { controller.abort(); element.remove(); if (cards.get(anchor) === entry) cards.delete(anchor); if (!cards.get(anchor)?.element.classList.contains('nspp-user-hover-inline')) delete replace.dataset.nsppReplaced; if (title !== null) anchor.setAttribute('title', title); } };
       cards.set(anchor, entry);
     } else {
-      document.body.append(element);
+      // Stay detached until first opened: hundreds of hidden cards in the page doubled the DOM every scan walks.
       let timer: ReturnType<typeof setTimeout> | undefined;
-      const close = () => { clearTimeout(timer); if (!element.hidden) element.hidden = true; };
+      const close = () => { clearTimeout(timer); if (!element.hidden) element.hidden = true; if (openCard?.element === element) openCard = undefined; };
       const open = () => {
         clearTimeout(timer); if (!anchor.isConnected) return;
         if (!userHoverEnabled() || document.hidden || innerWidth <= 700 || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
         if (Array.from(document.querySelectorAll<HTMLElement>('.hover-user-card')).some(card => !card.hidden && card.getClientRects().length > 0)) return;
-        syncTags(); element.hidden = false;
+        if (openCard && openCard.element !== element) openCard.close();
+        if (!element.isConnected) document.body.append(element);
+        syncTags(); element.hidden = false; openCard = { element, anchor, close }; listenGlobally();
         actions?.refresh();
         if (id && !avatar.getAttribute('src')) avatar.src = `/avatar/${id}.png`;
         const rect = anchor.getBoundingClientRect();
@@ -96,10 +111,6 @@ export function userHover(anchor: HTMLAnchorElement, ctx: Context) {
       element.addEventListener('mouseleave', leave, options);
       element.addEventListener('focusin', () => clearTimeout(timer), options);
       element.addEventListener('focusout', leave, options);
-      document.addEventListener('keydown', event => { if (event.key === 'Escape' && !element.hidden) { anchor.focus(); close(); } }, options);
-      document.addEventListener('pointerdown', event => { if (!element.contains(event.target as Node) && !anchor.contains(event.target as Node)) close(); }, options);
-      window.addEventListener('resize', close, options);
-      window.addEventListener('scroll', close, { ...options, capture: true });
       entry = { href, element, users: 0, dispose: () => { close(); controller.abort(); element.remove(); if (title !== null) anchor.setAttribute('title', title); if (cards.get(anchor) === entry) cards.delete(anchor); } };
       cards.set(anchor, entry);
     }

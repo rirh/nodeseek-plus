@@ -415,3 +415,23 @@ test('share launcher can be turned off in settings', async () => {
   try { assert.equal(f.window.document.querySelector('[data-nspp-share-launcher]'), null); }
   finally { await f.close(); }
 });
+
+test('toolbar collapse toggle remembers its state and restores on the next page', async () => {
+  const f = await fixture();
+  try {
+    const tools = f.window.document.getElementById('nspp-tools')!;
+    const toggle = tools.querySelector<HTMLButtonElement>('.nspp-tools-toggle')!;
+    assert.ok(toggle);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    toggle.click();
+    assert.equal(tools.hasAttribute('data-collapsed'), true);
+    assert.equal(toggle.getAttribute('aria-label'), '展开工具栏');
+    assert.equal(f.storage.get('nspp:tools-collapsed'), true);
+    const next = await fixture({}, '', '/', f.storage);
+    try { assert.equal(next.window.document.getElementById('nspp-tools')!.hasAttribute('data-collapsed'), true); }
+    finally { await next.close(); }
+    toggle.click();
+    assert.equal(tools.hasAttribute('data-collapsed'), false);
+    assert.equal(f.storage.get('nspp:tools-collapsed'), false);
+  } finally { await f.close(); }
+});
