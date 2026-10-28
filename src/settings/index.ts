@@ -25,6 +25,9 @@ const dependsOn: Record<string, (settings: Settings[string]) => boolean> = {
   "user-level.trustColor": settings => settings.colors === "custom",
   "user-level.roleColor": settings => settings.colors === "custom",
   "image-upload.base": settings => settings.provider !== "NodeImage",
+  "image-upload.customField": settings => settings.provider === "Custom",
+  "image-upload.customHeaders": settings => settings.provider === "Custom",
+  "image-upload.customResult": settings => settings.provider === "Custom",
   "reading-focus.height": settings => settings.collapse === true,
 };
 

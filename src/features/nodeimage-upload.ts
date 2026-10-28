@@ -1,21 +1,23 @@
 import { gmRequest, hasRequest } from '../lib/userscript';
 
-// Keep privileged requests scoped to the official NodeImage upload endpoint.
-export function uploadNodeImage(body: FormData, headers: Record<string, string>, signal: AbortSignal): Promise<unknown> {
+// Uploads go through the script manager so image hosts need no CORS; cookies are never sent.
+export function uploadImage(url: string, body: FormData, headers: Record<string, string>, signal: AbortSignal): Promise<unknown> {
+  const name = new URL(url).hostname === 'api.nodeimage.com' ? 'NodeImage' : '图床';
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(new Error('上传已取消')); return; }
-    if (!hasRequest()) { reject(new Error('请重新安装最新版脚本，授予 NodeImage 连接权限')); return; }
+    if (!hasRequest()) { reject(new Error(`请重新安装最新版脚本，授予 ${name} 连接权限`)); return; }
     const cleanup = () => signal.removeEventListener('abort', cancel);
     const request = gmRequest({
-      method: 'POST', url: 'https://api.nodeimage.com/api/upload', data: body, headers,
+      method: 'POST', url, data: body, headers,
       anonymous: true, responseType: 'json', timeout: 120000,
       onload: response => {
         cleanup();
-        if (response.status === 401 || response.status === 403) { reject(new Error('NodeImage 密钥无效或无权限，请到官网 API 页面检查')); return; }
-        if (response.status < 200 || response.status >= 300) { reject(new Error(`NodeImage 上传失败（HTTP ${response.status}）`)); return; }
+        if (response.status === 401 || response.status === 403) { reject(new Error(name === 'NodeImage' ? 'NodeImage 密钥无效或无权限，请到官网 API 页面检查' : '图床密钥无效或无权限（HTTP ' + response.status + '）')); return; }
+        if (response.status < 200 || response.status >= 300) { reject(new Error(`${name} 上传失败（HTTP ${response.status}）`)); return; }
+        if (!response.response) { reject(new Error(`${name} 未返回 JSON，请检查上传地址`)); return; }
         resolve(response.response);
       },
-      onerror: () => { cleanup(); reject(new Error('无法连接 NodeImage，请检查网络和脚本连接权限')); },
+      onerror: () => { cleanup(); reject(new Error(`无法连接 ${name}，请检查网络和脚本连接权限`)); },
       ontimeout: () => { cleanup(); reject(new Error('上传超时，请检查图床是否已收到图片后再重试')); },
       onabort: () => { cleanup(); reject(new Error('上传已取消')); },
     });

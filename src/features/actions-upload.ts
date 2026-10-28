@@ -1,16 +1,20 @@
-import { getNodeImageKey, uploadNodeImage } from './nodeimage-upload';
-import { uploadRequest, uploadResult } from './actions-upload-protocol';
+import { getNodeImageKey, uploadImage } from './nodeimage-upload';
+import { imageProviders, uploadErrorText, uploadNeedsKey, uploadRequest, uploadResult } from './actions-upload-protocol';
+import { hasRequest } from '../lib/userscript';
 import type { Feature } from '../core/types';
 import { setShine } from '../views/sweep-shine';
 
 type Editor = { replaceSelection(text: string): void; focus(): void };
 export const imageUpload: Feature = {
   id: 'image-upload', title: '图片上传', group: '操作辅助',
-  description: '选择图片上传并插入链接，支持六类图床协议。默认使用 NodeImage 官方图床；其他服务须允许 CORS；密钥仅存当前页面内存。',
-  defaults: { enabled: true, provider: 'NodeImage', base: '' },
+  description: '选择、粘贴或拖拽图片上传并插入链接。默认使用 NodeImage 官方图床（登录后自动获取密钥）；也可选择常见图床协议或「自定义」接口。API Key 仅存当前页面内存。',
+  defaults: { enabled: true, provider: 'NodeImage', base: '', customField: 'file', customHeaders: '', customResult: 'data.url' },
   fields: {
-    provider: { label: '图床协议', type: 'select', options: ['NodeImage', 'Telegraph', 'Telegraph2', 'LskyPro', 'Chevereto', 'EasyImages'].map(value => ({ label: value === 'NodeImage' ? 'NodeImage（论坛官方，默认）' : value, value })) },
-    base: { label: '其他图床地址（NodeImage 固定使用官方地址）', type: 'text' },
+    provider: { label: '图床', type: 'select', options: imageProviders.map(value => ({ label: value === 'NodeImage' ? 'NodeImage 官方图床（默认）' : value === 'Custom' ? '自定义接口' : value, value })) },
+    base: { label: '图床地址（HTTPS；自定义接口填完整上传地址）', type: 'text' },
+    customField: { label: '图片表单字段名', type: 'text' },
+    customHeaders: { label: '请求头（每行「名称: 值」，{key} 替换为页面填写的密钥，例如 Authorization: Bearer {key}）', type: 'textarea' },
+    customResult: { label: '返回 JSON 中图片地址的路径（如 data.url、data[0].src）', type: 'text' },
   },
   mount(ctx) {
     const bound = new WeakSet<Element>(); const bars: HTMLElement[] = []; const placements: (() => void)[] = []; let apiKey = '';
@@ -63,20 +67,21 @@ export const imageUpload: Feature = {
           input.disabled = true; key.disabled = true; setShine(status, true); status.textContent = '上传中…';
           try {
             if (ctx.get<string>('provider') === 'NodeImage' && !apiKey) { status.textContent = '正在获取 NodeImage 登录状态…'; await ensureKey(); status.textContent = '上传中…'; }
-            const request = uploadRequest(ctx.get<string>('provider'), ctx.get<string>('base'), apiKey, file);
-            const result = ctx.get<string>('provider') === 'NodeImage'
-              ? await uploadNodeImage(request.body, request.headers, ctx.signal)
+            const provider = ctx.get<string>('provider');
+            const request = uploadRequest(provider, ctx.get<string>('base'), apiKey, file, { field: ctx.get<string>('customField'), headers: ctx.get<string>('customHeaders') });
+            const result = provider === 'NodeImage' || hasRequest()
+              ? await uploadImage(request.url, request.body, request.headers, ctx.signal)
               : await ctx.request<unknown>(request.url, { method: 'POST', headers: request.headers, body: request.body });
-            const url = uploadResult(ctx.get<string>('provider'), request.base, result);
+            const url = uploadResult(provider, request.base, result, ctx.get<string>('customResult'));
             if (ctx.signal.aborted) return false;
             const markdown = `![image](<${url.href.replace(/>/g, '%3E')}>)`;
             if (cm) { cm.replaceSelection(markdown); cm.focus(); }
             else { ta!.setRangeText(markdown, ta!.selectionStart, ta!.selectionEnd, 'end'); ta!.dispatchEvent(new Event('input', { bubbles: true })); }
             status.textContent = ''; if (nodeImage) official.hidden = true; return true;
-          } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; official.hidden = false; } if (!ctx.signal.aborted) status.textContent = ctx.get<string>('provider') === 'NodeImage' && error instanceof Error ? error.message : '上传失败：请检查 HTTPS 图床地址、API Key、协议或 CORS 支持'; return false; }
+          } catch (error) { if (error instanceof Error && /密钥无效|无权限/.test(error.message)) { apiKey = ''; key.value = ''; official.hidden = false; } if (!ctx.signal.aborted) status.textContent = uploadErrorText(error); return false; }
           finally { input.disabled = false; key.disabled = false; input.value = ''; setShine(status, false); }
         }
-        bar.append(official); if (!nodeImage) bar.append(key); bar.append(input, status);
+        bar.append(official); if (uploadNeedsKey(ctx.get<string>('provider'), ctx.get<string>('customHeaders'))) bar.append(key); bar.append(input, status);
         const imageSelector = '.toolbar-item.i-icon.i-icon-pic[title="图片"]';
         host.addEventListener('click', event => {
           if (!(event.target instanceof Element) || !event.target.closest(imageSelector)) return;

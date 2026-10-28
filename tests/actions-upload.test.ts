@@ -35,3 +35,17 @@ test('reject insecure endpoint, missing key, failed response and executable resu
   assert.throws(() => uploadResult('Telegraph2', base, { data: 'javascript:alert(1)' }));
   assert.throws(() => uploadResult('NodeImage', base, {}));
 });
+test('custom provider posts to the full URL with templated headers and reads the configured path', () => {
+  const custom = { field: 'upload', headers: 'Authorization: Bearer {key}\nX-Album: 7', result: 'data[0].src' };
+  const request = uploadRequest('Custom', base + '/api/img?album=1', 'k1', file, custom);
+  assert.equal(request.url, base + '/api/img?album=1');
+  assert.ok(request.body.get('upload') instanceof Blob);
+  assert.equal(request.headers.Authorization, 'Bearer k1');
+  assert.equal(request.headers['X-Album'], '7');
+  assert.equal(uploadResult('Custom', request.base, { data: [{ src: '/i/a.png' }] }, custom.result).href, base + '/i/a.png');
+  assert.equal(uploadRequest('Custom', base + '/up', '', file).body.get('file') instanceof Blob, true);
+  assert.throws(() => uploadRequest('Custom', base + '/up', '', file, custom), /API Key required/);
+  assert.throws(() => uploadRequest('Custom', base + '/up', 'k', file, { headers: 'bad header' }), /Invalid header line/);
+  assert.throws(() => uploadRequest('Custom', 'http://images.example/up', '', file));
+  assert.throws(() => uploadResult('Custom', base, { data: {} }, 'data.url'), /Missing image URL/);
+});

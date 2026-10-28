@@ -1,7 +1,7 @@
 import type { Context } from '../core/types';
-import { GM_getValue } from '../lib/userscript';
-import { getNodeImageKey, uploadNodeImage } from '../features/nodeimage-upload';
-import { uploadRequest, uploadResult } from '../features/actions-upload-protocol';
+import { GM_getValue, hasRequest } from '../lib/userscript';
+import { getNodeImageKey, uploadImage } from '../features/nodeimage-upload';
+import { uploadErrorText, uploadNeedsKey, uploadRequest, uploadResult } from '../features/actions-upload-protocol';
 import { renderMessageMarkdown } from './message-markdown';
 
 type Options = { peer(): number | undefined; insert(peer: number, text: string): void; changed(): void; original(): void };
@@ -33,8 +33,8 @@ export function createMessageEditor(ctx: Context, input: HTMLTextAreaElement, ma
   const status = document.createElement('div'); status.className = 'nspp-message-editor-status'; status.setAttribute('role', 'status');
   const images = document.createElement('input'); images.type = 'file'; images.accept = 'image/*'; images.multiple = true; images.hidden = true;
   const documentFile = document.createElement('input'); documentFile.type = 'file'; documentFile.accept = '.md,.markdown,text/markdown,text/plain'; documentFile.hidden = true;
-  const uploadSettings = () => GM_getValue<Record<string, { provider?: string; base?: string; enabled?: boolean }>>(`nspp:settings:${location.hostname}`, {})['image-upload'] || {};
-  const key = document.createElement('input'); key.type = 'password'; key.autocomplete = 'off'; key.placeholder = '图床 API Key（仅本页）'; key.setAttribute('aria-label', key.placeholder); key.hidden = !uploadSettings().provider || uploadSettings().provider === 'NodeImage';
+  const uploadSettings = () => GM_getValue<Record<string, { provider?: string; base?: string; enabled?: boolean; customField?: string; customHeaders?: string; customResult?: string }>>(`nspp:settings:${location.hostname}`, {})['image-upload'] || {};
+  const key = document.createElement('input'); key.type = 'password'; key.autocomplete = 'off'; key.placeholder = '图床 API Key（仅本页）'; key.setAttribute('aria-label', key.placeholder); key.hidden = !uploadNeedsKey(uploadSettings().provider || 'NodeImage', uploadSettings().customHeaders);
   const login = document.createElement('a'); login.href = 'https://www.nodeimage.com/'; login.target = '_blank'; login.rel = 'noopener noreferrer'; login.textContent = '登录 NodeImage'; login.hidden = true;
   const uploadHelp = document.createElement('div'); uploadHelp.className = 'nspp-message-upload-help'; uploadHelp.append(key, login);
   body.append(input, preview); root.append(body, status, uploadHelp, images, documentFile);
@@ -126,17 +126,17 @@ export function createMessageEditor(ctx: Context, input: HTMLTextAreaElement, ma
           if (!nodeImageKey) await (auth ||= getNodeImageKey(ctx.signal).then(value => { nodeImageKey = value; return value; }).finally(() => { auth = undefined; }));
           apiKey = nodeImageKey;
         }
-        const request = uploadRequest(provider, settings.base || '', apiKey, file);
-        const result = provider === 'NodeImage' ? await uploadNodeImage(request.body, request.headers, ctx.signal)
+        const request = uploadRequest(provider, settings.base || '', apiKey, file, { field: settings.customField, headers: settings.customHeaders });
+        const result = provider === 'NodeImage' || hasRequest() ? await uploadImage(request.url, request.body, request.headers, ctx.signal)
           : await ctx.request(request.url, { method: 'POST', headers: request.headers, body: request.body });
-        const url = uploadResult(provider, request.base, result);
+        const url = uploadResult(provider, request.base, result, settings.customResult);
         if (ctx.signal.aborted) return;
         options.insert(peer, `![image](<${url.href.replace(/>/g, '%3E')}>)\n`);
       }
       statuses.set(peer, '图片已插入草稿'); login.hidden = true;
     } catch (error) {
       if (provider === 'NodeImage') { nodeImageKey = ''; login.hidden = false; }
-      statuses.set(peer, error instanceof Error ? error.message : '图片上传失败，请重试');
+      statuses.set(peer, uploadErrorText(error));
     } finally { uploads.delete(peer); images.value = ''; if (!ctx.signal.aborted) updateStatus(); }
   }
   images.addEventListener('change', () => { void uploadFiles(Array.from(images.files || [])); }, { signal: ctx.signal });
