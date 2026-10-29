@@ -57,6 +57,65 @@ test('manual update checks read metadata and open an update link only for a newe
   } finally { await f.close(); }
 });
 
+test('coming back from the installer reloads the page, unless a reply is still unsent', async () => {
+  let version = '1.0.0';
+  const f = await fixture({}, '<textarea id="draft"></textarea><div class="CodeMirror"></div>', '/', undefined, window => {
+    Object.assign(window, {
+      GM_xmlhttpRequest: (options: { onload(response: { status: number; responseText: string }): void }) => {
+        setTimeout(() => options.onload({ status: 200, responseText: `// ==UserScript==\n// @namespace nodeseek-plus-plus\n// @version ${version}\n// ==/UserScript==` }), 0);
+        return { abort() {} };
+      },
+    });
+  }, true);
+  try {
+    const doc = f.window.document;
+    let reloads = 0;
+    Object.defineProperty(f.window.location, 'reload', { configurable: true, value: () => { reloads++; } });
+    // A saved draft the editor loaded is clean, so it does not hold the reload back.
+    Object.assign(doc.querySelector('.CodeMirror')!, { CodeMirror: { getValue: () => '已保存的草稿', isClean: () => true } });
+    const leaveAndReturn = async () => {
+      for (const hidden of [true, false]) {
+        Object.defineProperty(doc, 'hidden', { configurable: true, value: hidden });
+        doc.dispatchEvent(new f.window.Event('visibilitychange'));
+      }
+      await new Promise(resolve => setTimeout(resolve, 30));
+    };
+    await new Promise(resolve => setTimeout(resolve, 10));
+    version = '99.999.9999';
+    f.menus[0]();
+    const check = doc.querySelector('#nspp-settings')!.shadowRoot!.querySelector<HTMLButtonElement>('.check-update')!;
+    check.click();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    let dialog = doc.querySelector<HTMLDialogElement>('.nspp-update-notice')!;
+    assert.match(dialog.textContent!, /自动刷新/);
+    await leaveAndReturn();
+    assert.equal(reloads, 0, 'switching tabs without opening the installer keeps the page');
+
+    doc.querySelector<HTMLTextAreaElement>('#draft')!.value = '还没发出去的回复';
+    dialog.querySelector<HTMLAnchorElement>('.nspp-update-install')!.click();
+    await leaveAndReturn();
+    assert.equal(reloads, 0, 'unsent text is never thrown away');
+    assert.match(dialog.textContent!, /未发送/);
+    const reload = dialog.querySelector<HTMLButtonElement>('.nspp-update-reload')!;
+    reload.click();
+    assert.equal(reloads, 1);
+    dialog.close('cancel');
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    doc.querySelector<HTMLTextAreaElement>('#draft')!.value = '';
+    check.click();
+    await new Promise(resolve => setTimeout(resolve, 30));
+    dialog = doc.querySelector<HTMLDialogElement>('.nspp-update-notice')!;
+    dialog.querySelector<HTMLAnchorElement>('.nspp-update-install')!.click();
+    await leaveAndReturn();
+    assert.equal(reloads, 2, 'returning from the installer loads the new version');
+    dialog.close('cancel');
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await leaveAndReturn();
+    assert.equal(reloads, 2, 'a closed notice stops watching for the return');
+  } finally { await f.close(); }
+});
+
 test('page entry always checks updates while system and page reminders are deduplicated', async () => {
   const shared = new Map<string, unknown>([
     [key, { attendance: { enabled: false }, monitor: { enabled: false }, 'notification-categories': { enabled: false } }],
