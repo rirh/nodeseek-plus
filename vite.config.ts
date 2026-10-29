@@ -1,41 +1,81 @@
-import { defineConfig } from 'vite';
-import monkey from 'vite-plugin-monkey';
-import packageJson from './package.json' with { type: 'json' };
-import { readFileSync } from 'node:fs';
+import { defineConfig } from "vite";
+import monkey from "vite-plugin-monkey";
+import packageJson from "./package.json" with { type: "json" };
+import { readFileSync } from "node:fs";
 
-const notices = ['THIRD_PARTY_NOTICES.md', 'references/highlight.js.LICENSE']
-  .map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n\n');
+const notices = ["references/highlight.js.LICENSE"]
+  .map((path) => readFileSync(new URL(path, import.meta.url), "utf8"))
+  .join("\n\n");
 
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    __APP_ENV__: JSON.stringify(mode === 'stage' ? 'stage' : mode === 'development' ? 'dev' : 'prod'),
-    __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })),
-  },
-  plugins: [monkey({
-    entry: 'src/main.ts',
-    userscript: {
-      name: mode === 'stage' ? 'NodeSeek++ (Stage)' : 'NodeSeek++',
-      namespace: 'nodeseek-plus-plus',
-      version: packageJson.version,
-      description: '模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现；摸鱼模式另支持 linux.do 与 V2EX。',
-      match: ['https://www.nodeseek.com/*', 'https://www.deepflood.com/*', 'https://linux.do/*', 'https://www.v2ex.com/*', 'https://v2ex.com/*'],
-      connect: ['api.nodeimage.com', 'rss.nodeseek.com', 'api.bimg.eu.org', 'raw.githubusercontent.com', '*'],
-      ...(mode === 'stage' || mode === 'development' ? {} : {
-        homepageURL: 'https://github.com/rirh/nodeseek-plus',
-        downloadURL: 'https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js',
-        updateURL: 'https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.meta.js',
+    __APP_ENV__: JSON.stringify(
+      mode === "stage" ? "stage" : mode === "development" ? "dev" : "prod",
+    ),
+    __BUILD_TIME__: JSON.stringify(
+      new Date().toLocaleString("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        hour12: false,
       }),
-      grant: ['GM_notification', 'GM_xmlhttpRequest', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'unsafeWindow', 'GM.getValue', 'GM.setValue', 'GM.listValues', 'GM.xmlHttpRequest'],
-      license: 'GPL-3.0-only',
-      'run-at': 'document-end',
-      noframes: true,
-    },
-    build: { fileName: 'nodeseek-plus-plus.user.js', metaFileName: true },
-  })],
+    ),
+  },
+  plugins: [
+    monkey({
+      entry: "src/main.ts",
+      userscript: {
+        name: mode === "stage" ? "NodeSeek++ (Stage)" : "NodeSeek++",
+        namespace: "nodeseek-plus-plus",
+        version: packageJson.version,
+        description:
+          "模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现；摸鱼模式另支持 linux.do 与 V2EX。",
+        match: [
+          "https://www.nodeseek.com/*",
+          "https://www.deepflood.com/*",
+          "https://linux.do/*",
+          "https://www.v2ex.com/*",
+          "https://v2ex.com/*",
+        ],
+        connect: [
+          "api.nodeimage.com",
+          "rss.nodeseek.com",
+          "api.bimg.eu.org",
+          "raw.githubusercontent.com",
+          "*",
+        ],
+        ...(mode === "stage" || mode === "development"
+          ? {}
+          : {
+              homepageURL: "https://github.com/rirh/nodeseek-plus",
+              downloadURL:
+                "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js",
+              updateURL:
+                "https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.meta.js",
+            }),
+        grant: [
+          "GM_notification",
+          "GM_xmlhttpRequest",
+          "GM_getValue",
+          "GM_setValue",
+          "GM_registerMenuCommand",
+          "unsafeWindow",
+          "GM.getValue",
+          "GM.setValue",
+          "GM.listValues",
+          "GM.xmlHttpRequest",
+        ],
+        license: "GPL-3.0-only",
+        "run-at": "document-end",
+        noframes: true,
+      },
+      build: { fileName: "nodeseek-plus-plus.user.js", metaFileName: true },
+    }),
+  ],
   build: {
-    outDir: mode === 'stage' ? 'dist-stage' : 'dist',
+    outDir: mode === "stage" ? "dist-stage" : "dist",
     minify: false,
-    rolldownOptions: { output: { banner: `/*!\n${notices.replaceAll('*/', '* /')}\n*/` } },
+    rolldownOptions: {
+      output: { banner: `/*!\n${notices.replaceAll("*/", "* /")}\n*/` },
+    },
   },
 }));

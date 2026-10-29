@@ -21,16 +21,16 @@ pnpm test
 
 测试会读取构建产物，应先执行 `pnpm build`。本地测试通过不等于浏览器权限、站点验证和第三方图床已通过实站验证。
 
-| 文件 / 目录 | 用途 |
-| --- | --- |
-| `src/features/` | 独立功能模块 |
-| `src/settings/` | 设置面板 |
-| `src/core/` | 配置、运行时与功能类型 |
-| `src/views/` | 预览、互动与快捷回复视图 |
-| `tests/` | 单元及构建产物测试 |
-| `dist/nodeseek-plus-plus.user.js` | 正式安装脚本 |
-| `dist/nodeseek-plus-plus.meta.js` | 更新检查用元信息 |
-| `references/` | 上游参考代码与许可材料 |
+| 文件 / 目录                       | 用途                     |
+| --------------------------------- | ------------------------ |
+| `src/features/`                   | 独立功能模块             |
+| `src/settings/`                   | 设置面板                 |
+| `src/core/`                       | 配置、运行时与功能类型   |
+| `src/views/`                      | 预览、互动与快捷回复视图 |
+| `tests/`                          | 单元及构建产物测试       |
+| `dist/nodeseek-plus-plus.user.js` | 正式安装脚本             |
+| `dist/nodeseek-plus-plus.meta.js` | 更新检查用元信息         |
+| `references/`                     | 上游参考代码与许可材料   |
 
 隔离构建阶段版本：
 
@@ -72,4 +72,4 @@ Webhook 接收地址可能包含账户凭据，不要提交到仓库。`make dep
 3. 在 [Greasy Fork](https://greasyfork.org/zh-CN) 原脚本页面提交新版本，上传 `dist/nodeseek-plus-plus.user.js` 的完整内容并填写变更说明。
 4. 用发布后的安装链接验证安装与升级。
 
-构建使用非压缩输出，并把第三方说明与 highlight.js 许可证写入脚本。请保留 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) 和 [references/highlight.js.LICENSE](../references/highlight.js.LICENSE)，构建时会读取它们。发布前查看 [油叉代码规则](https://greasyfork.org/zh-CN/help/code-rules) 和 [元信息说明](https://greasyfork.org/zh-CN/help/meta-keys)。
+构建使用非压缩输出，并把第三方说明与 highlight.js 许可证写入脚本。请保留 [THIRD_PARTY_NOTICES.md]和 [references/highlight.js.LICENSE](../references/highlight.js.LICENSE)，构建时会读取它们。发布前查看 [油叉代码规则](https://greasyfork.org/zh-CN/help/code-rules) 和 [元信息说明](https://greasyfork.org/zh-CN/help/meta-keys)。
