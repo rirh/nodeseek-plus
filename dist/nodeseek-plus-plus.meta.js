@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         NodeSeek++
 // @namespace    nodeseek-plus-plus
-// @version      26.1028.1453.1
-// @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。
+// @version      26.1029.1632
+// @description  模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现；摸鱼模式另支持 linux.do 与 V2EX。
 // @license      GPL-3.0-only
 // @homepageURL  https://github.com/rirh/nodeseek-plus
 // @downloadURL  https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js
 // @updateURL    https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.meta.js
 // @match        https://www.nodeseek.com/*
 // @match        https://www.deepflood.com/*
+// @match        https://linux.do/*
+// @match        https://www.v2ex.com/*
+// @match        https://v2ex.com/*
 // @connect      api.nodeimage.com
 // @connect      rss.nodeseek.com
 // @connect      api.bimg.eu.org

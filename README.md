@@ -10,7 +10,7 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 - 请遵守 NodeSeek / DeepFlood / v2ex /liunx.do 的社区规则，合理、友善地使用。
 - 如果站方或任何人认为本项目有不妥或违规的地方，请通过 [GitHub Issues](https://github.com/rirh/nodeseek-plus/issues) 或 [站内私信作者](https://www.nodeseek.com/space/17170) 联系，我们会尽快调整或删除相关内容。
 - 因为收益于各位大佬的技术分享我也是把自己的用的小工具贡献出来的，所以请不要把本项目用于商业用途，或者在未经允许的情况下二次分发。
-- 觉得好用的话，欢迎到点个 star 鼓励，你的鼓励是作者改bug的动力 。
+- 觉得好用的话，欢迎到点个 star 鼓励，兄弟们的鼓励是作者改bug的动力 。
 
 [安装脚本](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js) · [Greasy Fork](https://greasyfork.org/zh-CN/scripts/595488) · [使用说明](docs/guide.md) · [问题反馈](https://github.com/rirh/nodeseek-plus/issues)
 
@@ -22,12 +22,8 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 
 ## 前言
 
-平时没事就爱刷 NodeSeek，为了逛得舒服点，前前后后装了好几个脚本。单个用着都挺香，可装多了就开始打架：同一个功能好几个脚本各跑一份，按钮挤成一排，页面还越来越卡。
-
-忍了一阵子，干脆自己动手。我参考 NodeSeek Pro、NodeSeek X 和 NodeSeek 增强助手，把功能从头捋了一遍，同一个功能只留一套实现。顺手又加了几个自己一直想要的：消息中心、帖子监控，还有摸鱼模式，也就是把论坛伪装成微信，在教室或者实验室刷帖，旁边的人瞄一眼也只会以为你在回消息（笑）。
-
+因为收益于各位大佬的技术分享我也是把自己的用的小工具贡献出来的，所以请不要把本项目用于商业用途，或者在未经允许的情况下二次分发
 后来发现 V2EX 和 linux.do 我也想这么刷，就把摸鱼模式也搬了过去。
-
 下面先说怎么装，再挨个过一遍功能，最后聊聊实现上的几点取舍。各模块的具体用法写在 [使用说明](docs/guide.md) 里。
 
 ## 安装
@@ -216,10 +212,9 @@ NodeSeek++ 只是想让逛论坛更舒服一些，**不是**用来刷量、灌�
 
 - [使用说明](docs/guide.md)：监控正则写法、图片上传与自定义图床、请求并发、消息中心等细节
 - [开发与发布](docs/development.md)：本地开发、测试、`make deploy` 与 Greasy Fork 同步
-- [功能矩阵](docs/feature-matrix.md)：和上游脚本的功能对照与参考来源
 
 ## 许可证
 
-[GPL-3.0-only](LICENSE)。功能需求参考了 NodeSeek Pro、NodeSeek X 和 NodeSeek 增强助手，对照见 [功能矩阵](docs/feature-matrix.md)；第三方依赖适用各自的许可证，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+[GPL-3.0-only](LICENSE)。
 
 <p align="center"><a href="https://star-history.com/#rirh/nodeseek-plus&Date"><img src="https://api.star-history.com/svg?repos=rirh/nodeseek-plus&type=Date" alt="Star History Chart" width="640"></a></p>

@@ -1,4 +1,4 @@
-// Adapted from NodeSeek X (GPL-3.0); see docs/feature-matrix.md.
+// Adapted from NodeSeek X (GPL-3.0).
 type Rule = { scopes: string[]; test: (name: string) => boolean };
 type Rules = { allow: Rule[]; block: Rule[]; paths: { scopes: string[]; regex: RegExp }[] };
 export function parseLinkRules(text: string): Rules {

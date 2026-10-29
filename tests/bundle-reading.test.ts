@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Window } from 'happy-dom';
 import { key, fixture } from './helpers/bundle-fixture.ts';
 
 test('profile discussion stats load visible rows, reuse cached counts and leave other tabs alone', async () => {
@@ -117,9 +118,11 @@ test('history dialog searches, deletes and restores entries', async () => {
     assert.ok(dialog.open); assert.equal(dialog.querySelectorAll('ol a').length, 2);
     const search = dialog.querySelector('input')!; search.value = 'Alpha'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(dialog.querySelectorAll('ol a').length, 1);
-    (dialog.querySelector('ol button[aria-label]') as HTMLButtonElement).click();
+    dialog.querySelector<HTMLButtonElement>('ol button[aria-label="删除历史：Alpha"]')!.click();
     assert.equal(dialog.querySelectorAll('ol a').length, 0);
-    [...dialog.querySelectorAll('button')].find(b => b.textContent === '撤销删除')!.click();
+    const undo = dialog.querySelector<HTMLButtonElement>('.nspp-history-undo')!;
+    assert.equal(undo.title, '撤销删除');
+    undo.click();
     assert.equal(dialog.querySelector('ol a')!.textContent, 'Alpha');
     assert.ok(dialog.querySelector('time'));
   } finally { await f.close(); }
@@ -147,7 +150,7 @@ test('history records actual visits, prunes old entries and tracks recently clos
     const dialog = f.window.document.querySelector('dialog[aria-label="阅读历史"]')!;
     dialog.querySelector<HTMLButtonElement>('[data-tab="recent"]')!.click();
     assert.equal(dialog.querySelector('a')!.getAttribute('href'), '/post-12-1');
-    assert.ok([...dialog.querySelectorAll('button')].some(button => button.textContent === '恢复'));
+    assert.ok(dialog.querySelector('button[aria-label="重新打开：Current title"]'));
     dialog.querySelector<HTMLButtonElement>('.nspp-history-day button')!.click();
     assert.equal(state().recent.length, 0);
     assert.equal(state().entries.length, 1);
@@ -162,7 +165,8 @@ test('quick reply dialog supports default pagination, search and persistent temp
     const dialog = doc.querySelector<HTMLDialogElement>('.nspp-quick-replies')!;
     assert.equal(dialog.open, true);
     assert.equal(dialog.querySelectorAll('.nspp-quick-send').length, 6);
-    const button = (name: string) => [...dialog.querySelectorAll('button')].find(el => el.textContent === name)!;
+    // Secondary actions are icon buttons, named by their aria-label.
+    const button = (name: string) => [...dialog.querySelectorAll('button')].find(el => (el.getAttribute('aria-label') || el.textContent) === name)!;
     button('下一页').click(); assert.equal(dialog.querySelectorAll('.nspp-quick-send').length, 2);
     const search = dialog.querySelector<HTMLInputElement>('input')!;
     search.value = '感谢分享'; search.dispatchEvent(new f.window.Event('input'));
@@ -172,7 +176,7 @@ test('quick reply dialog supports default pagination, search and persistent temp
     text.value = '自定义测试回复'; dialog.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
     search.value = '自定义'; search.dispatchEvent(new f.window.Event('input'));
     assert.equal(dialog.querySelector('.nspp-quick-send')!.textContent, '自定义测试回复');
-    button('新增').click(); text.value = '另一条自定义'; dialog.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
+    button('新增快捷回复').click(); text.value = '另一条自定义'; dialog.querySelector('form')!.dispatchEvent(new f.window.Event('submit', { cancelable: true }));
     assert.equal(dialog.querySelectorAll('.nspp-quick-send').length, 2);
     button('删除').click(); assert.equal(dialog.querySelectorAll('.nspp-quick-send').length, 1);
     assert.ok((f.storage.get('nspp:state:www.nodeseek.com:list-interactions') as { quickReplies: string[] }).quickReplies.includes('另一条自定义'));
@@ -242,9 +246,19 @@ test('list counts are on demand and missing counts never create a hidden page', 
   } finally { await f.close(); }
 });
 
+// Viewer.js waits for transitionend, which Happy DOM never fires; with reduced motion it shows and hides at once.
+function reducedMotion(window: Window) {
+  const matchMedia = window.matchMedia.bind(window);
+  window.matchMedia = ((query: string) => {
+    const media = matchMedia(query);
+    if (query.includes('prefers-reduced-motion')) Object.defineProperty(media, 'matches', { value: true });
+    return media;
+  }) as typeof window.matchMedia;
+}
+
 test('linked banner images follow their link instead of opening any viewer', async () => {
   let nativeOpens = 0;
-  const f = await fixture({}, '<div class="post-content"><a href="https://example.com/site"><img id="banner" src="https://img.example.com/badge.svg"></a><a href="https://example.com/full.png"><img id="photo" src="https://example.com/thumb.png"></a></div>', '/post-42-1');
+  const f = await fixture({}, '<div class="post-content"><a href="https://example.com/site"><img id="banner" src="https://img.example.com/badge.svg"></a><a href="https://example.com/full.png"><img id="photo" src="https://example.com/thumb.png"></a></div>', '/post-42-1', undefined, reducedMotion);
   try {
     const doc = f.window.document;
     const banner = doc.querySelector<HTMLImageElement>('#banner')!;
@@ -253,15 +267,20 @@ test('linked banner images follow their link instead of opening any viewer', asy
     banner.dispatchEvent(click);
     assert.equal(click.defaultPrevented, false, 'the link still navigates');
     assert.equal(nativeOpens, 0, 'site viewers do not enlarge linked banners');
-    assert.equal(doc.querySelector('.nspp-image-viewer'), null);
+    assert.equal(doc.querySelector('.nspp-image-preview'), null);
     doc.querySelector<HTMLImageElement>('#photo')!.click();
-    assert.equal(doc.querySelector<HTMLDialogElement>('.nspp-image-viewer')!.open, true, 'links to image files still preview');
+    const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-preview')!;
+    assert.equal(gallery.open, true, 'links to image files still preview');
+    assert.equal(gallery.querySelector('.viewer-canvas img')?.getAttribute('src'), 'https://example.com/thumb.png');
+    const listed = [...gallery.querySelectorAll('.viewer-list img')].map(img => img.getAttribute('data-original-url') || img.getAttribute('src'));
+    assert.deepEqual(listed, ['https://example.com/thumb.png'], 'the linked banner stays out of the gallery');
   } finally { await f.close(); }
 });
 
 test('reading image preview claims clicks before native viewers and closes in one click', async () => {
   let nativeOpens = 0;
   const f = await fixture({}, '<div class="post-content"><img src="https://example.com/photo.png"></div>', '/post-42-1', undefined, window => {
+    reducedMotion(window);
     window.document.addEventListener('click', event => {
       if (event.target instanceof window.HTMLImageElement) nativeOpens++;
     }, true);
@@ -271,14 +290,47 @@ test('reading image preview claims clicks before native viewers and closes in on
     const image = doc.querySelector<HTMLImageElement>('.post-content img')!;
     image.addEventListener('click', () => { nativeOpens++; });
     image.click();
-    const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-viewer')!;
+    const gallery = doc.querySelector<HTMLDialogElement>('.nspp-image-preview')!;
     assert.equal(nativeOpens, 0, 'neither native capture nor image handlers should open a second layer');
     assert.equal(gallery.open, true);
-    gallery.querySelector<HTMLButtonElement>('button')!.click();
+    gallery.querySelector<HTMLElement>('[aria-label="关闭预览"]')!.click();
     assert.equal(doc.querySelectorAll('dialog[open]').length, 0);
+    assert.equal(doc.querySelector('.nspp-image-preview'), null, 'one click removes the gallery');
     image.dispatchEvent(new f.window.MouseEvent('click', { bubbles: true, ctrlKey: true }));
     assert.equal(nativeOpens, 2, 'modified clicks retain native behavior');
-    assert.equal(gallery.open, false);
+    assert.equal(doc.querySelector('.nspp-image-preview'), null);
+  } finally { await f.close(); }
+});
+
+test('the reading image viewer keeps its keys: arrows switch and zoom, Escape closes, the page stays put', async () => {
+  let scrolls = 0;
+  const f = await fixture({}, '<div class="post-content"><img id="first" src="https://example.com/one.png"><img id="second" src="https://example.com/two.png"></div>', '/post-42-1', undefined, window => {
+    reducedMotion(window);
+    window.scrollTo = (() => { scrolls++; }) as typeof window.scrollTo;
+  });
+  try {
+    const doc = f.window.document;
+    const shown = () => doc.querySelector('.nspp-image-preview .viewer-canvas img')?.getAttribute('src');
+    // Viewer.js reads keyCode; the keys go to the focused viewer inside the dialog, as in a browser.
+    const press = (key: string, keyCode: number, init: { altKey?: boolean } = {}) => {
+      const event = new f.window.KeyboardEvent('keydown', { key, keyCode, bubbles: true, cancelable: true, ...init });
+      (doc.activeElement || doc.body).dispatchEvent(event);
+      return event;
+    };
+    doc.querySelector<HTMLImageElement>('#first')!.click();
+    assert.equal(shown(), 'https://example.com/one.png');
+    assert.ok(doc.activeElement?.closest('.nspp-image-preview'), 'focus moves into the viewer');
+    press('ArrowRight', 39);
+    assert.equal(shown(), 'https://example.com/two.png', '→ shows the next image');
+    press('ArrowLeft', 37);
+    assert.equal(shown(), 'https://example.com/one.png', '← goes back');
+    const zoom = press('ArrowUp', 38, { altKey: true });
+    assert.equal(zoom.defaultPrevented, true, '↑ zooms instead of scrolling');
+    assert.equal(scrolls, 0, 'Alt + ↑ does not jump the page behind the viewer');
+    press('Escape', 27);
+    assert.equal(doc.querySelector('.nspp-image-preview'), null, 'Escape closes the viewer');
+    press('ArrowDown', 40, { altKey: true });
+    assert.equal(scrolls, 1, 'once the viewer is closed, Alt + ↓ jumps to the page end again');
   } finally { await f.close(); }
 });
 

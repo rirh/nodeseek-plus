@@ -11,7 +11,8 @@ export const navigationFeature: Feature = {
             document.body.classList.add('dark-layout');
         if (ctx.get('keyboard'))
             document.addEventListener('keydown', e => {
-                if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key) || (e.target as Element).closest('input,textarea,select,[contenteditable="true"]'))
+                // Editors keep their keys, and so do dialogs: the image viewer zooms on ↑ / ↓ while the page stays put.
+                if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key) || (e.target instanceof Element && e.target.closest('input,textarea,select,[contenteditable="true"],dialog')))
                     return;
                 e.preventDefault();
                 window.scrollTo(0, e.key === 'ArrowUp' ? 0 : document.documentElement.scrollHeight);

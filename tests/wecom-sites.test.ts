@@ -533,8 +533,10 @@ test('V2EX 签到 redeems the daily login reward once a day, and only for a sign
   const guest = await fixture({}, tabPage.replace(rightbar, '<div id="Rightbar"><a href="/signin">登录</a></div>'), '/', new Map(), window => v2exServer(window, visitor), false, V2EX);
   try {
     await new Promise(resolve => setTimeout(resolve, 30));
-    assert.equal(guest.window.document.querySelector('[data-nspp-attendance]'), null);
-    assert.equal(guest.window.document.querySelector<HTMLElement>('.nspp-wecom-rail-item[aria-label="通知"]'), null);
+    // Compare plain values, never DOM nodes: a failing assert on a node makes Node format the whole tree for minutes.
+    assert.equal(guest.window.document.querySelector('[data-nspp-attendance]') === null, true, 'no 签到 button for visitors');
+    // As on linux.do, the rail keeps its 通知 item but hides it for visitors.
+    assert.equal(guest.window.document.querySelector<HTMLElement>('.nspp-wecom-rail-item[aria-label="通知"]')?.hidden, true);
     assert.deepEqual(visitor, []);
   } finally { guest.close(); }
 });

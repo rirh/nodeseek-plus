@@ -2,6 +2,7 @@ import { toolIcon } from '../../lib/tool-icon';
 import type { Context, Feature } from '../../core/types';
 import { postPath } from '../reading-logic';
 import { sweepShine } from '../../views/sweep-shine';
+import { fillFloorMenus, pageFloors } from './floor-menu';
 function mount(ctx: Context) {
     const comments = /^\/post-/.test(location.pathname);
     if (!ctx.get<boolean>(comments ? 'comments' : 'posts'))
@@ -68,6 +69,7 @@ function mount(ctx: Context) {
             });
             // Collect listed post paths once per page instead of rescanning the whole list for every fetched row.
             const listed = comments ? undefined : new Set(Array.from(list.querySelectorAll<HTMLAnchorElement>('.post-title a'), a => postPath(a.href, location.href)));
+            const appended: Element[] = [];
             for (const child of Array.from(source.children)) {
                 const id = child.id;
                 if (id && document.getElementById(id))
@@ -81,8 +83,10 @@ function mount(ctx: Context) {
                         listed.add(path);
                     }
                 }
-                list.append(document.importNode(child, true));
+                appended.push(list.appendChild(document.importNode(child, true)));
             }
+            // The forum only mounts floor menus for its own page; give copied-in floors theirs from the fetched page.
+            if (comments) fillFloorMenus(ctx, appended, pageFloors(page), url.href);
             visited.add(url.href);
             failed = false;
             const href = page.querySelector<HTMLAnchorElement>('.nsk-pager a.pager-next')?.getAttribute('href');
@@ -128,4 +132,4 @@ function mount(ctx: Context) {
         button.hidden = true;
     return () => { observer.disconnect(); loading?.abort(); button.remove(); pause.remove(); };
 }
-export const infiniteScroll: Feature = { id: 'infinite-scroll', title: '自动翻页', description: '合并下一页帖子或评论；失败时手动重试。新增评论的互动请通过原始页面链接操作。', group: '阅读', defaults: { enabled: true, posts: true, comments: false }, fields: { posts: { label: '帖子自动翻页', type: 'text' }, comments: { label: '评论自动翻页（仅阅读）', type: 'text' } }, mount };
+export const infiniteScroll: Feature = { id: 'infinite-scroll', title: '自动翻页', description: '合并下一页帖子或评论；失败时手动重试。接上来的评论楼层同样可以点赞、加鸡腿、反对、引用和回复。', group: '阅读', defaults: { enabled: true, posts: true, comments: false }, fields: { posts: { label: '帖子自动翻页', type: 'text' }, comments: { label: '评论自动翻页', type: 'text' } }, mount };
