@@ -75,3 +75,10 @@ export function systemNotify(text: string, url: string, tag: string, title = 'æ–
     return true;
   } catch { return false; }
 }
+
+/** The forum's per-account comments-per-page setting; the site spells the field `commmentPerPage`. */
+export function commentsPerPage(): number | undefined {
+  const config = (unsafeWindow as Window & { __config__?: { commmentPerPage?: unknown; commentPerPage?: unknown } }).__config__;
+  const value = Number(config?.commmentPerPage ?? config?.commentPerPage);
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}

@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { toolIcon } from '../../lib/tool-icon';
+import { iconButton, toolIcon } from '../../lib/tool-icon';
 import { unsafeWindow } from '../../lib/userscript';
 import type { Feature } from '../../core/types';
 import { createSheet } from '../../views/sheet';
@@ -53,7 +53,7 @@ export const historyFeature: Feature = {
             historyDialog?.remove();
             historyDialog = createSheet('nspp-history', '阅读历史', { tall: true });
             const close = document.createElement('button');
-            close.textContent = '关闭';
+            iconButton(close, 'close', '关闭');
             close.type = 'button';
             close.addEventListener('click', () => historyDialog?.close(), { signal: ctx.signal });
             const heading = document.createElement('h2');
@@ -64,10 +64,11 @@ export const historyFeature: Feature = {
             search.setAttribute('aria-label', '搜索阅读历史');
             const clear = document.createElement('button');
             clear.type = 'button';
-            clear.textContent = '清空历史';
+            iconButton(clear, 'trash', '清空历史').dataset.danger = '';
             const undoButton = document.createElement('button');
             undoButton.type = 'button';
-            undoButton.textContent = '撤销删除';
+            undoButton.append(toolIcon('undo'), '撤销');
+            undoButton.className = 'nspp-history-undo'; undoButton.title = '撤销删除';
             undoButton.hidden = true;
             let previous: Entry[] | undefined;
             let tab = 'entries';
@@ -100,7 +101,7 @@ export const historyFeature: Feature = {
                         const group = document.createElement('li'); group.className = 'nspp-history-day';
                         const label = document.createElement('span');
                         label.textContent = `${day === format(new Date(), 'yyyy-MM-dd') ? '今天 - ' : ''}${format(new Date(entry.time), 'yyyy年M月d日 EEEE', { locale: zhCN })}`;
-                        const clearDay = document.createElement('button'); clearDay.type = 'button'; clearDay.textContent = '清除当天';
+                        const clearDay = document.createElement('button'); clearDay.type = 'button'; iconButton(clearDay, 'clear-day', '清除当天').dataset.danger = '';
                         clearDay.addEventListener('click', () => { previous = load(tab); entries = previous.filter(item => format(new Date(item.time), 'yyyy-MM-dd') !== day); undoButton.hidden = false; save(); render(); });
                         group.append(label, clearDay); list.append(group);
                     }
@@ -115,8 +116,7 @@ export const historyFeature: Feature = {
                     }
                     const remove = document.createElement('button');
                     remove.type = 'button';
-                    remove.textContent = '删除';
-                    remove.setAttribute('aria-label', `删除历史：${entry.title}`);
+                    iconButton(remove, 'close', `删除历史：${entry.title}`).dataset.danger = '';
                     remove.addEventListener('click', () => {
                         previous = load(tab);
                         entries = previous.filter(item => item.path !== entry.path);
@@ -131,7 +131,7 @@ export const historyFeature: Feature = {
                     link.title = entry.title;
                     li.append(link, date);
                     if (tab === 'recent') {
-                        const restore = document.createElement('button'); restore.type = 'button'; restore.textContent = '恢复';
+                        const restore = document.createElement('button'); restore.type = 'button'; iconButton(restore, 'undo', `重新打开：${entry.title}`);
                         restore.addEventListener('click', () => window.open(entry.path, '_blank', 'noopener'));
                         li.append(restore);
                     }

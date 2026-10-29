@@ -13,3 +13,4 @@
 .nspp-image-preview [role="button"]:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .nspp-preview-content img { cursor: zoom-in; }
 .nspp-preview-content img:focus-visible { outline: 2px solid var(--link-color, #0969da); outline-offset: 3px; border-radius: 3px; }
+.nspp-image-preview .viewer-title { margin: 0 0 8px; color: #fffc; font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; opacity: 1; }

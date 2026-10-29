@@ -3,7 +3,7 @@ import { requestMonitorRSS } from './monitor-rss-request';
 import { gsap } from 'gsap';
 import { GM_getValue, systemNotify, hasSystemNotifications } from '../lib/userscript';
 import { compileMonitorRules } from './monitor-rules';
-import { toolIcon } from '../lib/tool-icon';
+import { iconButton, toolIcon } from '../lib/tool-icon';
 import { withTabLock } from '../lib/tab-lock';
 import type { Context, Feature } from '../core/types';
 import { currentUser } from './actions';
@@ -27,7 +27,7 @@ function control(label: string, fn: () => void, ctx: Context) {
   const el = document.createElement('button'); el.type = 'button'; el.textContent = label;
   const icon = label === '关闭' ? 'close' : label === '刷新' || label === '更新' ? 'refresh' : label === '停止' ? 'stop' : undefined;
   if (icon) el.prepend(toolIcon(icon));
-  if (label === '关闭') { el.replaceChildren(toolIcon('close')); el.title = label; el.setAttribute('aria-label', label); }
+  if (label === '关闭') iconButton(el, 'close', label);
   el.addEventListener('click', fn, { signal: ctx.signal }); return el;
 }
 const monitor: Feature = {

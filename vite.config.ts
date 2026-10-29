@@ -18,8 +18,8 @@ export default defineConfig(({ mode }) => ({
       name: mode === 'stage' ? 'NodeSeek++ (Stage)' : 'NodeSeek++',
       namespace: 'nodeseek-plus-plus',
       version: packageJson.version,
-      description: '模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现。',
-      match: ['https://www.nodeseek.com/*', 'https://www.deepflood.com/*'],
+      description: '模块化论坛增强：阅读、过滤、回复、签到、交易与关键词监控，一个功能一套实现；摸鱼模式另支持 linux.do 与 V2EX。',
+      match: ['https://www.nodeseek.com/*', 'https://www.deepflood.com/*', 'https://linux.do/*', 'https://www.v2ex.com/*', 'https://v2ex.com/*'],
       connect: ['api.nodeimage.com', 'rss.nodeseek.com', 'api.bimg.eu.org', 'raw.githubusercontent.com', '*'],
       ...(mode === 'stage' || mode === 'development' ? {} : {
         homepageURL: 'https://github.com/rirh/nodeseek-plus',

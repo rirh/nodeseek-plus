@@ -3,6 +3,8 @@ import { readingContent } from '../views/post-preview';
 import { notificationAvatar } from '../views/notification-avatar';
 import { forumTime } from '../lib/forum-time';
 import { footprintHref } from '../lib/link-rules';
+import { commentsPerPage } from '../lib/userscript';
+import { iconButton } from '../lib/tool-icon';
 
 type Category = 'atMe' | 'reply';
 type Notice = { id: number; post_id: number; floor_id?: number | string; commenter_id?: number; member_id?: number; commenter_name?: string; title?: string; post_title?: string; content?: string; created_at?: string; viewed?: number | boolean };
@@ -15,7 +17,7 @@ const noticeFloor = (notice: Notice) => {
   const floor = Number(String(notice.floor_id).replace(/^#/, ''));
   return Number.isSafeInteger(floor) && floor >= 0 ? floor : null;
 };
-const noticeHref = (notice: Notice) => noticeFloor(notice) === null ? `/post-${notice.post_id}-1` : footprintHref(notice.post_id, noticeFloor(notice)!);
+const noticeHref = (notice: Notice) => noticeFloor(notice) === null ? `/post-${notice.post_id}-1` : footprintHref(notice.post_id, noticeFloor(notice)!, commentsPerPage());
 type Preview = { title: string; body: DocumentFragment; snippet: string; available: boolean };
 
 export function createNotificationInbox(ctx: Context, onRead: () => void, onBack: () => void) {
@@ -25,7 +27,7 @@ export function createNotificationInbox(ctx: Context, onRead: () => void, onBack
   const contactsBack = button('联系人', 'nspp-messages-back'); contactsBack.addEventListener('click', onBack, { signal: ctx.signal });
   toolbar.append(contactsBack);
   const search = node('input'); search.type = 'search'; search.placeholder = '搜索用户、帖子或已加载的回复'; search.setAttribute('aria-label', search.placeholder);
-  const refresh = button('刷新'); toolbar.append(search, refresh);
+  const refresh = iconButton(button(''), 'refresh', '刷新'); toolbar.append(search, refresh);
   const list = node('div', 'nspp-messages-conversations');
   const info = node('p', 'nspp-messages-list-status'); info.setAttribute('role', 'status');
   const more = button('加载更多', 'nspp-messages-more');

@@ -188,7 +188,10 @@ export function mountSettings(features: Feature[]) {
     label.append(element("strong", feature.title), toggle);
     row.append(label);
     const options = Object.keys(feature.defaults).filter(key => key !== "enabled");
-    if (!options.length) return row;
+    if (!options.length) {
+      toggle.addEventListener("change", () => { settings.enabled = toggle.checked; });
+      return row;
+    }
     const details = element("div");
     details.className = "feature-options";
     const conditional: [HTMLElement, () => boolean][] = [];
@@ -250,7 +253,7 @@ export function mountSettings(features: Feature[]) {
       group.append(renderFeature(feature));
     }
     const showData = !query || '数据 导出 导入 配置 缓存 恢复默认 备份'.includes(query);
-    const showAbout = !query || '关于 nodeseek++ github 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证'.includes(query);
+    const showAbout = !query || '关于 nodeseek++ github star 项目地址 下载 安装 更新 版本 使用说明 反馈 greasy fork 开源 许可证'.includes(query);
     if (showData || showAbout) {
       const group = groups.get("其他") || addSection("其他");
       groups.set("其他", group);

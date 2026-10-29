@@ -11,3 +11,12 @@
   dialog.nspp-sheet :is(button, input, select) { min-height: 36px; }
   dialog.nspp-sheet :is(input, textarea, select) { font-size: 16px; }
 }
+
+/* Icon-only secondary actions (see iconButton in tool-icon.ts): a fixed square instead of text width, larger touch target on phones. */
+button.nspp-icon-button.nspp-icon-button { display: inline-flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 0; border-radius: 6px; line-height: 0; }
+button.nspp-icon-button.nspp-icon-button svg { flex: none; width: 16px; height: 16px; }
+button.nspp-icon-button[data-danger]:hover { color: #cf222e; }
+@media (max-width: 700px), (hover: none) {
+  button.nspp-icon-button.nspp-icon-button { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+  button.nspp-icon-button.nspp-icon-button svg { width: 18px; height: 18px; }
+}

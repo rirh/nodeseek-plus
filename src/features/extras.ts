@@ -1,12 +1,12 @@
-import { toolIcon } from '../lib/tool-icon';
+import { iconButton, toolIcon } from '../lib/tool-icon';
 import { parseLinkRules, cleanLink, footprintHref } from '../lib/link-rules';
-import { unsafeWindow } from '../lib/userscript';
+import { commentsPerPage, unsafeWindow } from '../lib/userscript';
 import { resolveLink } from '../lib/resolve-link';
 import type { Feature } from '../core/types';
 import { createSheet } from '../views/sheet';
 import { sweepShine } from '../views/sweep-shine';
 
-type PageConfig = { user?: { member_id: number }; commentPerPage?: number };
+type PageConfig = { user?: { member_id: number } };
 function pageConfig(): PageConfig | undefined {
   return (unsafeWindow as Window & { __config__?: PageConfig }).__config__;
 }
@@ -24,14 +24,14 @@ export const extraFeatures: Feature[] = [
       const panel = createSheet('nspp-history nspp-footprints-dialog', '我的回帖足迹', { tall: true }); panel.dataset.nsppFootprints = '';
       const summary = document.createElement('h2'); summary.textContent = '我的回帖足迹';
       const open = document.createElement('button'); open.type = 'button'; open.className = 'nspp-tool-icon'; open.dataset.nsppFootprintsLauncher = ''; open.title = '回帖足迹'; open.setAttribute('aria-label', open.title); open.append(toolIcon('footprints'));
-      const close = document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
+      const close = iconButton(document.createElement('button'), 'close', '关闭'); close.type = 'button';
       open.addEventListener('click', () => { panel.showModal(); render(); }, { signal: ctx.signal });
       close.addEventListener('click', () => panel.close(), { signal: ctx.signal });
       const sync = document.createElement('button'); sync.type = 'button'; sync.textContent = '同步 / 继续';
-      const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = '清空缓存';
+      const reset = iconButton(document.createElement('button'), 'trash', '清空足迹缓存'); reset.type = 'button'; reset.dataset.danger = '';
       const status = document.createElement('span'); status.setAttribute('role', 'status');
       const list = document.createElement('div'); list.className = 'nspp-footprints-list nspp-sheet-body';
-      close.prepend(toolIcon('close')); sync.prepend(toolIcon('refresh'));
+      sync.prepend(toolIcon('refresh'));
       const header = document.createElement('header'); header.append(summary, close);
       const toolbar = document.createElement('div'); toolbar.className = 'nspp-footprints-toolbar'; toolbar.append(sync, reset, status);
       panel.append(header, toolbar, list);
@@ -44,7 +44,7 @@ export const extraFeatures: Feature[] = [
           const floor = latest.get(post); let badge = title.querySelector<HTMLAnchorElement>('[data-nspp-footprint]');
           if (!floor) { badge?.remove(); return; }
           if (!badge) { badge = document.createElement('a'); badge.dataset.nsppFootprint = ''; badge.style.marginInlineStart = '8px'; title.append(badge); badges.push(badge); }
-          const href = footprintHref(post, floor, pageConfig()?.commentPerPage);
+          const href = footprintHref(post, floor, commentsPerPage());
           if (badge.getAttribute('href') !== href) badge.setAttribute('href', href);
           const text = `已回复 #${floor}`; if (badge.textContent !== text) badge.textContent = text;
         });
@@ -96,7 +96,7 @@ export const extraFeatures: Feature[] = [
         status.textContent = `${latest.size} 个帖子 · ${records.length} 条回复`;
         if (!latest.size) { const empty = document.createElement('p'); empty.textContent = '暂无回帖足迹，点击“同步 / 继续”获取历史回复。'; list.append(empty); }
         latest.forEach((floor, post) => {
-          const a = document.createElement('a'); a.href = footprintHref(post, floor, pageConfig()?.commentPerPage);
+          const a = document.createElement('a'); a.href = footprintHref(post, floor, commentsPerPage());
           a.dataset.post = String(post);
           const title = titles.get(post);
           const label = document.createElement('span'); label.className = 'nspp-footprint-title'; label.textContent = title || '等待加载帖子标题…';
@@ -128,7 +128,7 @@ export const extraFeatures: Feature[] = [
           }
           ctx.set(`${key}:cursor`, cursor); render();
         } catch { if (!ctx.signal.aborted) ctx.notify('足迹同步失败，已保留进度，请重试'); }
-        finally { busy = false; sync.disabled = reset.disabled = false; sync.removeAttribute('aria-busy'); sync.textContent = '同步 / 继续'; }
+        finally { busy = false; sync.disabled = reset.disabled = false; sync.removeAttribute('aria-busy'); sync.replaceChildren(toolIcon('refresh'), '同步 / 继续'); }
       }, { signal: ctx.signal });
       reset.addEventListener('click', () => { records = []; cursor = 1; ctx.set(key, []); ctx.set(`${key}:cursor`, 1); render(); }, { signal: ctx.signal });
       return () => { titleController.abort(); titleObserver.disconnect(); stopBadges(); badges.forEach(badge => badge.remove()); open.remove(); panel.remove(); };

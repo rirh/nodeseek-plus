@@ -15,6 +15,9 @@ export function aboutContent(check: () => Promise<void>, share: () => void): HTM
   const buttons = document.createElement('div'); buttons.className = 'about-buttons'; buttons.append(shareButton, button);
   heading.append(title, buttons);
   const summary = document.createElement('p'); summary.textContent = `v${__APP_VERSION__} · NodeSeek / DeepFlood 论坛增强 · GPL-3.0-only`;
+  const star = document.createElement('p'); star.className = 'about-star';
+  const starLink = document.createElement('a'); starLink.href = REPOSITORY_URL; starLink.textContent = '⭐ Star'; starLink.target = '_blank'; starLink.rel = 'noopener noreferrer';
+  star.append('觉得好用的话，去 GitHub 点个 ', starLink, ' 支持一下吧');
   const links = document.createElement('div'); links.className = 'about-links';
   for (const [label, href] of [
     ['GitHub', REPOSITORY_URL],
@@ -25,5 +28,5 @@ export function aboutContent(check: () => Promise<void>, share: () => void): HTM
   ]) {
     const link = document.createElement('a'); link.href = href; link.textContent = label; link.target = '_blank'; link.rel = 'noopener noreferrer'; links.append(link);
   }
-  content.append(heading, summary, links); return content;
+  content.append(heading, summary, star, links); return content;
 }

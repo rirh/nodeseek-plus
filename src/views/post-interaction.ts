@@ -1,5 +1,6 @@
 import type { Context } from '../core/types';
 import { postURL, reactionCounts, type PostAction } from '../features/post-interaction-data';
+import { iconButton } from '../lib/tool-icon';
 
 type NativeEditor = { getValue(): string; setValue(value: string): void };
 export function createPostInteraction(ctx: Context, update: (url: string, counts: (number | null)[]) => void) {
@@ -7,7 +8,7 @@ export function createPostInteraction(ctx: Context, update: (url: string, counts
   view.setAttribute('aria-label', '帖子互动'); view.setAttribute('role', 'region');
   const head = document.createElement('header');
   const title = document.createElement('a'); title.target = '_blank'; title.rel = 'noopener noreferrer';
-  const close = document.createElement('button'); close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '关闭互动');
+  const close = document.createElement('button'); close.type = 'button'; iconButton(close, 'close', '关闭互动');
   const status = document.createElement('p'); status.setAttribute('role', 'status');
   const form = document.createElement('form');
   const input = document.createElement('textarea'); input.rows = 4; input.placeholder = '写下回复，支持 Markdown…'; input.setAttribute('aria-label', '回复内容');

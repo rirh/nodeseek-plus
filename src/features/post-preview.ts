@@ -9,6 +9,8 @@ export const postPreview: Feature = {
     const preview = createPostPreview(ctx);
     const bound = new Map<HTMLAnchorElement, string | null>();
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // The WeCom layout opens posts in its own conversation pane instead.
+    const wecom = () => document.documentElement.hasAttribute('data-nspp-wecom');
     const stop = ctx.watch(() => {
       for (const link of bound.keys()) if (!link.isConnected) bound.delete(link);
       document.querySelectorAll<HTMLAnchorElement>('.post-list-item .post-title a').forEach(link => {
@@ -17,13 +19,13 @@ export const postPreview: Feature = {
         if (url.origin !== location.origin || !/^\/post-\d+(?:-\d+)?(?:\.html)?\/?$/.test(url.pathname)) return;
         bound.set(link, link.getAttribute('title')); link.removeAttribute('title');
         link.addEventListener('mouseenter', () => {
-          if (!matchMedia('(hover: hover)').matches) return;
+          if (!matchMedia('(hover: hover)').matches || wecom()) return;
           preview.keepOpen();
           clearTimeout(timer); timer = setTimeout(() => preview.open(link, 'preview'), 400);
         }, { signal: ctx.signal });
         link.addEventListener('mouseleave', () => { clearTimeout(timer); preview.scheduleClose(); }, { signal: ctx.signal });
         link.addEventListener('click', event => {
-          if (!matchMedia('(max-width: 700px), (hover: none)').matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+          if (wecom() || !matchMedia('(max-width: 700px), (hover: none)').matches || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
           event.preventDefault(); clearTimeout(timer);
           preview.open(link, 'preview');
         }, { signal: ctx.signal });

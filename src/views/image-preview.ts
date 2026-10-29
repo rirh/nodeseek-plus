@@ -2,12 +2,26 @@ import Viewer from 'viewerjs';
 import 'viewerjs/dist/viewer.css';
 import './image-preview.css';
 
-export function openImagePreview(content: HTMLElement, image: HTMLImageElement, onClose: () => void) {
+/** Pass a container to browse its images, or an explicit gallery (e.g. images spread over several floors). */
+export function openImagePreview(content: HTMLElement | HTMLImageElement[], image: HTMLImageElement, onClose: () => void) {
   const dialog = document.createElement('dialog');
   dialog.className = 'nspp-image-preview';
   dialog.setAttribute('aria-label', '图片预览');
   document.body.append(dialog);
   dialog.showModal();
+  let source: HTMLElement;
+  let images: HTMLImageElement[];
+  if (Array.isArray(content)) {
+    // Viewer needs one root element; mirror the gallery into a hidden list so other page images stay out.
+    source = document.createElement('div'); source.hidden = true;
+    images = content.map(item => {
+      const copy = document.createElement('img');
+      copy.src = item.currentSrc || item.src; copy.alt = item.alt; copy.referrerPolicy = item.referrerPolicy;
+      source.append(copy); return copy;
+    });
+    dialog.append(source);
+  } else { source = content; images = Array.from(content.querySelectorAll('img')); }
+  const start = Array.isArray(content) ? content.indexOf(image) : images.indexOf(image);
   let viewer: Viewer | undefined;
   let closed = false;
   const close = () => {
@@ -18,12 +32,12 @@ export function openImagePreview(content: HTMLElement, image: HTMLImageElement, 
     onClose();
   };
   dialog.addEventListener('cancel', event => { event.preventDefault(); event.stopPropagation(); close(); });
-  const images = Array.from(content.querySelectorAll('img'));
   const multiple = images.length > 1;
-  viewer = new Viewer(content, {
+  viewer = new Viewer(source, {
     container: dialog,
-    initialViewIndex: images.indexOf(image),
-    title: false,
+    initialViewIndex: Math.max(0, start),
+    // Galleries show their position; a single image needs no caption.
+    title: multiple ? [1, function (this: Viewer) { return `${(this as unknown as { index: number }).index + 1} / ${images.length}`; }] : false,
     navbar: multiple,
     toolbar: { zoomOut: true, zoomIn: true, oneToOne: true, reset: true, prev: multiple, next: multiple },
     fullscreen: false,

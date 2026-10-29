@@ -18,7 +18,11 @@ import { floatingReply } from "./features/floating-reply";
 import { hotRankings } from "./features/hot-rankings";
 import { mountFastNav } from "./features/fast-nav";
 import { share } from "./features/share";
+import { moyuMode } from "./features/wecom";
 import { mountToolsCollapse } from "./features/tools-collapse";
+import { mountToolTips } from "./features/tool-tips";
+import { SITE, pageHealthy } from "./lib/site";
+import { v2exAttendance } from "./features/v2ex-attendance";
 import "./styles/base.css";
 import "./styles/history-preview.css";
 import "./styles/tools-monitor.css";
@@ -39,6 +43,8 @@ const MENU_COMMANDS = [
 
 function main() {
   if (document.getElementById("nspp-settings")) return;
+  // Cloudflare checks and error pages stay exactly as the site serves them.
+  if (!pageHealthy(SITE)) return;
   const loadingStyle = document.createElement("style");
   loadingStyle.textContent = loadingCss.replaceAll(
     '[aria-busy="true"]',
@@ -51,7 +57,9 @@ function main() {
   document.body.append(tools);
   const stopFastNav = mountFastNav(tools);
   const stopToolsCollapse = mountToolsCollapse(tools);
-  const features = [
+  const stopToolTips = mountToolTips(tools);
+  // linux.do and V2EX only get 摸鱼模式; every other module reads NodeSeek's own pages and APIs.
+  const features = SITE === "v2ex" ? [requestSettings, moyuMode, v2exAttendance] : SITE === "linuxdo" ? [requestSettings, moyuMode] : [
     requestSettings,
     ...readingFeatures,
     ...filteringFeatures,
@@ -68,6 +76,7 @@ function main() {
     floatingReply,
     hotRankings,
     share,
+    moyuMode,
   ];
   if (new Set(features.map((feature) => feature.id)).size !== features.length)
     throw new Error("重复功能 ID");
@@ -84,7 +93,7 @@ function main() {
   }
   const stop = startFeatures(features, settings, ui.notify);
   window.addEventListener("pagehide", (event) => {
-    if (!event.persisted) { stop(); ui.stopUpdates(); stopFastNav(); stopToolsCollapse(); }
+    if (!event.persisted) { stop(); ui.stopUpdates(); stopFastNav(); stopToolsCollapse(); stopToolTips(); }
   });
 }
 

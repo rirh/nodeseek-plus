@@ -23,7 +23,9 @@ export function readingContent(source: Element, base: string): DocumentFragment 
       if (!['http:', 'https:'].includes(url.protocol)) return;
       el.setAttribute(attribute, url.href);
       if (el instanceof HTMLAnchorElement) { el.target = '_blank'; el.rel = 'noopener noreferrer'; }
-      if (el instanceof HTMLImageElement) { el.alt = sourceElement.getAttribute('alt') || ''; el.loading = 'lazy'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', el.alt ? `查看大图：${el.alt}` : '查看大图'); }
+      // Emoji (Discourse marks them with a class) stay inline text-sized and are not photos to open.
+      if (el instanceof HTMLImageElement && sourceElement.classList.contains('emoji')) { el.alt = sourceElement.getAttribute('alt') || ''; el.dataset.emoji = ''; }
+      else if (el instanceof HTMLImageElement) { el.alt = sourceElement.getAttribute('alt') || ''; el.loading = 'lazy'; el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', el.alt ? `查看大图：${el.alt}` : '查看大图'); }
     }
     node.childNodes.forEach(child => copy(child, el));
     parent.appendChild(el);
@@ -119,7 +121,9 @@ export function createPostPreview(ctx: Context) {
       if (!body) throw new Error('未找到正文');
       const author = doc.querySelector('.nsk-post .author-info, .author-info');
       const meta = document.createElement('div'); meta.className = 'nspp-preview-meta';
-      meta.textContent = author?.textContent?.trim() || '';
+      // Name and tags are separate elements; joined with spaces they read "rirh 楼主" rather than "rirh楼主".
+      const parts = author ? Array.from(author.children, child => child.textContent?.trim()).filter(Boolean) : [];
+      meta.textContent = parts.length ? parts.join(' ') : author?.textContent?.trim() || '';
       const article = document.createElement('article'); article.append(readingContent(body, url.href));
       content.append(meta, article);
       const comments = Array.from(doc.querySelectorAll('.comment-content')).filter(node => !body.contains(node));

@@ -113,6 +113,15 @@ function mount(ctx: Context) {
         if (replying()) { observer.disconnect(); loading?.abort(); }
         else if (next && !paused) observer.observe(button);
     }, { signal: ctx.signal });
+    // 摸鱼模式 swaps the list for another sort or section in place; start paging again from the new list's pager.
+    document.addEventListener('nspp:list-replaced', () => {
+        loading?.abort(); busy = false; failed = false;
+        visited.clear(); visited.add(location.href);
+        next = document.querySelector<HTMLAnchorElement>('.nsk-pager a.pager-next')?.href;
+        button.hidden = !next; button.disabled = !next; button.textContent = next ? '加载下一页' : '已加载全部内容'; pause.hidden = !next;
+        observer.disconnect();
+        if (next && !paused) observer.observe(button);
+    }, { signal: ctx.signal });
     if (next)
         observer.observe(button);
     else

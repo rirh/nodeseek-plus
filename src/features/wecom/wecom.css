@@ -1,0 +1,421 @@
+/* 摸鱼模式: WeChat 4.0-style columns — rail | conversation list (the native post list, resizable) | chat pane. */
+html[data-nspp-wecom] body {
+  --wc-rail-w: 60px; --wc-list-w: 300px; --wc-head-h: 60px;
+  --wc-green: #07c160; --wc-red: #fa5151;
+  --wc-rail: #e9e9e9; --wc-rail-fg: #5f5f5f; --wc-rail-hover: #191919; --wc-rail-line: #0000000f;
+  --wc-list: #f7f7f7; --wc-search: #eaeaea; --wc-row-hover: #ececec; --wc-row-active: #dedede; --wc-pinned: #efefef; --wc-sep: #ebebeb;
+  --wc-chat: #f0f0f0; --wc-border: #e3e3e3; --wc-bubble: #fff; --wc-mine: #95ec69; --wc-mine-text: #000;
+  --wc-text: #191919; --wc-muted: #8c8c8c; --wc-time: #b2b2b2; --wc-link: #576b95; --wc-code: #f4f4f4;
+  --wc-box: #fff; --wc-box-line: #e2e2e2; --wc-send: #ededed; --wc-pop: #fff; --wc-pop-line: #e5e5e5; --wc-shadow: 0 8px 28px #00000024, 0 1px 3px #0000000f;
+  --wc-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  overflow: hidden;
+  background: var(--wc-chat);
+}
+/* Dark: NodeSeek's own dark layout, or the theme picked inside 摸鱼模式 on linux.do and V2EX. */
+html[data-nspp-wecom] body.dark-layout, html[data-nspp-wecom][data-nspp-wecom-dark] body {
+  --wc-rail: #1f1f1f; --wc-rail-fg: #9a9a9a; --wc-rail-hover: #ececec; --wc-rail-line: #ffffff12;
+  --wc-list: #262626; --wc-search: #303030; --wc-row-hover: #2d2d2d; --wc-row-active: #363636; --wc-pinned: #2b2b2b; --wc-sep: #2f2f2f;
+  --wc-chat: #1f1f1f; --wc-border: #2d2d2d; --wc-bubble: #2e2e2e; --wc-mine: #3eb575; --wc-mine-text: #0d0d0d;
+  --wc-text: #dcdcdc; --wc-muted: #8c8c8c; --wc-time: #6e6e6e; --wc-link: #7d90a9; --wc-code: #262626;
+  --wc-box: #242424; --wc-box-line: #353535; --wc-send: #343434; --wc-pop: #2c2c2c; --wc-pop-line: #3a3a3a; --wc-shadow: 0 8px 28px #00000080, 0 1px 3px #0000004d;
+}
+.nspp-wecom-rail, .nspp-wecom-railmenu, .nspp-wecom-categories, .nspp-wecom-listhead, .nspp-wecom-feed, .nspp-wecom-hot, .nspp-wecom-resizer, .nspp-wecom-chat, .nspp-wecom-messages { display: none; }
+html[data-nspp-wecom] :is(.nspp-wecom-rail, .nspp-wecom-railmenu, .nspp-wecom-categories, .nspp-wecom-listhead, .nspp-wecom-feed, .nspp-wecom-hot, .nspp-wecom-chat) { box-sizing: border-box; color: var(--wc-text); font-family: var(--wc-font); -webkit-font-smoothing: antialiased; }
+html[data-nspp-wecom] :is(.nspp-wecom-rail, .nspp-wecom-railmenu, .nspp-wecom-categories, .nspp-wecom-listhead, .nspp-wecom-feed, .nspp-wecom-hot, .nspp-wecom-chat) :is(*, ::before, ::after) { box-sizing: border-box; }
+html[data-nspp-wecom] :is(.nspp-wecom-rail, .nspp-wecom-railmenu, .nspp-wecom-categories, .nspp-wecom-listhead, .nspp-wecom-feed, .nspp-wecom-hot, .nspp-wecom-chat) [hidden] { display: none !important; }
+/* Text fields show focus by their caret, as WeChat's do; a ring there would draw a box inside the input box. */
+html[data-nspp-wecom] :is(.nspp-wecom-rail, .nspp-wecom-railmenu, .nspp-wecom-categories, .nspp-wecom-listhead, .nspp-wecom-feed, .nspp-wecom-hot, .nspp-wecom-chat, .nspp-wecom-resizer) :focus-visible:not(textarea, input) { outline: 2px solid var(--wc-green); outline-offset: 1px; }
+
+/* Native chrome the rail replaces. NodeSeek++'s toolbar stays in the page, invisible, so the ≡ menu can click its buttons. */
+html[data-nspp-wecom] body > header,
+html[data-nspp-wecom] body > footer,
+html[data-nspp-wecom] #nsk-left-panel-container,
+html[data-nspp-wecom] #nsk-right-panel-container,
+html[data-nspp-wecom] #fast-nav-button-group,
+html[data-nspp-wecom] #nsk-body-left .topic-carousel-wrapper,
+html[data-nspp-wecom] #nsk-body-left .post-list-controler,
+html[data-nspp-wecom] #nsk-body-left .nspp-list-actions { display: none !important; }
+html[data-nspp-wecom] #nspp-tools { left: 12px; right: auto; bottom: 14px; visibility: hidden; pointer-events: none; }
+/* linux.do and V2EX: the columns are built from the site's data, so the whole native page steps aside; NodeSeek++'s own
+   pieces (toolbar, settings, dialogs, image viewer) all carry an nspp- class or id and stay. */
+html[data-nspp-wecom][data-nspp-wecom-site] { overflow: hidden !important; }
+html[data-nspp-wecom][data-nspp-wecom-site] body { margin: 0 !important; padding: 0 !important; }
+html[data-nspp-wecom][data-nspp-wecom-site] body > :not([class*="nspp-"], [id^="nspp-"]) { display: none !important; }
+html[data-nspp-wecom-resizing], html[data-nspp-wecom-resizing] * { cursor: col-resize !important; user-select: none !important; }
+
+/* Thin, quiet scrollbars like WeChat's. */
+html[data-nspp-wecom] :is(#nsk-body-left, .nspp-wecom-feed, .nspp-wecom-chat-body, .nspp-wecom-messages .nspp-messages-contact-list, .nspp-wecom-messages .nspp-messages-thread) { scrollbar-width: thin; scrollbar-color: #00000026 transparent; }
+html[data-nspp-wecom] :is(body.dark-layout, [data-nspp-wecom-dark] body) :is(#nsk-body-left, .nspp-wecom-feed, .nspp-wecom-hot-list, .nspp-wecom-chat-body, .nspp-wecom-messages .nspp-messages-contact-list, .nspp-wecom-messages .nspp-messages-thread) { scrollbar-color: #ffffff26 transparent; }
+
+/* Rail */
+html[data-nspp-wecom] .nspp-wecom-rail:not([hidden]) { position: fixed; inset: 0 auto 0 0; z-index: 40; display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: var(--wc-rail-w); padding: 18px 0 12px; background: var(--wc-rail); border-right: 1px solid var(--wc-rail-line); }
+.nspp-wecom-rail-top, .nspp-wecom-rail-bottom { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+/* Prefixed so forum link colours (linux.do tints every link) do not reach the rail. */
+html[data-nspp-wecom] .nspp-wecom-rail .nspp-wecom-me { display: block; margin-bottom: 16px; color: var(--wc-rail-fg); line-height: 0; }
+.nspp-wecom-me img, .nspp-wecom-me > svg { display: block; flex: none; width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #0000000d; }
+.nspp-wecom-me > svg { padding: 6px; }
+.nspp-wecom-rail-item { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; margin: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--wc-rail-fg); cursor: pointer; transition: color .12s; }
+.nspp-wecom-rail-item:hover { color: var(--wc-rail-hover); }
+.nspp-wecom-rail-item[aria-current="page"], .nspp-wecom-rail-item[aria-expanded="true"] { color: var(--wc-green); }
+/* Like WeChat, the active icon turns solid green; detail strokes inside it are cut out in the rail colour. */
+.nspp-wecom-rail-item[aria-current="page"] svg path:not([data-detail]) { fill: currentColor; }
+.nspp-wecom-rail-item[aria-current="page"] svg path[data-detail] { stroke: var(--wc-rail); }
+.nspp-wecom-rail-item svg { width: 24px; height: 24px; }
+/* Round for one digit, a pill up to "99+", which still ends inside the rail instead of spilling over the list. */
+.nspp-wecom-badge { position: absolute; top: 2px; left: 20px; min-width: 18px; height: 18px; padding: 0 4px; border: 2px solid var(--wc-rail); border-radius: 9px; background: var(--wc-red); color: #fff; font: 600 10px/14px var(--wc-font); text-align: center; box-sizing: border-box; }
+.nspp-wecom-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--wc-red); }
+
+/* Tooltips beside the rail icons. */
+.nspp-wecom-rail [data-tip] { position: relative; }
+.nspp-wecom-rail [data-tip]::after { content: attr(data-tip); position: absolute; top: 50%; left: calc(100% + 10px); z-index: 50; padding: 5px 9px; border-radius: 5px; background: #2b2b2b; color: #fff; font: 12px/1.2 var(--wc-font); white-space: nowrap; box-shadow: 0 2px 8px #00000026; opacity: 0; pointer-events: none; transform: translate(-3px, -50%); transition: opacity .12s, transform .12s; }
+:is(body.dark-layout, [data-nspp-wecom-dark] body) .nspp-wecom-rail [data-tip]::after { background: #4a4a4a; }
+.nspp-wecom-rail [data-tip]:is(:hover, :focus-visible):not([aria-expanded="true"])::after { opacity: 1; transform: translate(0, -50%); transition-delay: .3s; }
+
+/* ≡ menu, opening beside the rail's bottom like WeChat's */
+html[data-nspp-wecom] .nspp-wecom-railmenu:not([hidden]) { position: fixed; bottom: 14px; left: calc(var(--wc-rail-w) - 4px); z-index: 45; display: block; min-width: 150px; max-width: 240px; max-height: calc(100dvh - 28px); padding: 6px 0; overflow-y: auto; border: 1px solid var(--wc-pop-line); border-radius: 8px; background: var(--wc-pop); box-shadow: var(--wc-shadow); }
+.nspp-wecom-railmenu button { position: relative; display: block; width: 100%; height: 34px; margin: 0; padding: 0 28px 0 16px; overflow: hidden; border: 0; border-radius: 0; background: transparent; color: var(--wc-text); font: 14px var(--wc-font); text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.nspp-wecom-railmenu button:hover:not(:disabled), .nspp-wecom-railmenu button:focus-visible { background: var(--wc-row-hover); outline: none; }
+.nspp-wecom-railmenu button:disabled { color: var(--wc-time); cursor: default; }
+.nspp-wecom-railmenu button[data-separate]:not([data-separate] ~ button) { margin-top: 6px; box-shadow: 0 -6px 0 -5px var(--wc-pop-line); }
+.nspp-wecom-railmenu .nspp-wecom-dot { top: 14px; right: 14px; }
+.nspp-wecom-railmenu p { margin: 0; padding: 8px 18px; color: var(--wc-muted); font-size: 13px; }
+
+/* Section flyout */
+html[data-nspp-wecom] .nspp-wecom-categories:not([hidden]) { position: fixed; top: 0; bottom: 0; left: var(--wc-rail-w); z-index: 39; display: block; width: 210px; padding: 18px 8px; overflow-y: auto; background: var(--wc-list); border-right: 1px solid var(--wc-sep); box-shadow: 8px 0 24px #0000001a; }
+.nspp-wecom-categories h2 { margin: 0 12px 10px; color: var(--wc-muted); font-size: 12px; font-weight: 400; }
+.nspp-wecom-categories ul { margin: 0; padding: 0; list-style: none; }
+.nspp-wecom-categories a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--wc-text); font-size: 14px; text-decoration: none; }
+.nspp-wecom-categories a:hover { background: var(--wc-row-hover); }
+.nspp-wecom-categories a[aria-current="page"] { background: var(--wc-row-active); }
+.nspp-wecom-categories .iconpark-icon { width: 16px; height: 16px; margin: 0; color: var(--wc-muted); }
+.nspp-wecom-categories a[data-depth="1"] { padding-left: 30px; color: var(--wc-muted); font-size: 13px; }
+.nspp-wecom-categories a[data-depth="1"]:is(:hover, [aria-current]) { color: var(--wc-text); }
+/* linux.do's category colours, as small rounded squares before the name. */
+.nspp-wecom-section-dot { flex: none; width: 9px; height: 9px; border-radius: 3px; }
+.nspp-wecom-section-dot:not([style]) { display: none; }
+.nspp-wecom-categories .nspp-wecom-muted { padding: 9px 12px; font-size: 13px; }
+
+/* Conversation list: search bar plus the native list, restyled in place so other modules keep working on it. */
+html[data-nspp-wecom] .nspp-wecom-listhead:not([hidden]) { position: fixed; top: 0; left: var(--wc-rail-w); z-index: 20; display: flex; align-items: center; gap: 8px; width: var(--wc-list-w); height: var(--wc-head-h); padding: 0 12px 0 14px; background: var(--wc-list); }
+html[data-nspp-wecom] .nspp-wecom-listhead input[type="search"] { flex: 1; box-shadow: none; min-width: 0; height: 28px; margin: 0; padding: 0 8px 0 28px; border: 0; border-radius: 6px; outline: none; background: var(--wc-search) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 9px center; color: var(--wc-text); font: 13px var(--wc-font); }
+html[data-nspp-wecom] .nspp-wecom-listhead input[type="search"]::placeholder { color: var(--wc-muted); font-size: 13px; }
+.nspp-wecom-sort { display: inline-flex; flex: none; align-items: center; gap: 2px; height: 28px; margin: 0; padding: 0 4px; border: 0; border-radius: 6px; background: transparent; color: var(--wc-muted); font: 12px var(--wc-font); white-space: nowrap; cursor: pointer; }
+.nspp-wecom-sort:hover { color: var(--wc-text); background: var(--wc-row-hover); }
+.nspp-wecom-compose { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: var(--wc-rail-fg); }
+.nspp-wecom-compose:hover { color: var(--wc-text); background: var(--wc-row-hover); }
+html[data-nspp-wecom] #nsk-body-left { position: fixed !important; top: var(--wc-head-h); bottom: 0; left: var(--wc-rail-w); z-index: 10; width: var(--wc-list-w) !important; max-width: none !important; margin: 0 !important; padding: 0 0 12px !important; box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; background: var(--wc-list); font-family: var(--wc-font); }
+html[data-nspp-wecom] #nsk-body-left ul.post-list { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; transition: opacity .15s; }
+html[data-nspp-wecom] #nsk-body-left[aria-busy="true"] ul.post-list { opacity: .5; pointer-events: none; }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item { position: relative; display: flex; align-items: center; gap: 11px; height: 66px; margin: 0; padding: 0 14px; box-sizing: border-box; border: 0 !important; border-radius: 0; background: transparent; cursor: default; }
+/* Hairline separators that start at the text, as in WeChat's list. */
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item::after { content: ""; position: absolute; right: 0; bottom: 0; left: 65px; height: 1px; background: var(--wc-sep); pointer-events: none; }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item:has(use[href="#pin"]) { background: var(--wc-pinned); }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item:hover { background: var(--wc-row-hover); }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item[data-nspp-wecom-active] { background: var(--wc-row-active) !important; }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item:is(:hover, [data-nspp-wecom-active])::after { opacity: 0; }
+html[data-nspp-wecom] #nsk-body-left ul.post-list > .post-list-item[data-nspp-wecom-filtered] { display: none !important; }
+html[data-nspp-wecom] #nsk-body-left .post-list-item > a:first-child { flex: none; line-height: 0; }
+html[data-nspp-wecom] #nsk-body-left .post-list-item img.avatar-normal { display: block; flex: none; width: 40px !important; height: 40px !important; max-width: none; margin: 0; padding: 0; border: 0; border-radius: 6px; box-shadow: none; object-fit: cover; aspect-ratio: 1; }
+/* Name and time on the first line, preview and reply count on the second — a grid, so long times never overlap the title.
+   The selector outranks the forum's `.post-list .post-list-item .post-list-content { margin-left: 10px }`, so the text starts where the separator does. */
+html[data-nspp-wecom] #nsk-body-left .post-list-item > .post-list-content { display: grid; flex: 1; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: 20px 17px; align-content: center; align-items: center; column-gap: 6px; row-gap: 3px; min-width: 0; margin: 0; padding: 0; white-space: nowrap; }
+html[data-nspp-wecom] #nsk-body-left .post-title { display: block; grid-column: 1 / 3; grid-row: 1; min-width: 0; margin: 0; overflow: hidden; color: var(--wc-text); font-size: 14px; font-weight: 400; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+html[data-nspp-wecom] #nsk-body-left .post-title a { color: var(--wc-text); font-weight: 400; text-decoration: none; }
+html[data-nspp-wecom] #nsk-body-left .post-title .iconpark-icon { width: 12px !important; height: 12px !important; }
+html[data-nspp-wecom] #nsk-body-left .post-info { display: contents; color: var(--wc-muted); font-size: 12px; line-height: 17px; }
+html[data-nspp-wecom] #nsk-body-left .post-info > * { display: none; margin: 0 !important; }
+/* Two sizes only, as in WeChat: 14px titles, 12px for everything else. Every second-line item is one 17px line box,
+   so the section, the last replier and the reply count share a centre line whatever the forum's own styles add. */
+html[data-nspp-wecom] #nsk-body-left .post-info > :is(.post-category, .nspp-category-actions) { display: inline-flex !important; position: static !important; inset: auto !important; grid-column: 1; grid-row: 2; align-items: center; height: 17px; transform: none !important; }
+html[data-nspp-wecom] #nsk-body-left .post-info .post-category { display: block !important; position: static !important; height: 17px !important; min-height: 0 !important; padding: 0; border: 0; border-radius: 0; background: none !important; box-shadow: none !important; color: var(--wc-muted) !important; font-size: 12px; line-height: 17px !important; white-space: nowrap; }
+/* 原生列表增强 wraps the section link with a quick-reply button; the chat pane has its own input, so only the name stays. */
+html[data-nspp-wecom] #nsk-body-left .post-info .nspp-category-reply { display: none !important; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-last-commenter { display: flex; grid-column: 2; grid-row: 2; align-items: center; min-width: 0; height: 17px; overflow: hidden; color: var(--wc-muted); font-size: 12px; line-height: 17px; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-last-commenter::before { content: "·"; flex: none; margin-right: 6px; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-last-commenter a { min-width: 0; overflow: hidden; color: inherit; font: inherit; line-height: inherit; text-overflow: ellipsis; white-space: nowrap; }
+html[data-nspp-wecom] #nsk-body-left .post-info .iconpark-icon { display: none; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-comments-count { display: inline-flex; grid-column: 3; grid-row: 2; justify-self: end; align-items: center; gap: 3px; height: 17px; color: var(--wc-time); font-size: 12px; line-height: 17px; font-variant-numeric: tabular-nums; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-comments-count > span { line-height: inherit; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-comments-count .iconpark-icon { display: inline-block; width: 12px; height: 12px; margin: 0; color: currentColor; }
+html[data-nspp-wecom] #nsk-body-left .post-info > .info-last-comment-time { display: block; grid-column: 3; grid-row: 1; justify-self: end; color: var(--wc-time); font-size: 12px; line-height: 20px; text-decoration: none; }
+html[data-nspp-wecom] #nsk-body-left .info-last-comment-time[data-nspp-wecom-time] > * { display: none; }
+html[data-nspp-wecom] #nsk-body-left .info-last-comment-time[data-nspp-wecom-time]::after { content: attr(data-nspp-wecom-time); }
+html[data-nspp-wecom] #nsk-body-left .nsk-pager, html[data-nspp-wecom] #nsk-body-left > div:has(> .nsk-pager) { justify-content: center !important; margin: 8px 0; font-size: 12px; }
+html[data-nspp-wecom] #nsk-body-left > .nspp-action, html[data-nspp-wecom] #nsk-body-left ul.post-list + .nspp-action { display: block; width: calc(100% - 28px); margin: 10px 14px; border: 0; background: var(--wc-search); color: var(--wc-muted); }
+
+/* linux.do / V2EX list column: rows built from the site's data, scrolling under the search bar. */
+html[data-nspp-wecom] .nspp-wecom-feed:not([hidden]) { position: fixed; top: var(--wc-head-h); bottom: 0; left: var(--wc-rail-w); z-index: 10; display: block; width: var(--wc-list-w); overflow-y: auto; overscroll-behavior: contain; background: var(--wc-list); }
+.nspp-wecom-feed > .nspp-wecom-hot-list { overflow: visible; padding: 0; }
+.nspp-wecom-hot-list > li[data-nspp-wecom-filtered] { display: none; }
+.nspp-wecom-hot-list > li[data-pinned] .nspp-wecom-hot-row { background: var(--wc-pinned); }
+.nspp-wecom-feed > .nspp-wecom-more { margin: 10px auto 18px; }
+.nspp-wecom-panel-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
+
+/* 热榜 in the middle column. */
+html[data-nspp-wecom][data-nspp-wecom-view="hot"] #nsk-body-left { display: none !important; }
+html[data-nspp-wecom] .nspp-wecom-hot:not([hidden]) { position: fixed; top: 0; bottom: 0; left: var(--wc-rail-w); z-index: 10; display: flex; flex-direction: column; width: var(--wc-list-w); background: var(--wc-list); }
+.nspp-wecom-hot-head { display: flex; flex: none; align-items: center; gap: 8px; height: var(--wc-head-h); padding: 0 12px 0 14px; }
+.nspp-wecom-tabs { display: flex; flex: 1; padding: 2px; border-radius: 6px; background: var(--wc-search); }
+.nspp-wecom-tabs button { flex: 1; height: 24px; margin: 0; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--wc-muted); font: 12px var(--wc-font); cursor: pointer; }
+.nspp-wecom-tabs button:hover { color: var(--wc-text); }
+.nspp-wecom-tabs button[aria-selected="true"] { background: var(--wc-bubble); color: var(--wc-text); font-weight: 500; box-shadow: 0 1px 2px #0000001a; }
+.nspp-wecom-hot-refresh { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--wc-rail-fg); cursor: pointer; }
+.nspp-wecom-hot-refresh:hover { color: var(--wc-text); background: var(--wc-row-hover); }
+.nspp-wecom-hot-list { flex: 1; min-height: 0; margin: 0; padding: 0 0 8px; overflow-y: auto; overscroll-behavior: contain; list-style: none; scrollbar-width: thin; scrollbar-color: #00000026 transparent; }
+.nspp-wecom-hot-list > li { position: relative; }
+.nspp-wecom-hot-list > li::after { content: ""; position: absolute; right: 0; bottom: 0; left: 65px; height: 1px; background: var(--wc-sep); pointer-events: none; }
+.nspp-wecom-hot-list > li:is(:hover, [data-nspp-wecom-active])::after { opacity: 0; }
+.nspp-wecom-hot-row { display: flex; align-items: center; gap: 11px; width: 100%; height: 66px; margin: 0; padding: 0 14px; border: 0; border-radius: 0; background: transparent; color: var(--wc-text); font: inherit; text-align: left; cursor: default; }
+.nspp-wecom-hot-list > li:hover .nspp-wecom-hot-row { background: var(--wc-row-hover); }
+.nspp-wecom-hot-list > li[data-nspp-wecom-active] .nspp-wecom-hot-row { background: var(--wc-row-active); }
+.nspp-wecom-hot-avatar { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 6px; background: var(--wc-search); color: var(--wc-muted); font-size: 16px; }
+.nspp-wecom-hot-avatar img { display: block; width: 100%; height: 100%; border-radius: 6px; object-fit: cover; }
+/* Unread replies as WeChat's red count on the avatar's corner; unread notifications as a dot. */
+.nspp-wecom-row-badge { position: absolute; top: -6px; right: -8px; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid var(--wc-list); border-radius: 9px; background: var(--wc-red); color: #fff; font: 600 10px/14px var(--wc-font); text-align: center; }
+.nspp-wecom-row-dot { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border: 2px solid var(--wc-list); border-radius: 50%; background: var(--wc-red); }
+.nspp-wecom-hot-text { display: grid; flex: 1; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 6px; row-gap: 4px; min-width: 0; }
+.nspp-wecom-hot-text strong { display: block; min-width: 0; overflow: hidden; font-size: 14px; font-weight: 400; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+.nspp-wecom-hot-text small { min-width: 0; overflow: hidden; color: var(--wc-muted); font-size: 12px; line-height: 17px; text-overflow: ellipsis; white-space: nowrap; }
+/* Rank badge before the title: red, orange and amber for the top three, grey after. */
+.nspp-wecom-hot-rank { display: inline-block; min-width: 16px; height: 16px; margin: 0 6px 0 0; padding: 0 4px; border-radius: 4px; background: var(--wc-search); color: var(--wc-muted); font: 600 11px/16px var(--wc-font); font-variant-numeric: tabular-nums; text-align: center; vertical-align: 1px; }
+.nspp-wecom-hot-rank[data-top] { color: #fff; }
+.nspp-wecom-hot-rank[data-top="1"] { background: #fa5151; }
+.nspp-wecom-hot-rank[data-top="2"] { background: #fa7d3c; }
+.nspp-wecom-hot-rank[data-top="3"] { background: #f5a623; }
+.nspp-wecom-hot-time { justify-self: end; color: var(--wc-time); font-size: 12px; line-height: 20px; }
+.nspp-wecom-hot-count { justify-self: end; color: var(--wc-time); font-size: 12px; line-height: 17px; font-variant-numeric: tabular-nums; }
+/* The reply count's bubble is the rail's 消息 glyph, drawn as a mask so it takes the text colour. */
+.nspp-wecom-hot-count::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 3px; vertical-align: -1px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M7 4.5h10a3.5 3.5 0 0 1 3.5 3.5v5.5a3.5 3.5 0 0 1-3.5 3.5h-5.2l-4.3 3.3V17H7a3.5 3.5 0 0 1-3.5-3.5V8A3.5 3.5 0 0 1 7 4.5Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M7 4.5h10a3.5 3.5 0 0 1 3.5 3.5v5.5a3.5 3.5 0 0 1-3.5 3.5h-5.2l-4.3 3.3V17H7a3.5 3.5 0 0 1-3.5-3.5V8A3.5 3.5 0 0 1 7 4.5Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.nspp-wecom-hot-status { flex: none; margin: 0; padding: 6px 14px 10px; color: var(--wc-time); font-size: 11px; text-align: center; }
+.nspp-wecom-hot-status:empty { display: none; }
+
+/* Resize handle on the list's right edge. */
+html[data-nspp-wecom] .nspp-wecom-resizer:not([hidden]) { position: fixed; top: 0; bottom: 0; left: calc(var(--wc-rail-w) + var(--wc-list-w) - 3px); z-index: 30; display: block; width: 6px; cursor: col-resize; touch-action: none; }
+html[data-nspp-wecom] .nspp-wecom-resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 2px; width: 2px; background: transparent; transition: background .15s; }
+html[data-nspp-wecom] .nspp-wecom-resizer:is(:hover, :focus-visible)::after, html[data-nspp-wecom-resizing] .nspp-wecom-resizer::after { background: var(--wc-green); opacity: .5; }
+
+/* Chat pane */
+html[data-nspp-wecom] .nspp-wecom-chat:not([hidden]) { position: fixed; inset: 0 0 0 calc(var(--wc-rail-w) + var(--wc-list-w)); z-index: 10; display: flex; flex-direction: column; background: var(--wc-chat); border-left: 1px solid var(--wc-border); font-size: 14px; }
+.nspp-wecom-empty { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--wc-time); }
+.nspp-wecom-empty svg { width: 96px; height: 96px; opacity: .3; }
+.nspp-wecom-empty p { margin: 0; font-size: 13px; }
+.nspp-wecom-chat-head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 16px; height: var(--wc-head-h); padding: 0 16px 0 24px; border-bottom: 1px solid var(--wc-border); background: var(--wc-chat); }
+.nspp-wecom-chat-title { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
+.nspp-wecom-chat-title a { min-width: 0; overflow: hidden; color: var(--wc-text); font-size: 16px; font-weight: 500; line-height: 22px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.nspp-wecom-chat-count { flex: none; color: var(--wc-text); font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nspp-wecom-chat-actions { position: relative; display: flex; flex: none; }
+.nspp-wecom-more-button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--wc-rail-fg); cursor: pointer; }
+.nspp-wecom-more-button:hover, .nspp-wecom-more-button[aria-expanded="true"] { color: var(--wc-text); background: var(--wc-row-hover); }
+.nspp-wecom-more-button svg { width: 22px; height: 22px; stroke-width: 3; }
+.nspp-wecom-menu { position: absolute; top: 40px; right: 0; z-index: 5; min-width: 168px; padding: 6px 0; border: 1px solid var(--wc-pop-line); border-radius: 8px; background: var(--wc-pop); box-shadow: var(--wc-shadow); }
+.nspp-wecom-menu button { display: block; width: 100%; height: 36px; margin: 0; padding: 0 18px; border: 0; border-radius: 0; background: transparent; color: var(--wc-text); font: 14px var(--wc-font); text-align: left; cursor: pointer; }
+.nspp-wecom-menu button:hover:not(:disabled) { background: var(--wc-row-hover); }
+.nspp-wecom-menu button:disabled { color: var(--wc-time); cursor: default; }
+.nspp-wecom-chat-body { flex: 1; min-height: 0; padding: 0 24px 16px; overflow-y: auto; overscroll-behavior: contain; outline: none; }
+.nspp-wecom-more { display: block; margin: 14px auto 4px; padding: 0; border: 0; background: transparent; color: var(--wc-link); font: 12px var(--wc-font); cursor: pointer; }
+.nspp-wecom-more:hover:not(:disabled) { text-decoration: underline; }
+.nspp-wecom-status { margin: 18px 0; color: var(--wc-time); font-size: 12px; text-align: center; }
+.nspp-wecom-divider { margin: 20px 0 12px; text-align: center; }
+.nspp-wecom-divider span { color: var(--wc-time); font-size: 12px; }
+.nspp-wecom-msg { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 18px; }
+.nspp-wecom-avatar { flex: none; line-height: 0; }
+.nspp-wecom-avatar img { display: block; width: 38px; height: 38px; border-radius: 6px; object-fit: cover; aspect-ratio: 1; }
+.nspp-wecom-letter { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 6px; background: var(--wc-search); color: var(--wc-muted); font-size: 16px; line-height: 1; }
+.nspp-wecom-msg-main { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; max-width: min(660px, calc(100% - 100px)); }
+.nspp-wecom-msg[data-op] .nspp-wecom-msg-main { max-width: calc(100% - 100px); }
+.nspp-wecom-msg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 5px; color: var(--wc-muted); font-size: 12px; line-height: 16px; }
+.nspp-wecom-name { color: var(--wc-muted); text-decoration: none; }
+.nspp-wecom-name:hover, .nspp-wecom-floor:hover { color: var(--wc-link); }
+.nspp-wecom-tag { padding: 0 4px; border-radius: 3px; background: #576b951a; color: var(--wc-link); font-size: 10px; line-height: 15px; }
+.nspp-wecom-tag-op { background: #fa9d3b1f; color: #e0861f; }
+.nspp-wecom-tag-hot { background: #fa51511a; color: var(--wc-red); }
+/* NodeSeek++'s author (uid 17170): a tag that is also the easter egg's button, and a small fish on the avatar, here and in the list. */
+.nspp-wecom-tag-author { margin: 0; border: 0; background: linear-gradient(90deg, #07c160, #10aeff); color: #fff; font: 600 10px/15px var(--wc-font); cursor: pointer; }
+.nspp-wecom-tag-author:hover { filter: brightness(1.08); }
+.nspp-wecom-msg[data-author] .nspp-wecom-avatar, html[data-nspp-wecom] #nsk-body-left .post-list-item > a:first-child[href$="/space/17170"] { position: relative; }
+.nspp-wecom-msg[data-author] .nspp-wecom-avatar::after, html[data-nspp-wecom] #nsk-body-left .post-list-item > a:first-child[href$="/space/17170"]::after { content: "🐟"; position: absolute; right: -6px; bottom: -5px; font-size: 14px; line-height: 1; pointer-events: none; }
+.nspp-wecom-school { position: absolute; inset: var(--wc-head-h) 0 0; z-index: 4; overflow: hidden; pointer-events: none; }
+.nspp-wecom-school span { position: absolute; top: var(--top); left: 100%; font-size: var(--size); line-height: 1; animation: nspp-wecom-swim 3s ease-in-out calc(var(--i) * .16s) both; }
+@keyframes nspp-wecom-swim { 0% { left: 100%; transform: translateY(0); } 25% { transform: translateY(-12px); } 50% { transform: translateY(8px); } 75% { transform: translateY(-6px); } 100% { left: -48px; transform: translateY(0); } }
+@keyframes nspp-wecom-bob { 0%, 100% { opacity: 0; } 20%, 80% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .nspp-wecom-school span { left: calc(16% + var(--i) * 10%); animation: nspp-wecom-bob 3s ease calc(var(--i) * .1s) both; } }
+.nspp-wecom-floor { visibility: hidden; color: var(--wc-time); font-variant-numeric: tabular-nums; text-decoration: none; }
+.nspp-wecom-msg:is(:hover, :focus-within) .nspp-wecom-floor, .nspp-wecom-msg[data-flash] .nspp-wecom-floor { visibility: visible; }
+.nspp-wecom-msg-foot { display: flex; gap: 12px; margin-top: 6px; color: var(--wc-time); font-size: 11px; line-height: 14px; }
+.nspp-wecom-reaction { display: inline-flex; align-items: center; gap: 3px; color: var(--wc-time); font-variant-numeric: tabular-nums; }
+.nspp-wecom-reaction :is(.iconpark-icon, svg) { width: 12px; height: 12px; margin: 0; color: currentColor; }
+.nspp-wecom-reaction[data-on] svg path { fill: currentColor; }
+/* Ones you gave yourself, like the forum's highlighted menu items. */
+.nspp-wecom-reaction[data-on] { color: var(--wc-green); }
+
+/* Right-click menu on a message: WeChat's plain list, with the forum's counts on the right. */
+html[data-nspp-wecom] .nspp-wecom-context:not([hidden]) { position: fixed; z-index: 60; display: block; min-width: 148px; max-width: 260px; padding: 5px 0; border: 1px solid var(--wc-pop-line); border-radius: 8px; background: var(--wc-pop); box-shadow: var(--wc-shadow); font-size: 13px; }
+.nspp-wecom-context > button { display: flex; align-items: center; gap: 16px; width: 100%; height: 32px; margin: 0; padding: 0 16px; border: 0; border-radius: 0; background: transparent; color: var(--wc-text); font: inherit; text-align: left; white-space: nowrap; cursor: pointer; }
+.nspp-wecom-context > button small { margin-left: auto; color: var(--wc-time); font-size: 12px; font-variant-numeric: tabular-nums; }
+html[data-nspp-wecom] .nspp-wecom-context > button:is(:hover, :focus-visible):not(:disabled) { background: var(--wc-row-hover); outline: none; }
+.nspp-wecom-context > button:disabled { color: var(--wc-time); cursor: default; }
+.nspp-wecom-context > [role="separator"] { height: 1px; margin: 5px 0; background: var(--wc-pop-line); }
+.nspp-wecom-context > p { max-width: 240px; margin: 0; padding: 8px 16px 10px; color: var(--wc-text); line-height: 1.5; white-space: normal; }
+.nspp-wecom-context-confirm { display: flex; justify-content: flex-end; gap: 8px; padding: 0 12px 6px; }
+.nspp-wecom-context-confirm button { height: 28px; margin: 0; padding: 0 14px; border: 0; border-radius: 6px; background: var(--wc-search); color: var(--wc-text); font: 13px var(--wc-font); cursor: pointer; }
+.nspp-wecom-context-confirm button[data-primary] { background: var(--wc-green); color: #fff; }
+.nspp-wecom-context-confirm button:hover { filter: brightness(.97); }
+/* WeChat 4.0 bubbles: rounded, no tail. */
+.nspp-wecom-bubble { max-width: 100%; padding: 10px 13px; border-radius: 6px; background: var(--wc-bubble); color: var(--wc-text); font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.nspp-wecom-msg[data-mine] { flex-direction: row-reverse; }
+.nspp-wecom-msg[data-mine] .nspp-wecom-msg-main { align-items: flex-end; }
+.nspp-wecom-msg[data-mine] .nspp-wecom-msg-meta { flex-direction: row-reverse; }
+.nspp-wecom-msg[data-mine] .nspp-wecom-bubble { background: var(--wc-mine); color: var(--wc-mine-text); }
+.nspp-wecom-msg[data-mine] .nspp-wecom-bubble a { color: inherit; text-decoration: underline; }
+.nspp-wecom-msg[data-flash] .nspp-wecom-bubble { animation: nspp-wecom-flash 1.6s ease-out; }
+@keyframes nspp-wecom-flash { from { box-shadow: 0 0 0 3px var(--wc-green); } to { box-shadow: 0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce) { .nspp-wecom-msg[data-flash] .nspp-wecom-bubble { animation: none; outline: 2px solid var(--wc-green); } }
+.nspp-wecom-bubble > :first-child { margin-top: 0; }
+.nspp-wecom-bubble > :last-child { margin-bottom: 0; }
+.nspp-wecom-bubble p { margin: 0 0 .45em; }
+.nspp-wecom-bubble :is(h1, h2, h3, h4) { margin: .6em 0 .3em; font-size: 1em; font-weight: 600; line-height: 1.5; }
+.nspp-wecom-bubble :is(ul, ol) { margin: 0 0 .45em; padding-left: 1.4em; }
+.nspp-wecom-bubble a { color: var(--wc-link); text-decoration: none; }
+.nspp-wecom-bubble a:hover { text-decoration: underline; }
+.nspp-wecom-bubble img { max-width: min(100%, 300px); max-height: 300px; border-radius: 4px; vertical-align: middle; cursor: zoom-in; }
+.nspp-wecom-bubble img[src*="/static/image/sticker/"] { width: auto; height: 40px; border-radius: 0; cursor: default; }
+.nspp-wecom-bubble img[data-emoji] { width: 1.35em; height: 1.35em; max-height: none; border-radius: 0; vertical-align: -.3em; cursor: default; }
+/* Quotes read like WeChat's quoted reply: a thin bar and muted text. */
+.nspp-wecom-bubble blockquote { margin: 0 0 .5em; padding: 0 0 0 9px; border: 0; border-left: 2px solid var(--wc-time); background: none; color: var(--wc-muted); font-size: 13px; }
+.nspp-wecom-bubble pre { margin: 0 0 .45em; padding: 8px 10px; overflow: auto; border-radius: 4px; background: var(--wc-code); font-size: 12.5px; line-height: 1.5; }
+.nspp-wecom-bubble code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+.nspp-wecom-bubble table { display: block; max-width: 100%; margin: 0 0 .45em; overflow: auto; border-collapse: collapse; }
+.nspp-wecom-bubble :is(th, td) { padding: 2px 8px; border: 1px solid var(--wc-border); }
+.nspp-wecom-bubble hr { border: 0; border-top: 1px solid var(--wc-border); }
+.nspp-wecom-muted { color: var(--wc-muted); }
+
+/* Input box as in WeChat: tools along the top, the text below them, 发送 in the bottom-right corner. Focus shows only as the caret. */
+.nspp-wecom-composer { --chat-text: var(--wc-text); --chat-muted: var(--wc-muted); --chat-border: var(--wc-border); --chat-surface: transparent; display: grid; flex: none; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "tools tools" "editor editor" ". bar"; align-items: center; column-gap: 12px; height: 176px; margin: 0 16px 16px; padding: 6px 12px 10px; border: 1px solid var(--wc-box-line); border-radius: 8px; background: var(--wc-box); }
+.nspp-wecom-composer > .nspp-message-editor { grid-area: editor; display: flex; flex-direction: column; min-height: 0; height: 100%; padding-top: 4px; background: transparent; }
+/* The icons' own padding moves left so the first icon lines up with the text. */
+.nspp-wecom-composer-tools { grid-area: tools; display: flex; align-items: center; min-width: 0; margin-left: -6px; }
+.nspp-wecom-composer .nspp-message-editor-toolbar { gap: 0; }
+.nspp-wecom-composer .nspp-message-editor-toolbar button { width: 30px; height: 30px; margin: 0; padding: 6px; border: 0; border-radius: 6px; background: transparent; box-shadow: none; color: var(--wc-rail-fg); cursor: pointer; }
+.nspp-wecom-composer .nspp-message-editor-toolbar button:hover:not(:disabled), .nspp-wecom-composer .nspp-message-editor-toolbar button[aria-pressed='true'] { background: var(--wc-row-hover); color: var(--wc-text); }
+.nspp-wecom-composer .nspp-message-editor-toolbar button:disabled { opacity: .45; cursor: default; }
+.nspp-wecom-composer .nspp-message-editor-toolbar svg { width: 18px; height: 18px; }
+.nspp-wecom-composer .nspp-message-editor-toolbar .nspp-message-editor-tab { width: auto; padding: 0 8px; font: 12px var(--wc-font); }
+.nspp-wecom-composer .nspp-message-editor-body { display: flex; flex: 1; min-height: 0; }
+.nspp-wecom-composer .nspp-message-editor-body textarea { flex: 1; width: 100%; min-height: 0; margin: 0; padding: 0; border: 0; outline: none; resize: none; background: transparent; box-shadow: none; color: var(--wc-text); font: 14px/1.6 var(--wc-font); caret-color: var(--wc-green); }
+.nspp-wecom-composer .nspp-message-editor-body textarea::placeholder { color: var(--wc-time); opacity: 1; }
+.nspp-wecom-composer .nspp-message-editor-preview { flex: 1; min-height: 0; max-height: none; padding: 0; overflow: auto; color: var(--wc-text); font-size: 14px; }
+.nspp-wecom-composer .nspp-message-editor-status { padding: 2px 0; color: var(--wc-muted); }
+.nspp-wecom-composer-bar { grid-area: bar; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 6px; }
+.nspp-wecom-send-status { min-width: 0; max-width: 260px; overflow: hidden; color: var(--wc-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.nspp-wecom-send-status[data-idle] { color: var(--wc-time); }
+.nspp-wecom-send { flex: none; height: 30px; margin: 0; padding: 0 22px; border: 0; border-radius: 6px; background: var(--wc-green); color: #fff; font: 14px var(--wc-font); cursor: pointer; }
+.nspp-wecom-send:hover:not(:disabled) { filter: brightness(1.06); }
+.nspp-wecom-send:disabled { background: var(--wc-send); color: var(--wc-time); cursor: default; }
+
+/* Message center in the columns: 消息 swaps the post list and chat pane for the existing message center. */
+html[data-nspp-wecom][data-nspp-wecom-view="messages"] #nsk-body-left { display: none !important; }
+html[data-nspp-wecom] .nspp-wecom-messages:not([hidden]) { position: fixed; inset: 0 0 0 var(--wc-rail-w); z-index: 10; display: block; }
+html[data-nspp-wecom] .nspp-wecom-messages > .nspp-messages {
+  --chat-bg: var(--wc-chat); --chat-sidebar: var(--wc-list); --chat-surface: var(--wc-bubble); --chat-text: var(--wc-text); --chat-muted: var(--wc-muted); --chat-border: var(--wc-border);
+  display: grid; grid-template-columns: var(--wc-list-w) minmax(0, 1fr); grid-template-rows: var(--wc-head-h) minmax(0, 1fr);
+  width: 100%; height: 100%; min-height: 0; max-height: none; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  background: var(--wc-chat); color: var(--wc-text); font-family: var(--wc-font);
+}
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace:not(.nspp-notice-workspace) { display: contents; }
+/* It is a <header>, which the forum styles; reset the shadow and position it adds. */
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-top { position: static; grid-column: 2; grid-row: 1; min-height: 0; height: var(--wc-head-h); padding: 0 16px 0 24px; border-bottom: 1px solid var(--wc-border); border-left: 1px solid var(--wc-border); background: var(--wc-chat); box-shadow: none; }
+.nspp-wecom-messages .nspp-messages-top .nspp-messages-heading strong { font-size: 16px; font-weight: 500; }
+.nspp-wecom-messages .nspp-messages-top-actions button { color: var(--wc-muted); font-size: 12px; }
+.nspp-wecom-messages .nspp-messages-top-actions button:hover:not(:disabled) { color: var(--wc-text); }
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace > .nspp-messages-sidebar { grid-column: 1; grid-row: 1 / 3; min-height: 0; border: 0; background: var(--wc-list); }
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace > :is(.nspp-messages-chat, .nspp-notice-workspace) { grid-column: 2; grid-row: 2; min-height: 0; border-left: 1px solid var(--wc-border); background: var(--wc-chat); }
+/* Contact list, styled like the post list next to it. */
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace > .nspp-messages-sidebar > .nspp-messages-search { align-items: center; gap: 8px; height: var(--wc-head-h); padding: 0 12px 0 14px; }
+.nspp-wecom-messages .nspp-messages-search input { height: 28px; padding: 0 8px 0 28px; border-radius: 6px; background: var(--wc-search) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 9px center; color: var(--wc-text); font-size: 13px; }
+.nspp-wecom-messages .nspp-messages-search > button:not(.nspp-messages-back) { display: inline-flex; align-items: center; justify-content: center; width: 28px; min-width: 28px; height: 28px; padding: 0; border-radius: 6px; background: transparent; color: var(--wc-rail-fg); }
+.nspp-wecom-messages .nspp-messages-search > button:not(.nspp-messages-back):hover { background: var(--wc-row-hover); color: var(--wc-text); }
+.nspp-wecom-messages .nspp-messages-search > button svg { width: 16px; height: 16px; }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-peer { gap: 11px; min-height: 66px; padding: 0 14px; }
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace > .nspp-messages-sidebar .nspp-messages-peer { position: relative; }
+.nspp-wecom-messages > .nspp-messages > .nspp-messages-workspace > .nspp-messages-sidebar .nspp-messages-peer::after { content: ""; position: absolute; right: 0; bottom: 0; left: 67px; height: 1px; background: var(--wc-sep); }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-peer:hover { background: var(--wc-row-hover); }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-peer:is([aria-pressed='true'], [aria-current]) { background: var(--wc-row-active); }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-avatar { width: 42px; height: 42px; border-radius: 6px; }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-peer-title strong { font-size: 14px; font-weight: 400; }
+.nspp-wecom-messages .nspp-messages-peer-title time { color: var(--wc-time); font-size: 12px; }
+.nspp-wecom-messages .nspp-messages-snippet { color: var(--wc-muted); font-size: 12px; }
+.nspp-wecom-messages .nspp-messages-sidebar .nspp-messages-unread { top: 8px; left: 50px; border-color: var(--wc-list); }
+.nspp-wecom-messages .nspp-messages-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--wc-red); font-size: 11px; line-height: 18px; }
+/* Chat thread, matching the post conversation pane. */
+.nspp-wecom-messages .nspp-messages-thread { padding: 12px 24px 16px; }
+.nspp-wecom-messages .nspp-messages-stamp { margin: 8px 0 12px; color: var(--wc-time); font-size: 12px; }
+.nspp-wecom-messages .nspp-messages-message { gap: 12px; margin-bottom: 18px; }
+.nspp-wecom-messages .nspp-messages-message .nspp-messages-avatar { width: 38px; height: 38px; border-radius: 6px; }
+.nspp-wecom-messages .nspp-messages-bubble { min-height: 0; max-width: min(660px, calc(100% - 100px)); padding: 10px 13px; border-radius: 6px; background: var(--wc-bubble); box-shadow: none; color: var(--wc-text); font-size: 14px; line-height: 1.65; }
+.nspp-wecom-messages .nspp-messages-bubble::before { display: none; }
+.nspp-wecom-messages .nspp-messages-message.is-mine .nspp-messages-bubble { background: var(--wc-mine); color: var(--wc-mine-text); }
+.nspp-wecom-messages .nspp-messages-bubble a { color: var(--wc-link); text-decoration: none; }
+.nspp-wecom-messages .nspp-messages-message.is-mine .nspp-messages-bubble a { color: inherit; text-decoration: underline; }
+/* Private-chat input box: the same rounded box, tools and 发送 along the bottom. */
+.nspp-wecom-messages .nspp-messages-composer:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "editor editor editor" "tools markdown send"; align-items: center; column-gap: 12px; height: 168px; margin: 0 16px 16px; padding: 10px 10px 8px 14px; border: 1px solid var(--wc-box-line); border-radius: 10px; background: var(--wc-box); }
+.nspp-wecom-messages .nspp-messages-composer:focus-within { border-color: color-mix(in srgb, var(--wc-green) 45%, var(--wc-box-line)); }
+.nspp-wecom-messages .nspp-messages-composer > .nspp-message-editor { grid-area: editor; display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; background: transparent; }
+.nspp-wecom-messages .nspp-messages-composer .nspp-message-editor-body { flex: 1; min-height: 0; display: flex; }
+.nspp-wecom-messages .nspp-messages-composer .nspp-message-editor-body textarea { flex: 1; min-height: 0; max-height: none; padding: 0; resize: none; background: transparent; color: var(--wc-text); font-size: 14px; caret-color: var(--wc-green); }
+.nspp-wecom-messages .nspp-messages-composer .nspp-message-editor-preview { flex: 1; min-height: 0; max-height: none; padding: 0; }
+.nspp-wecom-messages .nspp-messages-composer > .nspp-messages-compose-actions { display: contents; }
+.nspp-wecom-messages .nspp-messages-compose-actions > .nspp-message-editor-toolbar { grid-area: tools; gap: 0; }
+.nspp-wecom-messages .nspp-messages-compose-actions > label { grid-area: markdown; color: var(--wc-time); }
+.nspp-wecom-messages .nspp-messages-compose-actions > small { display: none; }
+.nspp-wecom-messages .nspp-message-editor-toolbar button { width: 30px; height: 30px; color: var(--wc-rail-fg); }
+.nspp-wecom-messages .nspp-message-editor-toolbar .nspp-message-editor-tab { width: auto; padding: 0 8px; font-size: 12px; }
+.nspp-wecom-messages .nspp-message-editor-toolbar svg { width: 18px; height: 18px; }
+.nspp-wecom-messages .nspp-messages .nspp-messages-send { grid-area: send; height: 30px; min-width: 0; padding: 0 20px; border-radius: 6px; background: var(--wc-green); color: #fff; }
+.nspp-wecom-messages .nspp-messages .nspp-messages-send:disabled { opacity: 1; background: var(--wc-send); color: var(--wc-time); }
+/* @我 / 回复主题 notices as cards on the chat background, like WeChat's service notifications. */
+.nspp-wecom-messages .nspp-notice-workspace > .nspp-messages-sidebar { background: var(--wc-chat); }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-search { padding: 12px 24px 4px; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-conversations { padding: 8px 24px 4px; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-peer { align-items: flex-start; gap: 12px; min-height: 0; margin: 0 0 10px; padding: 12px 14px; border-radius: 8px; background: var(--wc-bubble); }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-peer:hover { background: var(--wc-bubble); box-shadow: 0 0 0 1px var(--wc-border), 0 2px 8px #0000000d; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-avatar { width: 36px; height: 36px; border-radius: 6px; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-peer-title strong { font-size: 13px; font-weight: 500; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-notice-subject { color: var(--wc-text); font-size: 14px; }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-unread { top: 10px; left: 44px; border-color: var(--wc-bubble); }
+.nspp-wecom-messages .nspp-notice-workspace .nspp-messages-more { margin: 0 auto 16px; color: var(--wc-link) !important; }
+.nspp-wecom-messages .nspp-notice-detail { padding: 16px 24px; }
+.nspp-wecom-messages .nspp-notice-summary { padding: 14px 16px; border: 0; border-radius: 8px; background: var(--wc-bubble); }
+
+/* User card, as WeChat's profile popover: neutral surface, compact, trust score on the right as before. */
+html[data-nspp-wecom] .nspp-user-hover:not(.nspp-user-hover-inline) { width: 288px; padding: 16px 16px 14px; border: 1px solid var(--wc-pop-line) !important; border-radius: 10px; background: var(--wc-pop) !important; box-shadow: var(--wc-shadow); color: var(--wc-text); font-family: var(--wc-font); }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-header { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-header > :is(.nspp-user-hover-avatar, .nspp-user-hover-monogram) { display: block; grid-column: 1; width: 48px; height: 48px; margin: 0; border-radius: 6px; object-fit: cover; aspect-ratio: 1; font-size: 22px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-header > div { grid-column: 2; min-width: 0; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-name { color: var(--wc-text); font-size: 16px; font-weight: 500; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-copy-button { color: var(--wc-time); }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-score { grid-column: 3; flex-direction: column; align-items: flex-end; margin: 0; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-score strong { font: 600 24px/1 var(--wc-font); letter-spacing: -.5px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-score small { margin-top: 3px; color: var(--wc-muted); font-size: 11px; line-height: 1; opacity: 1; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-signature { margin: 10px 0 0; color: var(--wc-muted); font-size: 12px; }
+html[data-nspp-wecom] .nspp-user-hover > dl { margin: 12px 0 0; padding: 8px 0; border-top: 1px solid var(--wc-pop-line); border-bottom: 1px solid var(--wc-pop-line); }
+html[data-nspp-wecom] .nspp-user-hover > dl > div { padding: 3px 0; }
+html[data-nspp-wecom] .nspp-user-hover > dl dt { color: var(--wc-muted); font-size: 12px; }
+html[data-nspp-wecom] .nspp-user-hover > dl dt .iconpark-icon { display: none; }
+html[data-nspp-wecom] .nspp-user-hover > dl dd { color: var(--wc-text); font-size: 13px; }
+html[data-nspp-wecom] .nspp-user-hover > dl dd a { color: var(--wc-text); text-decoration-color: var(--wc-time); }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-rich { margin: 8px 0 0; color: var(--wc-muted); font-size: 12px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-rich .nspp-age { padding: 0; border: 0; background: none; color: var(--wc-muted); font-size: 12px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-rich .nspp-age strong { color: var(--wc-text); }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-actions { gap: 6px; margin-top: 12px; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-actions > :is(button, a) { display: inline-flex; align-items: center; justify-content: center; height: 30px; border: 0; border-radius: 6px; background: var(--wc-search) !important; color: var(--wc-text) !important; font: 13px var(--wc-font); text-decoration: none; box-shadow: none; }
+html[data-nspp-wecom] .nspp-user-hover .nspp-user-hover-actions > :is(button, a):hover:not(:disabled) { background: var(--wc-row-active) !important; }
+html[data-nspp-wecom] .nspp-user-hover :is(.nspp-user-hover-actions > [data-action="block"], .nspp-block-toggle) { color: var(--wc-red) !important; }
+/* Private-chat profile strip: neutral like the rest of the pane; the trust number keeps its tier colour. */
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile { padding: 12px 24px; border-bottom: 1px solid var(--wc-border); background: var(--wc-chat) !important; }
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile::before { display: none; }
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile > a .nspp-messages-avatar { border-radius: 6px; outline: 0; }
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile-data { background: var(--wc-bubble) !important; }
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile :is(.nspp-chat-profile-heading > strong, .nspp-chat-profile-stat > strong) { color: var(--wc-text); }
+html[data-nspp-wecom] .nspp-wecom-messages .nspp-chat-profile :is(.nspp-chat-profile-meta, .nspp-chat-profile-notice, .nspp-chat-profile-stat > small, .nspp-chat-profile-bio) { color: var(--wc-muted); }
+/* The scrolling pane takes focus for keyboard scrolling; it needs no ring of its own. */
+html[data-nspp-wecom] .nspp-wecom-chat .nspp-wecom-chat-body:focus-visible { outline: none; }

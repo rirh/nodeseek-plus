@@ -64,8 +64,9 @@ textarea { resize: vertical; min-height: 60px; }
 .check-update { min-height: 24px; padding: 1px 8px; font-size: 11.5px; }
 .about-content p { font-size: 12px; }
 .about-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 12px; }
-.about-links a { color: var(--link); text-decoration: none; }
-.about-links a:hover { text-decoration: underline; }
+.about-star { margin-top: 4px; }
+.about-links a, .about-star a { color: var(--link); text-decoration: none; }
+.about-links a:hover, .about-star a:hover { text-decoration: underline; }
 .about-buttons { display: flex; gap: 6px; }
 .about-share { min-height: 24px; padding: 1px 8px; font-size: 11.5px; }
 

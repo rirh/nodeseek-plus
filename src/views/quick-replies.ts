@@ -1,6 +1,7 @@
 import type { Context } from '../core/types';
 import { createSheet } from './sheet';
 import { setShine } from './sweep-shine';
+import { iconButton } from '../lib/tool-icon';
 
 const defaults = ['感谢分享！', '学习了，感谢楼主。', '收藏了，之后仔细看看。', '感谢解答，问题解决了。', '这个方法很实用，感谢。', '请问方便补充一下具体配置吗？', '请问目前还有吗？', '祝早出！'];
 export function createQuickReplies(ctx: Context, send: (link: HTMLAnchorElement, text: string) => Promise<string>) {
@@ -11,21 +12,21 @@ export function createQuickReplies(ctx: Context, send: (link: HTMLAnchorElement,
   const dialog = createSheet('nspp-quick-replies', '快捷回复');
   const head = document.createElement('div'); head.className = 'nspp-quick-head';
   const heading = document.createElement('strong'); heading.textContent = '快捷回复';
-  const close = document.createElement('button'); close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '关闭快捷回复');
+  const close = document.createElement('button'); close.type = 'button'; iconButton(close, 'close', '关闭快捷回复');
   head.append(heading, close);
   const title = document.createElement('p'); title.className = 'nspp-quick-target';
   const toolbar = document.createElement('div'); toolbar.className = 'nspp-quick-toolbar';
   const search = document.createElement('input'); search.type = 'search'; search.placeholder = '查找回复'; search.setAttribute('aria-label', '查找回复');
-  const add = document.createElement('button'); add.type = 'button'; add.textContent = '新增'; add.className = 'nspp-quick-primary'; toolbar.append(search, add);
+  const add = document.createElement('button'); add.type = 'button'; add.className = 'nspp-quick-primary'; iconButton(add, 'plus', '新增快捷回复'); toolbar.append(search, add);
   const list = document.createElement('div'); list.className = 'nspp-quick-list nspp-sheet-body';
   const editor = document.createElement('form'); editor.hidden = true;
   const text = document.createElement('textarea'); text.maxLength = 2000; text.required = true; text.rows = 3; text.placeholder = '输入常用回复内容…'; text.setAttribute('aria-label', '模板内容');
   const save = document.createElement('button'); save.type = 'submit'; save.textContent = '保存'; save.className = 'nspp-quick-primary';
   const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = '取消'; editor.append(text, save, cancel);
   const footer = document.createElement('div'); footer.className = 'nspp-quick-pagination';
-  const previous = document.createElement('button'); previous.type = 'button'; previous.textContent = '上一页';
+  const previous = document.createElement('button'); previous.type = 'button'; iconButton(previous, 'left', '上一页');
   const total = document.createElement('span');
-  const next = document.createElement('button'); next.type = 'button'; next.textContent = '下一页'; footer.append(previous, total, next);
+  const next = document.createElement('button'); next.type = 'button'; iconButton(next, 'right', '下一页'); footer.append(previous, total, next);
   const status = document.createElement('p'); status.className = 'nspp-quick-status'; status.setAttribute('role', 'status'); status.textContent = '点击回复内容即直接发送';
   dialog.append(head, title, toolbar, list, editor, footer, status); document.body.append(dialog);
   const persist = () => ctx.set('quickReplies', replies);
@@ -45,8 +46,8 @@ export function createQuickReplies(ctx: Context, send: (link: HTMLAnchorElement,
         catch { if (!ctx.signal.aborted) { status.textContent = '回复结果未确认，请勿重复发送。'; dialog.close(); ctx.notify(status.textContent); } }
         finally { busy = false; setShine(status, false); if (!ctx.signal.aborted) render(); }
       }, { signal: ctx.signal });
-      const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = '修改'; edit.disabled = busy; edit.addEventListener('click', () => startEdit(index), { signal: ctx.signal });
-      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '删除'; remove.className = 'nspp-quick-delete'; remove.disabled = busy; remove.addEventListener('click', () => { replies.splice(index, 1); persist(); editor.hidden = true; render(); }, { signal: ctx.signal });
+      const edit = document.createElement('button'); edit.type = 'button'; iconButton(edit, 'edit', '修改'); edit.disabled = busy; edit.addEventListener('click', () => startEdit(index), { signal: ctx.signal });
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'nspp-quick-delete'; iconButton(remove, 'trash', '删除').dataset.danger = ''; remove.disabled = busy; remove.addEventListener('click', () => { replies.splice(index, 1); persist(); editor.hidden = true; render(); }, { signal: ctx.signal });
       row.append(reply, edit, remove); list.append(row);
     }
     if (!matches.length) { const empty = document.createElement('p'); empty.textContent = '暂无匹配回复'; list.append(empty); }

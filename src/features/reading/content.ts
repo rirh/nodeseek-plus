@@ -1,7 +1,7 @@
 import { copyButton } from '../../views/copy-button';
 import { forumTime } from '../../lib/forum-time';
 import type { Feature } from '../../core/types';
-import { linksElsewhere } from '../../views/image-preview';
+import { linksElsewhere, openImagePreview } from '../../views/image-preview';
 import { directLink } from '../reading-logic';
 import { contentSelector } from './shared';
 const units: Record<string, string> = { y: '年', mo: '月', d: '天', h: '小时', min: '分钟', s: '秒' };
@@ -95,7 +95,7 @@ export const contentFeature: Feature = {
                     undo.push(() => details.replaceWith(el));
                 });
         });
-        let dialog: HTMLDialogElement | undefined;
+        let closeViewer: (() => void) | undefined;
         if (images)
             window.addEventListener('click', e => {
                 if (!(e.target instanceof Element) || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
@@ -111,50 +111,10 @@ export const contentFeature: Feature = {
                 e.preventDefault();
                 // Claim the image before the site's document/element viewer handlers.
                 e.stopImmediatePropagation();
-                dialog?.remove();
-                dialog = document.createElement('dialog');
-                dialog.className = 'nspp-image-viewer';
-                const close = document.createElement('button');
-                close.textContent = '关闭预览';
-                close.type = 'button';
-                close.addEventListener('click', () => dialog?.close(), { signal: ctx.signal });
-                const large = document.createElement('img');
+                closeViewer?.();
                 const gallery = Array.from(document.querySelectorAll<HTMLImageElement>(`${contentSelector} img`)).filter(image => image === img || !linksElsewhere(image));
-                let index = Math.max(0, gallery.indexOf(img));
-                const count = document.createElement('span');
-                const previous = document.createElement('button');
-                previous.type = 'button';
-                previous.textContent = '上一张';
-                const next = document.createElement('button');
-                next.type = 'button';
-                next.textContent = '下一张';
-                const display = () => {
-                    const selected = gallery[index]!;
-                    large.src = selected.currentSrc || selected.src;
-                    large.alt = selected.alt;
-                    count.textContent = `${index + 1} / ${gallery.length}`;
-                    previous.disabled = index === 0;
-                    next.disabled = index === gallery.length - 1;
-                };
-                previous.addEventListener('click', () => { index--; display(); }, { signal: ctx.signal });
-                next.addEventListener('click', () => { index++; display(); }, { signal: ctx.signal });
-                dialog.addEventListener('keydown', event => {
-                    if (event.key === 'ArrowLeft' && index > 0) {
-                        event.preventDefault();
-                        index--;
-                        display();
-                    }
-                    if (event.key === 'ArrowRight' && index < gallery.length - 1) {
-                        event.preventDefault();
-                        index++;
-                        display();
-                    }
-                }, { signal: ctx.signal });
-                display();
-                dialog.append(close, previous, count, next, large);
-                document.body.append(dialog);
-                dialog.showModal();
+                closeViewer = openImagePreview(gallery, img, () => { closeViewer = undefined; });
             }, { capture: true, signal: ctx.signal });
-        return () => { stop(); dialog?.remove(); undo.reverse().forEach(fn => fn()); };
+        return () => { stop(); closeViewer?.(); undo.reverse().forEach(fn => fn()); };
     },
 };

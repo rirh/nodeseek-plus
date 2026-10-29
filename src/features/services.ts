@@ -5,12 +5,15 @@ import type { Feature } from '../core/types';
 import { createSheet } from '../views/sheet';
 import { whenReady } from '../core/when-ready';
 import { sweepShine } from '../views/sweep-shine';
+/** Pages that mark notices read publish fresh counts here so the sidebar badge clears without waiting for the poll. */
+export const unreadChannel = (uid: number) => `nspp:unread:${location.host}:${uid}`;
 export const serviceFeatures: Feature[] = [
   {
     id: 'notification-categories', title: '通知分类', description: '侧边卡片分别显示回复、@我、私信；每60秒检查，新回复、@我和私信使用系统通知，失败保留上次结果。', group: '操作辅助', defaults: { enabled: true },
     mount(ctx) {
       const initialize = () => {
-        const uid = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number } } }).__config__?.user?.member_id;
+        const user = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number; unViewedCount?: Record<string, number> } } }).__config__?.user;
+        const uid = user?.member_id;
         if (!uid) return;
         const cacheKey = `counts:${uid}`;
         const originals = new Map<HTMLElement, HTMLElement['hidden']>();
@@ -81,23 +84,26 @@ export const serviceFeatures: Feature[] = [
           }
           links.forEach((link, index) => { const old = rows[index]!.querySelector('a'); if (old) old.replaceWith(link); else rows[index]!.prepend(link); });
         };
-        const run = async () => {
-          if (pending || ctx.signal.aborted || Date.now() - lastAttempt < 5_000) return;
+        const update = (counts: Record<string, number>, announce: boolean) => {
+          const previous = ctx.get<Record<string, number> | undefined>(cacheKey);
+          render(counts); ctx.set(cacheKey, counts);
+          if (!announce || !previous || ctx.signal.aborted) return;
+          for (const [key, label, title, path] of [['reply', '评论/回复', '收到了评论/回复', 'reply'], ['atMe', '@提醒', '有人 @你', 'atMe'], ['message', '私信', '收到了私信', 'message?mode=list']]) {
+            const before = previous[key]; const count = counts[key];
+            if (!Number.isFinite(before) || before < 0 || !Number.isFinite(count) || count <= before) continue;
+            const message = `收到 ${count - before} 条新${label}，当前有 ${count} 条${label}未读`;
+            if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`, title)) ctx.notify(message);
+          }
+        };
+        // Returning to a tab or reading notices elsewhere must refresh right away; only the background poll is throttled across tabs.
+        const run = async (fresh = false) => {
+          if (pending || ctx.signal.aborted || Date.now() - lastAttempt < (fresh ? 1_000 : 5_000)) return;
           lastAttempt = Date.now(); pending = true;
           try {
-            await withTabLock(`unread:${uid}`, 60_000, async () => {
+            await withTabLock(`unread:${uid}`, fresh ? 2_000 : 60_000, async () => {
               const result = await ctx.request<{ success: boolean; unreadCount?: Record<string, number> }>('/api/notification/unread-count');
               if (!result.success || !result.unreadCount) throw new Error('Invalid response');
-              const previous = ctx.get<Record<string, number> | undefined>(cacheKey);
-              render(result.unreadCount); ctx.set(cacheKey, result.unreadCount); failed = false;
-              if (previous && !ctx.signal.aborted) {
-                for (const [key, label, title, path] of [['reply', '评论/回复', '收到了评论/回复', 'reply'], ['atMe', '@提醒', '有人 @你', 'atMe'], ['message', '私信', '收到了私信', 'message?mode=list']]) {
-                  const before = previous[key]; const count = result.unreadCount[key];
-                  if (!Number.isFinite(before) || before < 0 || !Number.isFinite(count) || count <= before) continue;
-                  const message = `收到 ${count - before} 条新${label}，当前有 ${count} 条${label}未读`;
-                  if (!systemNotify(message, `${location.origin}/notification#/${path}`, `nspp:${location.hostname}:${uid}:${key}`, title)) ctx.notify(message);
-                }
-              }
+              update(result.unreadCount, true); failed = false;
             });
             render(ctx.get<Record<string, number>>(cacheKey));
           } catch {
@@ -106,10 +112,15 @@ export const serviceFeatures: Feature[] = [
           } finally { pending = false; }
         };
         render({ reply: 0, atMe: 0, message: 0 });
-        try { render(ctx.get<Record<string, number>>(cacheKey)); } catch { /* Invalid old cache is ignored. */ }
+        // The page's own counts are fresh on every load, unlike the shared cache.
+        const seeded = user?.unViewedCount;
+        try { if (seeded && ['reply', 'atMe', 'message'].every(key => Number.isFinite(seeded[key]))) update(seeded, true); else render(ctx.get<Record<string, number>>(cacheKey)); } catch { /* Invalid counts are ignored. */ }
+        const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel(unreadChannel(uid)) : undefined;
+        channel?.addEventListener('message', event => { try { if (event.data?.counts) update(event.data.counts, false); } catch { /* Ignore malformed counts. */ } });
         const stopPlacement = ctx.watch(place);
-        document.addEventListener('visibilitychange', () => { if (!document.hidden) void run(); }, { signal: ctx.signal }); void run();
-        const timer = setInterval(() => { void run(); }, 60_000); return () => { clearInterval(timer); stopPlacement(); rows.forEach(row => row.remove()); originals.forEach((hidden, el) => { el.hidden = hidden; el.classList.remove('nspp-original-notification'); }); };
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) void run(true); }, { signal: ctx.signal });
+        window.addEventListener('pageshow', event => { if (event.persisted) void run(true); }, { signal: ctx.signal }); void run();
+        const timer = setInterval(() => { void run(); }, 60_000); return () => { clearInterval(timer); channel?.close(); stopPlacement(); rows.forEach(row => row.remove()); originals.forEach((hidden, el) => { el.hidden = hidden; el.classList.remove('nspp-original-notification'); }); };
       };
       return whenReady(ctx, initialize);
     },

@@ -2,6 +2,7 @@ import type { Context, Feature } from '../core/types';
 import { unsafeWindow } from '../lib/userscript';
 import { toolIcon } from '../lib/tool-icon';
 import { createNotificationInbox } from './notification-inbox';
+import { unreadChannel } from './services';
 import { notificationAvatar } from '../views/notification-avatar';
 import { forumTime } from '../lib/forum-time';
 import { createMessageArchive, mergeMessages, type Message, type Conversation } from './messages-storage';
@@ -23,7 +24,14 @@ const time = (value: string) => { const date = new Date(value); return Number.is
 const preview = (text: string) => text.replace(/!\[[^\]]*\]\([^)]+\)/g, '[图片]').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
 const unread = (message: Message) => message.viewed === false || message.viewed === 0;
 
-function mountChat(ctx: Context, account: number) {
+/**
+ * Lets another layout (摸鱼模式) host the message center: it mounts into `container`, keeps its route in `hash`
+ * instead of the URL, and re-reads the route when the host dispatches MESSAGE_ROUTE_EVENT on the container.
+ */
+export type MessageHost = { container: HTMLElement; hash: string; visible(): boolean };
+export const MESSAGE_ROUTE_EVENT = 'nspp-messages-route';
+
+export function mountChat(ctx: Context, account: number, host?: MessageHost) {
   const lifetime = new AbortController();
   ctx = { ...ctx, signal: AbortSignal.any([ctx.signal, lifetime.signal]) };
   const root = element('section', 'nspp-messages'); root.hidden = true; root.setAttribute('aria-label', '消息中心');
@@ -82,7 +90,10 @@ function mountChat(ctx: Context, account: number) {
   const nativeToolbar = element('div', 'nspp-message-native-toolbar');
   const returnToNew = button('切回新版聊天', 'nspp-message-return'); returnToNew.hidden = true; nativeToolbar.append(returnToNew);
   let nativeContainer: HTMLElement | undefined;
+  const routeHash = () => host ? host.hash : location.hash;
+  const go = (url: string) => { if (host) host.hash = new URL(url, location.href).hash || '#/atMe'; else history.pushState(null, '', url); };
   function attachToNative() {
+    if (host) { if (root.parentElement !== host.container) host.container.append(root); return true; }
     if (!nativeContainer?.isConnected) {
       nativeContainer?.classList.remove('nspp-messages-container');
       nativeContainer?.removeAttribute('data-nspp-message-view');
@@ -142,6 +153,7 @@ function mountChat(ctx: Context, account: number) {
     try {
       const result = await ctx.request<{ success?: boolean; unreadCount?: Record<string, number> }>('/api/notification/unread-count', { signal: ctx.signal });
       if (!panelValid() || !result.success || !result.unreadCount) return;
+      if (typeof BroadcastChannel === 'function') { const channel = new BroadcastChannel(unreadChannel(account)); channel.postMessage({ counts: result.unreadCount }); channel.close(); }
       navigation.querySelectorAll<HTMLAnchorElement>('a').forEach(link => {
         const value = result.unreadCount![link.dataset.category!]; const badge = link.querySelector<HTMLElement>('.nspp-messages-count')!;
         badge.hidden = !Number.isSafeInteger(value) || value <= 0; badge.textContent = badge.hidden ? '' : String(value);
@@ -330,15 +342,16 @@ function mountChat(ctx: Context, account: number) {
     } finally { if (!requestSignal.aborted) { threadBusy = false; retrySync.disabled = false; retrySync.textContent = '重试'; } }
   }
   function navigate(id?: number) {
-    history.pushState(null, '', `/notification#/message?mode=${id ? `talk&to=${id}` : 'list'}`); syncRoute();
+    go(`/notification#/message?mode=${id ? `talk&to=${id}` : 'list'}`); syncRoute();
   }
   function syncRoute() {
-    const next = (location.hash.match(/^#\/(atMe|reply|message)(?:\?|$)/)?.[1] as typeof category) || (!location.hash || location.hash === '#/' ? 'atMe' : undefined);
-    const params = new URLSearchParams(location.hash.split('?')[1] || '');
+    const hash = routeHash();
+    const next = (hash.match(/^#\/(atMe|reply|message)(?:\?|$)/)?.[1] as typeof category) || (!hash || hash === '#/' ? 'atMe' : undefined);
+    const params = new URLSearchParams(hash.split('?')[1] || '');
     returnToNew.hidden = params.get('native') !== '1';
     if (!next) suppressed = false;
     const attached = attachToNative();
-    const show = attached && !!next && !suppressed && params.get('native') !== '1';
+    const show = attached && !!next && !suppressed && params.get('native') !== '1' && (!host || host.visible());
     const wasHidden = root.hidden;
     root.hidden = !show;
     if (nativeContainer) nativeContainer.dataset.nsppMessageView = show ? 'new' : 'native';
@@ -413,6 +426,7 @@ function mountChat(ctx: Context, account: number) {
   more.addEventListener('click', () => { autoPaused = false; void loadList(true); }, { signal: ctx.signal });
   back.addEventListener('click', () => navigate(), { signal: ctx.signal });
   original.addEventListener('click', () => {
+    if (host) { location.assign(`/notification${routeHash() || '#/atMe'}`); return; }
     suppressed = true; const params = new URLSearchParams(location.hash.split('?')[1] || ''); params.set('native', '1');
     location.hash = `#/${category || 'atMe'}?${params}`; syncRoute();
   }, { signal: ctx.signal });
@@ -446,12 +460,16 @@ function mountChat(ctx: Context, account: number) {
     if (!(event.target instanceof Element)) return;
     const link = event.target.closest<HTMLAnchorElement>('a[href]'); if (!link) return;
     const url = new URL(link.href, location.href);
-    if (url.origin !== location.origin || url.pathname !== '/notification' || (url.hash && !/^#\/(atMe|reply|message)(?:\?|$)/.test(url.hash)) || suppressed || new URLSearchParams(location.hash.split('?')[1] || '').get('native') === '1') return;
-    event.preventDefault(); event.stopImmediatePropagation(); history.pushState(null, '', url); syncRoute();
+    if (host && !host.visible()) return;
+    if (url.origin !== location.origin || url.pathname !== '/notification' || (url.hash && !/^#\/(atMe|reply|message)(?:\?|$)/.test(url.hash)) || suppressed || new URLSearchParams(routeHash().split('?')[1] || '').get('native') === '1') return;
+    event.preventDefault(); event.stopImmediatePropagation(); go(url.href); syncRoute();
   };
   document.addEventListener('click', followLink, { capture: true, signal: ctx.signal });
-  window.addEventListener('hashchange', syncRoute, { signal: ctx.signal });
-  window.addEventListener('popstate', syncRoute, { signal: ctx.signal });
+  if (host) host.container.addEventListener(MESSAGE_ROUTE_EVENT, syncRoute, { signal: ctx.signal });
+  else {
+    window.addEventListener('hashchange', syncRoute, { signal: ctx.signal });
+    window.addEventListener('popstate', syncRoute, { signal: ctx.signal });
+  }
   const poll = () => {
     if (!panelValid() || document.hidden) return;
     void refreshCounts();
@@ -459,7 +477,7 @@ function mountChat(ctx: Context, account: number) {
     else void inbox.refresh();
   };
   const timer = setInterval(poll, 30000); document.addEventListener('visibilitychange', poll, { signal: ctx.signal });
-  const stopMount = ctx.watch(() => {
+  const stopMount = host ? () => {} : ctx.watch(() => {
     const wasAttached = root.isConnected && root.parentElement === nativeContainer && nativeToolbar.parentElement === nativeContainer;
     if (!wasAttached && attachToNative()) syncRoute();
   });

@@ -5,11 +5,11 @@ import { Window } from 'happy-dom';
 
 export const bundle = readFileSync(process.env.NSPP_TEST_BUNDLE || new URL('../../dist/nodeseek-plus-plus.user.js', import.meta.url), 'utf8');
 export const key = 'nspp:settings:www.nodeseek.com';
-export async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void, testUpdates = false) {
+export async function fixture(settings: Record<string, unknown> = {}, html = '', path = '/', shared?: Map<string, unknown>, setup?: (window: Window) => void, testUpdates = false, origin = 'https://www.nodeseek.com') {
   // Evaluate only our locally built bundle and fixed test fixtures, never downloaded code.
   // Tests must stay offline: link clicks only update the URL, and any other internal happy-dom fetch gets a local 503
   // instead of reaching the real forum (a reset connection there would crash the whole test process).
-  const window = new Window({ url: `https://www.nodeseek.com${path}`, settings: {
+  const window = new Window({ url: `${origin}${path}`, settings: {
     enableJavaScriptEvaluation: true, suppressInsecureJavaScriptEnvironmentWarning: true,
     navigation: { disableMainFrameNavigation: true, disableChildFrameNavigation: true, disableChildPageNavigation: true },
     fetch: { interceptor: {
