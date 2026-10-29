@@ -89,7 +89,7 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 
 摸鱼模式把论坛换成类似微信桌面版的三栏布局。桌面端（窗口宽度 ≥ 1000px）在首页或版块列表点右侧工具栏的小鱼图标即可切换，再点一次恢复论坛原样。
 
-![摸鱼模式：左侧导航、热榜列表与聊天式阅读区](docs/screenshots/moyu-light.webp)
+![NodeSeek 上切换摸鱼模式，打开帖子阅读](docs/screenshots/moyu-nodeseek.gif)
 
 可以看到，界面分成三栏：
 
@@ -131,12 +131,13 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 - 没登录时，通知和发帖按钮会隐藏。
 - V2EX 只在刷新页面时更新未读数，所以开着摸鱼模式时，脚本每 3 分钟会自己查一次。
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/moyu-v2ex.webp" alt="V2EX 上的摸鱼模式"><p align="center">V2EX</p></td>
-    <td width="50%"><img src="docs/screenshots/moyu-linuxdo.webp" alt="linux.do 上的摸鱼模式"><p align="center">linux.do</p></td>
-  </tr>
-</table>
+V2EX：
+
+![V2EX 上的摸鱼模式](docs/screenshots/moyu-v2ex.gif)
+
+linux.do：
+
+![linux.do 上的摸鱼模式](docs/screenshots/moyu-linuxdo.gif)
 
 ## 实现上的几点取舍
 
@@ -169,6 +170,10 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 - 跟随站点的日间 / 夜间模式。
 
 ## 截图
+
+实时热榜和帖子监控：
+
+![实时热榜切换与帖子监控](docs/screenshots/hot-and-monitor.gif)
 
 <table>
   <tr>
