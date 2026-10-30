@@ -1,6 +1,5 @@
 import type { Context } from '../../../core/types';
 import { unsafeWindow } from '../../../lib/userscript';
-import { createPostInteraction } from '../../../views/post-interaction';
 import { reactions, siteIcon } from '../../post-interaction-data';
 import { parsePostPage, postHref, postTarget, type Floor, type FloorStats, type PostPage } from '../parse';
 import type { Chip, FloorAction, ThreadSource } from '../source';
@@ -16,17 +15,20 @@ const VOTES = {
 } as const satisfies Record<string, { endpoint: string; done: keyof FloorStats; total: keyof FloorStats; confirm: string }>;
 type Vote = keyof typeof VOTES;
 type StatResult = { success?: boolean; message?: string; current?: number; postCollectionCount?: number };
+type ReplyResult = { success?: boolean; message?: string };
+const TOKEN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const absolute = (path: string) => new URL(path, location.origin).href;
 const icon = (title: string) => {
   const name = reactions.find(reaction => reaction.title === title)?.icon;
   return name ? () => siteIcon(name) : undefined;
 };
 
-/** NodeSeek and DeepFlood: post pages are fetched through the shared request queue; replies go through the forum's own editor. */
+/** NodeSeek and DeepFlood: post pages are fetched through the shared request queue; replies post to the endpoint the forum's own editor uses. */
 export function nodeseekThread(ctx: Context): ThreadSource {
   const user = (unsafeWindow as Window & { __config__?: { user?: { member_id?: number; member_name?: string } | null } }).__config__?.user;
   const me = user?.member_id;
-  let interaction: ReturnType<typeof createPostInteraction> | undefined;
+  // The forum's editor sends a random token of its own making in this header, one per editor; the pane is one editor.
+  const csrf = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => TOKEN[byte % TOKEN.length]).join('');
   const statistic = (path: string, payload: object) => ctx.request<StatResult>(`/api/statistics/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   async function vote(kind: Vote, stats: FloorStats) {
     const spec = VOTES[kind];
@@ -52,7 +54,7 @@ export function nodeseekThread(ctx: Context): ThreadSource {
   return {
     me: me == null ? null : { id: me, name: user?.member_name || '' },
     markdown: true,
-    sending: '正在通过原帖编辑器发送…',
+    sending: '正在发送…',
     href: postHref,
     target: href => postTarget(href, location.origin),
     async load(id, page, signal) {
@@ -62,12 +64,25 @@ export function nodeseekThread(ctx: Context): ThreadSource {
       if (!data.floors.length && page === 1) throw new Error('未找到正文');
       return data;
     },
+    // The same request the forum's editor makes, sent straight away: no hidden copy of the post page, its avatars or its scripts.
+    // Like that editor, it reads the JSON whatever the status and shows the forum's own message when it refuses.
     async reply(id, text) {
-      const link = document.createElement('a'); link.href = absolute(postHref(id));
-      interaction ??= createPostInteraction(ctx, () => {});
-      const result = await interaction.quickReply(link, text);
-      // quickReply reports success with this exact message once the native editor has cleared itself.
-      return result.startsWith('回复已提交') ? '' : result;
+      let response: Response;
+      try {
+        response = await fetch(absolute('/api/content/new-comment'), {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'csrf-token': csrf },
+          body: JSON.stringify({ content: text, mode: 'new-comment', postId: id }),
+          signal: AbortSignal.any([ctx.signal, AbortSignal.timeout(20_000)]),
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'TimeoutError') return '尚未确认发送结果，请刷新查看，勿重复发送';
+        return '网络连接失败，回复未发送，请稍后重试';
+      }
+      const result = await response.json().catch(() => null) as ReplyResult | null;
+      if (result?.success) return '';
+      if (result?.message) return result.message;
+      return response.ok ? '服务器未返回有效数据，请检查登录状态或站点验证页面' : `回复未发送（HTTP ${response.status}），请在原帖完成登录或站点验证后重试`;
     },
     // Counts come from the page config when present, so they can follow this pane's own actions; the menu text is the fallback.
     chips(floor, data): Chip[] {
@@ -107,6 +122,5 @@ export function nodeseekThread(ctx: Context): ThreadSource {
     source: floor => floor.stats?.markdown || '',
     sticker: image => image.src.includes(STICKER),
     author: floor => floor.uid === AUTHOR_UID,
-    destroy() { interaction?.destroy(); },
   };
 }

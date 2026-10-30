@@ -38,6 +38,25 @@ export function fishIcon() {
   return svg;
 }
 
+/**
+ * A rail button whose flyout opens while the mouse rests on it and closes shortly after the mouse leaves both,
+ * so the pointer can cross the gap between them. Clicks still toggle it for touch and keyboard; with the mouse
+ * on the button a click keeps it open, since hovering already opened it.
+ */
+export function hoverFlyout(ctx: Context, button: HTMLElement, flyout: HTMLElement, set: (open: boolean) => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let over = false;
+  const later = (open: boolean, delay: number) => { clearTimeout(timer); timer = setTimeout(() => set(open), delay); };
+  const mouse = (event: PointerEvent) => event.pointerType === 'mouse';
+  // A short pause first, so passing over the button on the way to its neighbours does not flash the flyout.
+  button.addEventListener('pointerenter', event => { if (!mouse(event)) return; over = true; if (flyout.hidden) later(true, 120); else clearTimeout(timer); }, { signal: ctx.signal });
+  button.addEventListener('pointerleave', event => { if (!mouse(event)) return; over = false; later(false, 250); }, { signal: ctx.signal });
+  flyout.addEventListener('pointerenter', event => { if (mouse(event)) clearTimeout(timer); }, { signal: ctx.signal });
+  flyout.addEventListener('pointerleave', event => { if (mouse(event)) later(false, 250); }, { signal: ctx.signal });
+  button.addEventListener('click', () => { clearTimeout(timer); set(over || !!flyout.hidden); }, { signal: ctx.signal });
+  ctx.signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
+}
+
 /** ≡ menu: NodeSeek++'s own tools, mirrored from its (hidden) toolbar so each keeps its own behaviour. */
 export function createToolMenu(ctx: Context, tools: HTMLElement | null, more: HTMLElement) {
   const menu = el('div', 'nspp-wecom-railmenu'); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'NodeSeek++ 工具'); menu.hidden = true;

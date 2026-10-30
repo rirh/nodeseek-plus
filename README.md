@@ -12,19 +12,19 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 - 因为收益于各位大佬的技术分享我也是把自己的用的小工具贡献出来的，所以请不要把本项目用于商业用途，或者在未经允许的情况下二次分发。
 - 觉得好用的话，欢迎到点个 star 鼓励，兄弟们的鼓励是作者改bug的动力 。
 
-[安装脚本](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js) · [Greasy Fork](https://greasyfork.org/zh-CN/scripts/595488) · [使用说明](docs/guide.md) · [问题反馈](https://github.com/rirh/nodeseek-plus/issues)
+[安装脚本](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/dist/nodeseek-plus-plus.user.js) · [Greasy Fork](https://greasyfork.org/zh-CN/scripts/595488) · [使用说明](https://github.com/rirh/nodeseek-plus/blob/main/docs/guide.md) · [问题反馈](https://github.com/rirh/nodeseek-plus/issues)
 
 [![GitHub Stars](https://img.shields.io/github/stars/rirh/nodeseek-plus?style=social)](https://github.com/rirh/nodeseek-plus)
 [![Greasy Fork](https://img.shields.io/greasyfork/v/595488?label=Greasy%20Fork)](https://greasyfork.org/zh-CN/scripts/595488)
-[![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](https://github.com/rirh/nodeseek-plus/blob/main/LICENSE)
 
-![首页：用户资料卡、等级与信任分徽章、右侧工具栏](docs/screenshots/home-user-card.webp)
+![首页：用户资料卡、等级与信任分徽章、右侧工具栏](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/home-user-card.webp)
 
 ## 前言
 
 因为收益于各位大佬的技术分享我也是把自己的用的小工具贡献出来的，所以请不要把本项目用于商业用途，或者在未经允许的情况下二次分发
 后来发现 V2EX 和 linux.do 我也想这么刷，就把摸鱼模式也搬了过去。
-下面先说怎么装，再挨个过一遍功能，最后聊聊实现上的几点取舍。各模块的具体用法写在 [使用说明](docs/guide.md) 里。
+下面先说怎么装，再挨个过一遍功能，最后聊聊实现上的几点取舍。各模块的具体用法写在 [使用说明](https://github.com/rirh/nodeseek-plus/blob/main/docs/guide.md) 里。
 
 ## 安装
 
@@ -54,7 +54,7 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 
 | 模块     | 说明                                                                                                  |
 | -------- | ----------------------------------------------------------------------------------------------------- |
-| 摸鱼模式 | 桌面端切换成微信式三栏，帖子列表像会话列表，帖子像群聊；V2EX 和 linux.do 也能用，见 [下文](#摸鱼模式) |
+| 摸鱼模式 | 桌面端切换成微信式三栏，帖子列表像会话列表，帖子像群聊；V2EX 和 linux.do 也能用，见 [下文](https://github.com/rirh/nodeseek-plus#摸鱼模式) |
 | 阅读增强 | 自动翻页、阅读历史与已读标记、外链直达、图片预览、代码高亮与复制、只看楼主、长文折叠                  |
 | 帖子预览 | 悬停预加载、帖子卡片预览、主题帖浏览与评论数                                                          |
 | 实时热榜 | 实时热榜 / 日榜 / 周榜切换，打开时按需获取，缓存 5 分钟                                               |
@@ -89,27 +89,27 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 
 摸鱼模式把论坛换成类似微信桌面版的三栏布局。桌面端（窗口宽度 ≥ 1000px）在首页或版块列表点右侧工具栏的小鱼图标即可切换，再点一次恢复论坛原样。
 
-![NodeSeek 上切换摸鱼模式，打开帖子阅读](docs/screenshots/moyu-nodeseek.gif)
+![NodeSeek 上切换摸鱼模式，打开帖子阅读](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-nodeseek.gif)
 
 可以看到，界面分成三栏：
 
-- 左侧是导航，包括消息、帖子、版块、热榜；NodeSeek++ 的其他工具收在左下角的菜单里。
+- 左侧是导航，包括消息、帖子、版块、热榜；鼠标停在版块上就会展开版块列表；NodeSeek++ 的其他工具收在左下角的菜单里。
 - 中间是帖子列表，可以拖拽调整宽度。热榜的实时 / 日榜 / 周榜也在这里切换；切版块、翻页、换排序都在原位刷新，不会整页跳转。
 - 右侧用聊天气泡读帖子和回复。
 
 阅读时的操作和原帖保持一致：
 
 - 右键楼层：点赞、加鸡腿、反对、收藏、引用、回复、复制，和原帖楼层菜单一样；加鸡腿和反对会先确认消耗。
-- 底部输入框：带 Markdown 工具栏、图片上传与预览，`Ctrl / ⌘ + Enter` 通过原帖编辑器发送。
+- 底部输入框：带 Markdown 工具栏、图片上传与预览，`Ctrl / ⌘ + Enter` 直接调用论坛的评论接口发送，失败时显示论坛给出的原因。
 - 消息中心：@我、回复、系统消息和私信都在同一个窗口里打开。
 
 另外，在设置里可以选择进入摸鱼模式时默认打开首页、热榜还是某个版块；日间 / 夜间模式跟随站点。里面还藏了一个小彩蛋，这里就不剧透了。
 
 <table>
   <tr>
-    <td width="40%"><img src="docs/screenshots/moyu-dark.webp" alt="摸鱼模式夜间"><p align="center">夜间模式</p></td>
-    <td width="40%"><img src="docs/screenshots/moyu-messages.webp" alt="摸鱼模式中的消息中心与私信"><p align="center">消息中心与私信</p></td>
-    <td width="20%"><img src="docs/screenshots/moyu-sections.webp" alt="版块抽屉"><p align="center">版块抽屉</p></td>
+    <td width="40%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-dark.webp" alt="摸鱼模式夜间"><p align="center">夜间模式</p></td>
+    <td width="40%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-messages.webp" alt="摸鱼模式中的消息中心与私信"><p align="center">消息中心与私信</p></td>
+    <td width="20%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-sections.webp" alt="版块抽屉"><p align="center">版块抽屉</p></td>
   </tr>
 </table>
 
@@ -133,11 +133,11 @@ NodeSeek++ 只是想让逛论坛更舒服一些，，**不是**用来刷量、�
 
 V2EX：
 
-![V2EX 上的摸鱼模式](docs/screenshots/moyu-v2ex.gif)
+![V2EX 上的摸鱼模式](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-v2ex.gif)
 
 linux.do：
 
-![linux.do 上的摸鱼模式](docs/screenshots/moyu-linuxdo.gif)
+![linux.do 上的摸鱼模式](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/moyu-linuxdo.gif)
 
 ## 实现上的几点取舍
 
@@ -173,20 +173,20 @@ linux.do：
 
 实时热榜和帖子监控：
 
-![实时热榜切换与帖子监控](docs/screenshots/hot-and-monitor.gif)
+![实时热榜切换与帖子监控](https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/hot-and-monitor.gif)
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/monitor.webp" alt="帖子监控面板"><p align="center">帖子监控：正则匹配新帖</p></td>
-    <td width="50%"><img src="docs/screenshots/messages.webp" alt="消息中心"><p align="center">消息中心：通知与私信合一</p></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/monitor.webp" alt="帖子监控面板"><p align="center">帖子监控：正则匹配新帖</p></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/messages.webp" alt="消息中心"><p align="center">消息中心：通知与私信合一</p></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/hot-rankings.webp" alt="NodeSeek 热榜"><p align="center">实时热榜 / 日榜 / 周榜</p></td>
-    <td><img src="docs/screenshots/menu.png" alt="脚本管理器菜单"><p align="center">脚本管理器菜单快捷入口</p></td>
+    <td><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/hot-rankings.webp" alt="NodeSeek 热榜"><p align="center">实时热榜 / 日榜 / 周榜</p></td>
+    <td><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/menu.png" alt="脚本管理器菜单"><p align="center">脚本管理器菜单快捷入口</p></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/monitor-panel.webp" alt="帖子监控结果"><p align="center">监控结果：命中的新帖高亮，后台继续检查</p></td>
-    <td><img src="docs/screenshots/monitor-config.webp" alt="监控配置"><p align="center">监控配置：正则、刷新间隔与 AI 写正则提示</p></td>
+    <td><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/monitor-panel.webp" alt="帖子监控结果"><p align="center">监控结果：命中的新帖高亮，后台继续检查</p></td>
+    <td><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/monitor-config.webp" alt="监控配置"><p align="center">监控配置：正则、刷新间隔与 AI 写正则提示</p></td>
   </tr>
 </table>
 
@@ -194,9 +194,9 @@ linux.do：
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/screenshots/mobile-home.webp" alt="手机首页"></td>
-    <td width="33%"><img src="docs/screenshots/mobile-hot.webp" alt="手机热榜"></td>
-    <td width="33%"><img src="docs/screenshots/mobile-monitor.webp" alt="手机帖子监控"></td>
+    <td width="33%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/mobile-home.webp" alt="手机首页"></td>
+    <td width="33%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/mobile-hot.webp" alt="手机热榜"></td>
+    <td width="33%"><img src="https://raw.githubusercontent.com/rirh/nodeseek-plus/main/docs/screenshots/mobile-monitor.webp" alt="手机帖子监控"></td>
   </tr>
 </table>
 
@@ -215,11 +215,11 @@ NodeSeek++ 只是想让逛论坛更舒服一些，**不是**用来刷量、灌�
 
 ## 文档
 
-- [使用说明](docs/guide.md)：监控正则写法、图片上传与自定义图床、请求并发、消息中心等细节
-- [开发与发布](docs/development.md)：本地开发、测试、`make deploy` 与 Greasy Fork 同步
+- [使用说明](https://github.com/rirh/nodeseek-plus/blob/main/docs/guide.md)：监控正则写法、图片上传与自定义图床、请求并发、消息中心等细节
+- [开发与发布](https://github.com/rirh/nodeseek-plus/blob/main/docs/development.md)：本地开发、测试、`make deploy` 与 Greasy Fork 同步
 
 ## 许可证
 
-[GPL-3.0-only](LICENSE)。
+[GPL-3.0-only](https://github.com/rirh/nodeseek-plus/blob/main/LICENSE)。
 
 <p align="center"><a href="https://star-history.com/#rirh/nodeseek-plus&Date"><img src="https://api.star-history.com/svg?repos=rirh/nodeseek-plus&type=Date" alt="Star History Chart" width="640"></a></p>

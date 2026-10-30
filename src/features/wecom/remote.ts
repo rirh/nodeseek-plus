@@ -9,7 +9,7 @@ import { V2EX_TABS } from './sites/v2ex-parse';
 import { v2exSite } from './sites/v2ex';
 import type { Row, Section, SiteSource } from './source';
 import { listTime } from './time';
-import { conversationRow, createResizer, createToolMenu, fishIcon, railItem } from './ui';
+import { conversationRow, createResizer, createToolMenu, fishIcon, hoverFlyout, railItem } from './ui';
 
 const ACTIVE = 'data-nspp-wecom-active';
 const FILTERED = 'data-nspp-wecom-filtered';
@@ -329,7 +329,7 @@ function mountRemote(ctx: Context, site: SiteSource, kind: string) {
     else { setFlyout(false); tool.set(false); void loadList(site.home); }
   }, { signal: ctx.signal });
   hot.addEventListener('click', () => showView('hot'), { signal: ctx.signal });
-  sectionsButton.addEventListener('click', () => { tool.set(false); setFlyout(!!flyout.hidden); }, { signal: ctx.signal });
+  hoverFlyout(ctx, sectionsButton, flyout, open => { if (open) tool.set(false); setFlyout(open); });
   more.addEventListener('click', () => { setFlyout(false); tool.set(!!tool.menu.hidden); }, { signal: ctx.signal });
   sectionList.addEventListener('click', event => {
     const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-path]');

@@ -115,6 +115,13 @@ function desktop(window: Window, requests: string[]) {
     // The floor menu's endpoints: every vote succeeds with a count of 1, and today's free 鸡腿 is still unused.
     if (path.startsWith('/api/statistics/')) { requests.push(`${path} ${init?.body}`); return new window.Response(JSON.stringify({ success: true, current: 1 })); }
     if (path === '/api/progress/today') { requests.push(path); return new window.Response(JSON.stringify({ maxFreeLike: 1, freeLikeUsed: 0 })); }
+    // The comment endpoint the forum's editor posts to; it needs the editor's csrf-token header.
+    if (path === '/api/content/new-comment') {
+      const token = new window.Headers(init?.headers).get('csrf-token') || '';
+      requests.push(`${path} ${/^[A-Za-z0-9]{16}$/.test(token) ? 'token' : 'no-token'} ${init?.body}`);
+      if (String(init?.body).includes('刷屏')) return new window.Response(JSON.stringify({ success: false, message: '评论过于频繁' }), { status: 400 });
+      return new window.Response(JSON.stringify({ success: true, redirect: '/post-42-3', redirectHash: '#13' }));
+    }
     // Other modules (profiles, block list) make their own requests; only post and list pages matter here.
     if (!path.startsWith('/post-')) return new window.Response('{}', { status: 404 });
     requests.push(path);
@@ -189,6 +196,32 @@ test('in 摸鱼模式 list rows open as a read-only conversation and the button 
     assert.equal(sort.textContent, '新评论');
     assert.equal(doc.querySelector('.nspp-wecom-rail .nspp-wecom-badge')!.textContent, '5');
     assert.equal(doc.querySelectorAll('.nspp-wecom-categories a').length, 2);
+    // 版块 opens on hover after a short pause and closes once the mouse has left both the button and the flyout.
+    const sectionsButton = doc.querySelector<HTMLElement>('.nspp-wecom-rail-item[aria-label="版块"]')!;
+    const flyout = doc.querySelector<HTMLElement>('.nspp-wecom-categories')!;
+    const hover = (node: Element, type: string) => node.dispatchEvent(new f.window.PointerEvent(type, { pointerType: 'mouse' }));
+    const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    hover(sectionsButton, 'pointerenter');
+    assert.equal(flyout.hidden, true);
+    await waitFor(() => !flyout.hidden);
+    assert.equal(sectionsButton.getAttribute('aria-expanded'), 'true');
+    // A click with the mouse on the button keeps it open, and crossing over to the flyout does too.
+    sectionsButton.click();
+    assert.equal(flyout.hidden, false);
+    hover(sectionsButton, 'pointerleave'); hover(flyout, 'pointerenter');
+    await pause(300);
+    assert.equal(flyout.hidden, false);
+    hover(flyout, 'pointerleave');
+    await waitFor(() => flyout.hidden);
+    // Passing over the button on the way elsewhere does not open it.
+    hover(sectionsButton, 'pointerenter'); hover(sectionsButton, 'pointerleave');
+    await pause(300);
+    assert.equal(flyout.hidden, true);
+    // Touch and keyboard still toggle it with a click.
+    sectionsButton.click();
+    assert.equal(flyout.hidden, false);
+    sectionsButton.click();
+    assert.equal(flyout.hidden, true);
     assert.equal(doc.querySelector('.nspp-wecom-me')!.getAttribute('href'), '/space/7');
 
     // Hover cards would cover the conversation pane, so they stay off in this layout.
@@ -225,17 +258,30 @@ test('in 摸鱼模式 list rows open as a read-only conversation and the button 
     assert.ok([...toolbar.querySelectorAll('button')].some(button => button.textContent === '原版编辑器'));
     assert.match(doc.querySelector('.nspp-wecom-send-status')!.textContent!, /Enter 发送/);
 
-    // The input box hands the reply to the forum's own editor through the shared quick-reply bridge.
+    // The input box posts to the endpoint the forum's own editor uses, then follows the thread to its new last page.
     const send = doc.querySelector<HTMLButtonElement>('.nspp-wecom-send')!;
     const input = doc.querySelector<HTMLTextAreaElement>('.nspp-wecom-composer textarea')!;
     assert.equal(send.disabled, true);
+    // A refusal shows the forum's own reason and keeps the draft.
+    input.value = '刷屏';
+    input.dispatchEvent(new f.window.Event('input'));
+    send.click();
+    await waitFor(() => doc.querySelector('.nspp-wecom-send-status')!.textContent === '评论过于频繁');
+    assert.equal(input.value, '刷屏');
+    assert.equal(send.disabled, false);
     input.value = '支持一下';
     input.dispatchEvent(new f.window.Event('input'));
     assert.equal(send.disabled, false);
+    requests.length = 0;
     send.click();
     assert.equal(send.disabled, true);
-    assert.match(doc.querySelector('.nspp-wecom-send-status')!.textContent!, /正在通过原帖编辑器发送/);
-    assert.ok([...doc.querySelectorAll('iframe[aria-hidden="true"]')].some(frame => frame.getAttribute('src') === 'https://www.nodeseek.com/post-42-1'));
+    assert.match(doc.querySelector('.nspp-wecom-send-status')!.textContent!, /正在发送/);
+    await waitFor(() => doc.querySelector('.nspp-wecom-send-status')!.textContent === '已发送');
+    assert.equal(requests[0], '/api/content/new-comment token {"content":"支持一下","mode":"new-comment","postId":42}');
+    assert.equal(input.value, '');
+    // No hidden copy of the post page is loaded to send through.
+    assert.ok(![...doc.querySelectorAll('iframe')].some(frame => frame.getAttribute('src')?.includes('/post-42')));
+    await waitFor(() => requests.includes('/post-42-3'));
     assert.equal(doc.querySelectorAll('.nspp-wecom-chat script, .nspp-wecom-chat [onclick]').length, 0);
 
     // The last-reply time opens the page that holds that floor.

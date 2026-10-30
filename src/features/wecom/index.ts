@@ -9,7 +9,7 @@ import { postTarget } from './parse';
 import { remoteMoyu } from './remote';
 import { nodeseekThread } from './sites/nodeseek';
 import { listTime } from './time';
-import { conversationRow, createResizer, createToolMenu, fishIcon, railItem } from './ui';
+import { conversationRow, createResizer, createToolMenu, fishIcon, hoverFlyout, railItem } from './ui';
 import './wecom.css';
 
 const LIST = '#nsk-body-left ul.post-list:not(.topic-carousel-panel)';
@@ -24,7 +24,7 @@ const SECTIONS = [['daily', '日常'], ['tech', '技术'], ['info', '情报'], [
 
 const nodeseekMoyu: Feature = {
   id: 'moyu-mode', title: '摸鱼模式', group: '外观',
-  description: '默认保持论坛原样式。桌面端（宽度 ≥ 1000px）的首页和版块列表在工具栏多一个小鱼按钮，点击切换为微信聊天式三栏：左侧导航（消息、帖子、版块、热榜，底部菜单收纳 NodeSeek++ 工具）、可拖拽调宽的帖子列表、气泡式阅读区；消息在原位打开消息中心。再点一次小鱼恢复原样式。底部输入框通过原帖的论坛编辑器发送回复。从首页进入时默认打开的栏目可选：首页帖子、热榜或某个版块。',
+  description: '默认保持论坛原样式。桌面端（宽度 ≥ 1000px）的首页和版块列表在工具栏多一个小鱼按钮，点击切换为微信聊天式三栏：左侧导航（消息、帖子、版块、热榜，鼠标停在版块上即展开版块列表，底部菜单收纳 NodeSeek++ 工具）、可拖拽调宽的帖子列表、气泡式阅读区；消息在原位打开消息中心。再点一次小鱼恢复原样式。底部输入框直接调用论坛的评论接口发送回复。从首页进入时默认打开的栏目可选：首页帖子、热榜或某个版块。',
   defaults: { enabled: true, defaultView: 'home' },
   fields: {
     defaultView: { label: '进入摸鱼模式时默认打开', type: 'select', options: [
@@ -283,7 +283,7 @@ const nodeseekMoyu: Feature = {
 
     desktop.addEventListener('change', apply, { signal: ctx.signal });
     toggle.addEventListener('click', () => { moyu = !moyu; ctx.set('moyu', moyu); apply(); if (moyu) openDefault(); }, { signal: ctx.signal });
-    sections.addEventListener('click', () => { setMenu(false); setFlyout(!!flyout.hidden); }, { signal: ctx.signal });
+    hoverFlyout(ctx, sections, flyout, open => { if (open) setMenu(false); setFlyout(open); });
     more.addEventListener('click', () => { setFlyout(false); setMenu(!!menu.hidden); }, { signal: ctx.signal });
     hot.addEventListener('click', () => { setFlyout(false); setMenu(false); showView('hot'); }, { signal: ctx.signal });
     // In 摸鱼模式 消息 and 帖子 switch columns in place instead of leaving the page.
